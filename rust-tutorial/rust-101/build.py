@@ -77,7 +77,7 @@ c.lesson("println! দিয়ে সুন্দর করে প্রিন�
     say("<code>{}</code> জায়গায় মান বসে। Variable-এর নাম সরাসরি <code>{name}</code> লেখা যায়।"),
     points("<code>{:.2}</code> — দশমিকের পর ২ ঘর", "<code>{:>8}</code> — ডানে সাজিয়ে ৮ ঘর জায়গা",
            "<code>{:?}</code> — debug আকারে (পরে কাজে লাগবে)"),
-    tip("<code>price * qty as f64</code> — <code>qty</code> পূর্ণসংখ্যা, তাই <code>as f64</code> দিয়ে দশমিক বানিয়ে <code>price</code>-এর সাথে গুণ; <code>{:.2}</code> ফলটা ২ ঘর দশমিকে দেখায় (3751.50)।"),
+    tip("<code>f64</code> = দশমিক সংখ্যা (৬৪-bit, PHP-র <code>float</code>)। <code>price * qty as f64</code> — <code>qty</code> পূর্ণসংখ্যা, তাই <code>as f64</code> দিয়ে দশমিক বানিয়ে <code>price</code>-এর সাথে গুণ; <code>{:.2}</code> ফলটা ২ ঘর দশমিকে দেখায় (3751.50)।"),
     php_note("<code>printf(\"%.2f\", $price)</code> বা <code>\"Hello {$name}\"</code> — Rust-এ সব <code>{}</code> দিয়ে।"),
     code(r'''
 fn main() {

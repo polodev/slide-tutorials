@@ -536,7 +536,8 @@ class ShellSession:
         "promrules": ["promtool", "check", "rules", "{file}"],
     }
 
-    def __init__(self, slug, env=None):
+    def __init__(self, slug, env=None, container=None):
+        self.container = container   # run commands inside this (Linux) container instead of the host
         self.dir = CACHE / "shell" / slug
         if self.dir.exists():
             shutil.rmtree(self.dir, ignore_errors=True)
@@ -549,6 +550,9 @@ class ShellSession:
         path = self.dir / c.file
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(c.src + "\n")
+        if self.container and c.file.startswith("/"):   # absolute path: a file inside the Linux container
+            subprocess.run(["docker", "exec", "-i", self.container, "bash", "-c", f"mkdir -p $(dirname {c.file}) && cat > {c.file}"],
+                           input=c.src + "\n", text=True, check=True, env=self.env)
         if not c.validate:
             return None
         cmd = [a.format(file=str(path)) for a in self.VALIDATORS[c.validate]]
@@ -572,11 +576,21 @@ class ShellSession:
     def run(self, c: Code):
         parts, failed = [], False
         for cmd in self.commands(c.src):
-            marker = self.dir / ".pwd"
-            script = f"cd {json.dumps(str(self.cwd))}\n{cmd}\n__rc=$?\npwd > {json.dumps(str(marker))}\nexit $__rc\n"
-            r = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=c.timeout, env=self.env)
-            if marker.exists():
-                self.cwd = Path(marker.read_text().strip())
+            if self.container:
+                cwd = getattr(self, "ccwd", "/root")
+                script = f"cd {json.dumps(cwd)}\n{cmd}\n__rc=$?\necho \"@@PWD@@$(pwd)\"\nexit $__rc\n"
+                r = subprocess.run(["docker", "exec", "-i", self.container, "bash", "-c", script], capture_output=True,
+                                   text=True, timeout=c.timeout, env=self.env)
+                m = re.search(r"@@PWD@@(.*)\n?", r.stdout)
+                if m:
+                    self.ccwd = m.group(1).strip()
+                    r = subprocess.CompletedProcess(r.args, r.returncode, r.stdout.replace(m.group(0), ""), r.stderr)
+            else:
+                marker = self.dir / ".pwd"
+                script = f"cd {json.dumps(str(self.cwd))}\n{cmd}\n__rc=$?\npwd > {json.dumps(str(marker))}\nexit $__rc\n"
+                r = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=c.timeout, env=self.env)
+                if marker.exists():
+                    self.cwd = Path(marker.read_text().strip())
             out = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]", "", r.stdout + r.stderr).replace(str(self.dir), "~/shop")
             out = self._trim(out.rstrip(), c.max_lines)
             parts.append(f"$ {cmd}" + (f"\n{out}" if out else ""))
@@ -824,7 +838,7 @@ class Course:
         else:
             if self.shell_setup:
                 self.shell_setup()
-            sess, results = ShellSession(self.slug, self.shell_env), []
+            sess, results = ShellSession(self.slug, self.shell_env, self.shell_container), []
             try:
                 for c in blocks:
                     print(f"  … {c.file or self.commands_preview(c)}", flush=True)
@@ -842,6 +856,7 @@ class Course:
         return ShellSession.commands(c.src)[0][:60] if ShellSession.commands(c.src) else c.lang
 
     shell_setup = None      # optional callables, e.g. start/stop colima around the session
+    shell_container = None  # name of a running container to execute the commands in
     shell_teardown = None
 
     def _run_all(self):
