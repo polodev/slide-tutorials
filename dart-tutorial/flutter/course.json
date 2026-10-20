@@ -1,0 +1,7 @@
+{
+ "slug": "flutter",
+ "title": "Flutter — প্রথম App থেকে API পর্যন্ত",
+ "subtitle": "Widget, layout, state, form, navigation, provider, FutureBuilder আর API — প্রতিটি app-এর আসল screenshot সহ",
+ "lessons": 20,
+ "slides": 22
+}

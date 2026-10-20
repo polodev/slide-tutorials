@@ -1,0 +1,7 @@
+{
+ "slug": "dart-102",
+ "title": "Dart 102 — Class, Mixin ও Pattern",
+ "subtitle": "Class আর constructor, inheritance, interface, mixin (PHP trait), enum, extension, generic, record, pattern আর sealed class",
+ "lessons": 15,
+ "slides": 17
+}

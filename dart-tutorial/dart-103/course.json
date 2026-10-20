@@ -1,0 +1,7 @@
+{
+ "slug": "dart-103",
+ "title": "Dart 103 — Async, JSON ও Test",
+ "subtitle": "Future আর async/await, Stream, Isolate, JSON ↔ class, file, HTTP server ও client, pub package আর test",
+ "lessons": 15,
+ "slides": 17
+}

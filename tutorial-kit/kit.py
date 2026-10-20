@@ -96,14 +96,15 @@ class Code:
 
     def __init__(self, src, lang="rust", *, run=None, err=None, panic=False, stdin=None, file=None,
                  deps=None, requests=None, hl=(), args=None, show_output=True, label=None, test=False,
-                 server_log=False, eloquent=False):
+                 server_log=False, eloquent=False, flutter=False, app=None, actions=None):
         self.src = src.strip("\n")
         self.lang = lang
-        self.run = (lang in ("rust", "php", "mysql", "postgresql")) if run is None else run
+        self.run = (lang in ("rust", "php", "mysql", "postgresql", "dart")) if run is None else run
         self.err, self.panic, self.stdin = err, panic, stdin
         self.file, self.deps, self.requests, self.hl, self.args = file, deps, requests, hl, args or []
         self.show_output, self.label, self.test, self.server_log = show_output, label, test, server_log
         self.eloquent = eloquent   # php block that runs with Eloquent booted against the course database
+        self.flutter, self.app, self.actions = flutter, app, actions   # Flutter: screenshot, or test against app
         self.result = None   # filled by the runner: dict(kind, text)
 
 
@@ -261,6 +262,154 @@ def run_cargo(c: Code, res: Results):
     return out
 
 
+DART_SDK = "^3.9.0"
+
+
+def _clean_dart(text, d):
+    text = text.replace(str(d) + "/", "").replace("file://" + str(d) + "/", "")
+    text = re.sub(r"(?m)^#\d+ .*\n?", "", text)              # stack frames
+    text = re.sub(r"(?m)^<asynchronous suspension>\n?", "", text)
+    return text.strip()
+
+
+def run_dart(c: Code, res: Results):
+    """Dart program (dart run) or test file (dart test). deps= adds pub packages."""
+    key = _hash("dart", c.src, c.deps, c.stdin, c.err, c.panic, c.test)
+    if key in res.data:
+        return res.data[key]
+    d = CACHE / "dart" / key
+    d.mkdir(parents=True, exist_ok=True)
+    deps = dict(c.deps or {})
+    if c.test:
+        deps.setdefault("test", "^1.25.0")
+    if deps:
+        lines = "\n".join(f"  {k}: {v}" for k, v in deps.items())
+        (d / "pubspec.yaml").write_text(f"name: tut\nenvironment:\n  sdk: {DART_SDK}\ndependencies:\n{lines}\n")
+        g = subprocess.run(["dart", "pub", "get"], cwd=d, capture_output=True, text=True, timeout=300)
+        if g.returncode != 0:
+            raise SystemExit(f"dart pub get failed:\n{g.stdout}{g.stderr}")
+    name = "main_test.dart" if c.test else "main.dart"
+    (d / name).write_text(c.src + "\n")
+    cmd = ["dart", "test", name, "--reporter", "expanded", "--no-color"] if c.test else ["dart", "run", name]
+    r = subprocess.run(cmd, cwd=d, input=c.stdin, capture_output=True, text=True, timeout=120)
+    both = _clean_dart(r.stdout + r.stderr, d)
+    if c.err:
+        if r.returncode == 0 or c.err not in both:
+            raise SystemExit(f"expected dart error {c.err!r}, got:\n{both}\n{c.src}")
+        out = dict(kind="error", text=both)
+    elif c.panic:
+        if r.returncode == 0:
+            raise SystemExit(f"expected an exception/failure:\n{c.src}")
+        out = dict(kind="panic", text=both)
+    else:
+        if r.returncode != 0:
+            raise SystemExit(f"dart failed ({r.returncode}):\n{both}\n--- source ---\n{c.src}")
+        out = dict(kind="out", text=_clean_dart(r.stdout, d).rstrip(), stdin=c.stdin)
+    if c.test:
+        out["text"] = re.sub(r"(?m)^\d\d:\d\d ", "", out["text"])   # drop timers
+    res.data[key] = out
+    res.save()
+    return out
+
+
+FLUTTER_SIZE = (360, 720)   # logical phone screen for screenshots (rendered at 2x)
+
+
+def _flutter_root():
+    r = subprocess.run(["flutter", "--version", "--machine"], capture_output=True, text=True)
+    return Path(json.loads(r.stdout[r.stdout.index("{"):])["flutterRoot"])
+
+
+def _flutter_project():
+    """One cached Flutter project; lessons swap lib/main.dart and tests in and out of it."""
+    proj = CACHE / "flutter_app"
+    if not (proj / "pubspec.yaml").exists():
+        subprocess.run(["flutter", "create", "--empty", "--project-name", "flutter_app", "--platforms", "android,ios,web",
+                        str(proj)], check=True, capture_output=True, timeout=600)
+        subprocess.run(["flutter", "pub", "add", "http", "provider"], cwd=proj, check=True, capture_output=True, timeout=600)
+    return proj
+
+
+SHOT_TEST = """
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_app/main.dart';
+
+Future<void> _font(String family, List<String> files) async {
+  final loader = FontLoader(family);
+  for (final f in files) {
+    loader.addFont(Future.value(ByteData.view(Uint8List.fromList(File(f).readAsBytesSync()).buffer)));
+  }
+  await loader.load();
+}
+
+void main() {
+  testWidgets('screenshot', (tester) async {
+    await _font('Roboto', [%(fonts)s]);
+    await _font('MaterialIcons', ['%(icons)s']);
+    tester.view.physicalSize = const Size(%(w)d * 2, %(h)d * 2);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    debugDisableShadows = false;   // real shadows, not the test-mode black outline
+    await tester.pumpWidget(const App());
+    await tester.pumpAndSettle();
+%(actions)s
+    await tester.pumpAndSettle();   // finish animations (floating labels, error fade-in, ripples)
+    await expectLater(find.byType(App), matchesGoldenFile('shot.png'));
+    debugDisableShadows = true;
+  });
+}
+"""
+
+
+def run_flutter(c: Code, res: Results, folder: Path):
+    """Analyze lib/main.dart; then either run the lesson's widget test, or take a real screenshot."""
+    key = _hash("flutter", c.src, c.app, c.actions, c.test, c.panic, SHOT_TEST)
+    shots = folder / "shots"
+    cached = res.data.get(key)
+    if cached and (not cached.get("img") or (folder / cached["img"]).exists()):
+        return cached
+    proj = _flutter_project()
+    (proj / "test").mkdir(exist_ok=True)
+    for f in (proj / "test").glob("*.dart"):
+        f.unlink()
+    app_src = c.app if c.test else c.src
+    (proj / "lib/main.dart").write_text(app_src + "\n")
+    a = subprocess.run(["dart", "analyze", "--fatal-infos", "lib/main.dart"], cwd=proj, capture_output=True, text=True, timeout=300)
+    if a.returncode != 0:
+        raise SystemExit(f"flutter analyze failed:\n{a.stdout}{a.stderr}\n--- source ---\n{app_src}")
+    if c.test:
+        (proj / "test/lesson_test.dart").write_text(c.src + "\n")
+        r = subprocess.run(["flutter", "test", "--no-pub", "--reporter", "expanded", "test/lesson_test.dart"],
+                           cwd=proj, capture_output=True, text=True, timeout=600)
+        text = re.sub(r"(?m)^\d\d:\d\d ", "", r.stdout).replace(str(proj) + "/", "").strip()
+        if c.panic != (r.returncode != 0):
+            raise SystemExit(f"flutter test result unexpected ({r.returncode}):\n{text}\n{r.stderr}")
+        out = dict(kind="panic" if c.panic else "out", text=text)
+    else:
+        kit_fonts = ", ".join(f"'{KIT / 'fonts' / n}'" for n in ("HindSiliguri-Regular.ttf", "HindSiliguri-SemiBold.ttf", "HindSiliguri-Bold.ttf"))
+        icons = _flutter_root() / "bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf"
+        actions = "\n".join("    " + a for a in (c.actions or []))
+        (proj / "test/shot_test.dart").write_text(SHOT_TEST % dict(fonts=kit_fonts, icons=icons, w=FLUTTER_SIZE[0],
+                                                                    h=FLUTTER_SIZE[1], actions=actions))
+        (proj / "test/shot.png").unlink(missing_ok=True)
+        r = subprocess.run(["flutter", "test", "--no-pub", "--update-goldens", "test/shot_test.dart"],
+                           cwd=proj, capture_output=True, text=True, timeout=600)
+        if r.returncode != 0 or not (proj / "test/shot.png").exists():
+            raise SystemExit(f"flutter screenshot failed:\n{r.stdout}{r.stderr}\n{c.src}")
+        shots.mkdir(exist_ok=True)
+        name = f"shots/{key[:12]}.png"
+        shutil.copy(proj / "test/shot.png", folder / name)
+        out = dict(kind="shot", img=name, text="")
+    res.data[key] = out
+    res.save()
+    return out
+
+
 def run_php(c: Code, res: Results):
     key = _hash("php", c.src, c.stdin)
     if key in res.data:
@@ -380,7 +529,7 @@ class SqlSession:
 
 # ------------------------------------------------------------------ rendering
 FORMATTER_OPTS = dict(nowrap=False, wrapcode=False, cssclass="hl")
-LANG_LABEL = {"rust": "Rust", "php": "PHP", "mysql": "MySQL", "postgresql": "PostgreSQL", "toml": "TOML",
+LANG_LABEL = {"rust": "Rust", "dart": "Dart", "go": "Go", "yaml": "YAML", "php": "PHP", "mysql": "MySQL", "postgresql": "PostgreSQL", "toml": "TOML",
               "console": "Terminal", "bash": "Terminal", "sql": "SQL", "json": "JSON", "ini": ".env", "html": "HTML",
               "dockerfile": "Dockerfile", "nginx": "Nginx", "text": ""}
 LEXER = {"mysql": "mysql", "postgresql": "postgresql", "console": "console", "ini": "ini", "php": "php"}
@@ -403,13 +552,22 @@ def render_code(c: Code):
     r = c.result
     if r and c.show_output:
         title = {"out": "cargo test" if c.test else "আউটপুট", "http": "Response (curl)", "error": "Compiler বলছে (ইচ্ছাকৃত ভুল)",
-                 "panic": "Program থেমে গেল (panic)"}[r["kind"]]
+                 "panic": "Program থেমে গেল (panic)", "shot": ""}[r["kind"]]
         if c.test and r["kind"] == "panic":
             title = "cargo test — একটা test ব্যর্থ (ইচ্ছাকৃত)"
+        if c.lang == "dart" and c.flutter:
+            title = "flutter test" if r["kind"] == "out" else "flutter test — একটা test ব্যর্থ (ইচ্ছাকৃত)"
+        elif c.lang == "dart":
+            title = {"out": "dart test" if c.test else "আউটপুট", "error": "Dart compiler বলছে (ইচ্ছাকৃত ভুল)",
+                     "panic": "dart test — একটা test ব্যর্থ (ইচ্ছাকৃত)" if c.test else "Exception (program থেমে গেল)"}[r["kind"]]
         if c.lang in ("mysql", "postgresql"):
             title = "ফলাফল" if r["kind"] == "out" else "Database বলছে (ইচ্ছাকৃত ভুল)"
         if c.lang == "php":
             title = "Laravel চালিয়ে পাওয়া আউটপুট" if c.eloquent else "PHP আউটপুট"
+        if r["kind"] == "shot":
+            return (f'<div class="code{cls}">{head}{hl_code(c.src, c.lang, c.hl)}</div>'
+                    f'<figure class="phone-shot"><img src="{r["img"]}" alt="screenshot" loading="lazy">'
+                    f'<figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure>')
         kind = r["kind"]
         r = {**r, "text": re.sub(r"thread '(\w+)' \(\d+\)", r"thread '\1'", r["text"])}   # drop the OS thread id
         stdin = f'<div class="stdin">ইনপুট: {e(r.get("stdin").strip())}</div>' if r.get("stdin") else ""
@@ -478,6 +636,10 @@ class Course:
                     c.result = run_cargo(c, res)
                 elif c.lang == "rust":
                     c.result = run_rust(c, res)
+                elif c.lang == "dart" and c.flutter:
+                    c.result = run_flutter(c, res, self.folder)
+                elif c.lang == "dart":
+                    c.result = run_dart(c, res)
                 elif c.lang == "php" and c.eloquent:
                     c.result = run_eloquent(c, sql, self.models)
                 elif c.lang == "php":
@@ -544,10 +706,13 @@ CSS = """
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
 *{box-sizing:border-box;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
-.deck html,.deck body{height:100%}
-body.deck{height:100vh;overflow:hidden}
-#deck{height:100%;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
-.slide{flex:0 0 100vw;height:100%;overflow-y:auto;padding:60px 4vw 84px}
+html:has(body.deck){overflow:hidden;height:100%}
+/* the deck is pinned to the viewport: mobile browsers must not widen the layout to fit the off-screen slides */
+body.deck{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+#deck{position:absolute;inset:0;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100%;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;padding:60px 4vw 84px;
+  touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.slide .inner,.body,.txt,.codecol{min-width:0}
 .slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
 h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
 h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
@@ -590,6 +755,11 @@ code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;backgrou
 .term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
 pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
 .term.error pre,.term.panic pre{color:#FFB4B4}
+.phone-shot{margin:0;align-self:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.phone-shot img{width:min(260px,60vw);border-radius:22px;border:6px solid #111827;box-shadow:0 12px 30px rgba(0,0,0,.3);background:#fff}
+.phone-shot figcaption{font-size:13px;color:var(--muted)}
+.codecol:has(.phone-shot){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:1.2vw}
+@media (max-width:900px){.codecol:has(.phone-shot){grid-template-columns:1fr}}
 .stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
 .hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
 .hero .inner{justify-content:center;max-width:1100px}
@@ -624,7 +794,11 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 #resume.show{display:flex}
 #resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
 #resume button.alt{background:var(--line);color:var(--ink)}
-@media (max-width:900px){body.deck{overflow:hidden}.slide{padding:56px 5vw 96px}.body.two{grid-template-columns:1fr}.hero .learn{grid-template-columns:1fr}}
+@media (max-width:900px){.slide{padding:54px 16px 92px}.body.two{grid-template-columns:minmax(0,1fr);gap:16px}.hero .learn{grid-template-columns:1fr}
+  .tbl{display:block;overflow-x:auto;white-space:nowrap}.tbl td,.tbl th{white-space:normal;min-width:7em}
+  .hl pre,.term pre{font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere}   /* wrap instead of side-scroll: swipes stay free */.txt p,.txt li{font-size:15.5px}h2{font-size:22px}h1{font-size:30px}
+  #top .crumb{display:none}#top{justify-content:space-between}
+  #nav{gap:4px;padding:5px 8px;bottom:10px}#nav button{width:34px;height:34px}#count{min-width:52px;font-size:13px}}
 @media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
 """
 
@@ -679,7 +853,7 @@ JS = r"""
   var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
   try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
   function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
-  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'vw)';
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'%)';
     bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
     st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
     try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
@@ -709,10 +883,14 @@ JS = r"""
     else if(e.key==='f'||e.key==='F')toggleFs();
     else if(e.key==='d'||e.key==='D')toggleTheme();
     else if(e.key==='m'||e.key==='M')toggleMenu();});
-  var x0=null,y0=null;
-  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  // Swipe left/right changes slide; vertical drags scroll the slide. A swipe that actually scrolled a wide
+  // code block or table sideways is treated as scrolling that block, not as a slide change.
+  var x0=null,y0=null,box=null,box0=0;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY;
+    box=e.target.closest('pre,.tbl');box0=box?box.scrollLeft:0},{passive:true});
   document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
-    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!e.target.closest('pre'))go(i+(dx<0?1:-1));x0=null});
+    var scrolledBox=box&&Math.abs(box.scrollLeft-box0)>2;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5&&!scrolledBox)go(i+(dx<0?1:-1));x0=null;box=null});
   var h=parseInt((location.hash||'').slice(1),10);
   if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
     if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';

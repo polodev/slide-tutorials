@@ -13,13 +13,15 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "tutorial-kit"))
 from kit import build_hub, series_meta  # noqa: E402
 
-SERIES = ["rust-tutorial", "mysql-tutorial", "postgresql-tutorial", "accounts-101"]
+SERIES = ["rust-tutorial", "dart-tutorial", "mysql-tutorial", "postgresql-tutorial", "accounts-101"]
 
 
 def tutorials():
     return [
         ("rust-tutorial", "🦀", "Rust", "শূন্য থেকে Rust, তারপর axum দিয়ে Laravel-এর মতো web API। PHP developer-দের জন্য তুলনাসহ।",
          series_meta(HERE / "rust-tutorial")),
+        ("dart-tutorial", "🎯", "Dart ও Flutter", "PHP থেকে Dart, তারপর Flutter দিয়ে mobile app — প্রতিটি app-এর আসল screenshot সহ।",
+         series_meta(HERE / "dart-tutorial")),
         ("mysql-tutorial", "🐬", "MySQL", "Table বানানো থেকে join, index, transaction — প্রতিটি query আসল MySQL-এ চালানো।",
          series_meta(HERE / "mysql-tutorial")),
         ("postgresql-tutorial", "🐘", "PostgreSQL", "PostgreSQL-এর শক্তি: JSONB, window function, CTE, full-text search।",

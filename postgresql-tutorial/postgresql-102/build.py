@@ -7,7 +7,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "tutorial-kit"))
 sys.path.insert(0, str(HERE.parent))
 from kit import Course, code, php_note, points, quiz, say, table, task, tip, warn  # noqa: E402
-from shop_schema import SCHEMA, SEED  # noqa: E402
+from pg_shop_schema import SCHEMA, SEED  # noqa: E402
 
 
 def sql(src, **kw):

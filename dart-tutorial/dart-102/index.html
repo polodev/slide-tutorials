@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dart 102 — Class, Mixin ও Pattern</title>
+<meta name="description" content="Class আর constructor, inheritance, interface, mixin (PHP trait), enum, extension, generic, record, pattern আর sealed class">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.6vh);--navy:#0C1E38;--accent:#0D8A4A;--accent2:#E8F6EE;--amber:#B7791F;--red:#C53030;--php:#4F5B93;
+  --bg:#F4F7FA;--ink:#18263A;--muted:#5B6B80;--card:#fff;--line:#DCE4EE;--codebg:#1E2430}
+:root[data-theme=dark]{--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+html:has(body.deck){overflow:hidden;height:100%}
+/* the deck is pinned to the viewport: mobile browsers must not widen the layout to fit the off-screen slides */
+body.deck{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+#deck{position:absolute;inset:0;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100%;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;padding:60px 4vw 84px;
+  touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.slide .inner,.body,.txt,.codecol{min-width:0}
+.slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
+h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(15px,calc(var(--u)*1.9),28px);color:var(--muted);max-width:36em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--accent);color:#fff;font-weight:600;font-size:clamp(12px,calc(var(--u)*1.15),17px);padding:.3em 1em;border-radius:999px}
+.head{display:flex;flex-direction:column;gap:1vh}
+.body.two{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:3vw;align-items:start}
+.body.one{max-width:1100px}
+.txt{display:flex;flex-direction:column;gap:1.6vh}
+.txt p,.txt li{font-size:clamp(15px,calc(var(--u)*1.6),24px);line-height:1.7}
+.txt ul{list-style:none;padding:0;display:grid;gap:1vh}
+.txt li{padding-left:1.3em;position:relative}
+.txt li::before{content:"";position:absolute;left:0;top:.7em;width:.45em;height:.45em;border-radius:50%;background:var(--accent)}
+code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
+.callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.callout.warn{border-left-color:var(--amber)}
+.callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
+.callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
+.quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.quiz summary{cursor:pointer;font-weight:600;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--accent);font-weight:600;font-size:clamp(14px,calc(var(--u)*1.4),21px);line-height:1.6}
+.tbl{border-collapse:collapse;width:100%;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.tbl th,.tbl td{padding:.9vh .9vw;text-align:left;font-size:clamp(13px,calc(var(--u)*1.35),20px);border-bottom:1px solid var(--line);line-height:1.5}
+.tbl th{background:var(--accent2);font-weight:600}
+.steps{display:grid;gap:1vh}
+.steps div{background:var(--card);border-radius:10px;padding:1.1vh 1vw;font-size:clamp(14px,calc(var(--u)*1.5),22px);display:flex;gap:.9vw;align-items:center;box-shadow:0 3px 12px rgba(12,30,56,.07);line-height:1.5}
+.steps i{flex:0 0 auto;width:2em;height:2em;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.codecol{display:flex;flex-direction:column;gap:1.2vh;min-width:0}
+.code{background:var(--codebg);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#151A23;color:#9AA7B8;font:600 13px 'JetBrains Mono',monospace}
+.code-h.php{background:#262B47;color:#C3C9EE}
+.copy{border:0;background:#2A3242;color:#C9D4E3;font:600 12px 'Hind Siliguri',sans-serif;padding:3px 10px;border-radius:6px;cursor:pointer}
+.copy:hover{background:var(--accent);color:#fff}
+.hl pre{margin:0;padding:12px 16px;overflow-x:auto;font:clamp(12.5px,calc(var(--u)*1.08),17px)/1.55 'JetBrains Mono',monospace;color:#E3E8EF;tab-size:4}
+.hl .hll{background:rgba(255,214,102,.13);display:inline-block;width:100%}
+.term{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0F141C}
+.term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
+.term.error .term-h,.term.panic .term-h{background:#B83434}
+.term.http .term-h{background:#1F5FA8}
+.term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
+pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
+.term.error pre,.term.panic pre{color:#FFB4B4}
+.phone-shot{margin:0;align-self:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.phone-shot img{width:min(260px,60vw);border-radius:22px;border:6px solid #111827;box-shadow:0 12px 30px rgba(0,0,0,.3);background:#fff}
+.phone-shot figcaption{font-size:13px;color:var(--muted)}
+.codecol:has(.phone-shot){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:1.2vw}
+@media (max-width:900px){.codecol:has(.phone-shot){grid-template-columns:1fr}}
+.stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
+.hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
+.hero .inner{justify-content:center;max-width:1100px}
+.hero h1{color:#fff}.hero .lead{color:#CFDDEE}
+.hero .learn{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1vh 2vw}
+.hero .learn li{font-size:clamp(14px,calc(var(--u)*1.55),23px);padding-left:1.4em;position:relative;line-height:1.5;color:#E6EEF8}
+.hero .learn li::before{content:"✓";position:absolute;left:0;color:#4ADE80;font-weight:700}
+.hero .need,.hero .howto{color:#AFC2D8;font-size:clamp(13px,calc(var(--u)*1.35),20px)}
+.hero .need b{color:#fff}
+.hero.end .steps div{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.hero.end .steps i{background:#4ADE80;color:#0C1E38}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:#4ADE80;color:#0C1E38;font-weight:700;text-decoration:none;padding:.7em 1.4em;border-radius:999px;font-size:clamp(14px,calc(var(--u)*1.5),21px)}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+#top{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px}
+#top a{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+#top .crumb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#top .hub{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+#bar{position:fixed;left:0;top:44px;height:3px;background:var(--accent);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:600 14px 'Hind Siliguri',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.9);padding:6px 10px;border-radius:999px;white-space:nowrap}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--accent)}
+#count{min-width:64px;text-align:center}
+#menu{position:fixed;inset:0;background:rgba(8,15,28,.94);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:20px;margin:2.4vh 0 .8vh}
+#menu a{display:flex;gap:.6em;color:#dbe7f5;text-decoration:none;padding:.55vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a.seen::after{content:"✓";color:#4ADE80;margin-left:auto}
+#menu a.cur{background:rgba(74,222,128,.18)}
+#menu a:hover{background:var(--accent);color:#fff}
+#resume{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25);border-radius:14px;padding:12px 16px;z-index:8;display:none;gap:10px;align-items:center;font-size:15px;flex-wrap:wrap;justify-content:center}
+#resume.show{display:flex}
+#resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
+#resume button.alt{background:var(--line);color:var(--ink)}
+@media (max-width:900px){.slide{padding:54px 16px 92px}.body.two{grid-template-columns:minmax(0,1fr);gap:16px}.hero .learn{grid-template-columns:1fr}
+  .tbl{display:block;overflow-x:auto;white-space:nowrap}.tbl td,.tbl th{white-space:normal;min-width:7em}
+  .hl pre,.term pre{font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere}   /* wrap instead of side-scroll: swipes stay free */.txt p,.txt li{font-size:15.5px}h2{font-size:22px}h1{font-size:30px}
+  #top .crumb{display:none}#top{justify-content:space-between}
+  #nav{gap:4px;padding:5px 8px;bottom:10px}#nav button{width:34px;height:34px}#count{min-width:52px;font-size:13px}}
+@media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
+
+.hl .c,.hl .c1,.hl .cm,.hl .cs,.hl .ch,.hl .cp,.hl .cpf{color:#7F8C98;font-style:italic}
+.hl .k,.hl .kd,.hl .kn,.hl .kr,.hl .kp,.hl .ow{color:#C678DD}
+.hl .kc{color:#D19A66}
+.hl .kt,.hl .nc,.hl .nn{color:#E5C07B}
+.hl .s,.hl .s1,.hl .s2,.hl .sb,.hl .sc,.hl .sd,.hl .sh,.hl .sx,.hl .dl{color:#98C379}
+.hl .se,.hl .si,.hl .sa{color:#56B6C2}
+.hl .m,.hl .mi,.hl .mf,.hl .mh,.hl .mb,.hl .il,.hl .mo{color:#D19A66}
+.hl .nf,.hl .fm{color:#61AFEF}
+.hl .nb,.hl .bp{color:#56B6C2}
+.hl .nd,.hl .nl{color:#E06C75}
+.hl .nt{color:#E06C75}.hl .na{color:#D19A66}
+.hl .nv,.hl .vi,.hl .vc,.hl .vg{color:#E06C75}
+.hl .o{color:#ABB2BF}.hl .p{color:#ABB2BF}
+.hl .gp{color:#4ADE80;font-weight:600;user-select:none}.hl .go{color:#9AA7B8}
+.hl .err{color:#E3E8EF;background:none}
+</style>
+</head>
+<body class="deck">
+<div id="top"><a href="../index.html">← সব কোর্স</a><span class="crumb">Dart 102 · <b id="part"></b></span><a class="hub" href="../../index.html">সব টিউটোরিয়াল</a></div>
+<div id="bar"></div>
+<div id="resume"><span id="resumeText"></span><button id="resumeGo">চালিয়ে যান</button><button class="alt" id="resumeNo">শুরু থেকে</button></div>
+<main id="deck">
+<section class="slide hero" data-part="শুরু" data-title="Dart 102Class, Mixin ও Pattern"><div class="inner"><span class="tag">Dart 102</span><h1>Dart 102<br>Class, Mixin ও Pattern</h1><p class="lead">Flutter-এ সবকিছুই class — প্রতিটি widget, প্রতিটি model। এই কোর্সে Dart-এর object-oriented দিক আর Dart 3-এর আধুনিক record ও pattern।</p><ul class="learn"><li>Class আর ছোট constructor</li><li>Named আর factory constructor</li><li>Getter, setter, private (_)</li><li>extends, implements, abstract</li><li>Mixin = PHP trait</li><li>Enhanced enum আর extension</li><li>Generic, record, pattern matching</li><li>Sealed class আর exception</li></ul><p class="need"><b>আগে জানা দরকার:</b> Dart 101।</p><p class="howto">→ তীর চাপুন বা swipe করুন · <b>M</b> সব পাঠের তালিকা · অগ্রগতি নিজে থেকেই সেভ হয়</p></div></section>
+<section class="slide" data-part="Class" data-title="Class আর ছোট constructor"><div class="inner"><div class="head"><span class="tag">পাঠ ১</span><h2>Class আর ছোট constructor</h2></div><div class="body two"><div class="txt"><p><code>this.name</code> লিখলে constructor নিজেই field-এ মান বসায় — PHP 8-এর constructor promotion-এর মতো।</p><div class="callout">💡 Dart-এ <code>new</code> লেখা লাগে না: <code>Product(...)</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kd">class</span><span class="w"> </span><span class="nc">Product</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">price</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">stock</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">Product</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">});</span>
+
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">stockValue</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">stock</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">sell</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">qty</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">stock</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="n">qty</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Product</span><span class="p">(</span><span class="s1">&#39;Redmi 13&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">17500</span><span class="p">,</span><span class="w"> </span><span class="nl">stock:</span><span class="w"> </span><span class="m">5</span><span class="p">);</span>
+<span class="w">  </span><span class="n">p</span><span class="p">.</span><span class="n">sell</span><span class="p">(</span><span class="m">2</span><span class="p">);</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">${</span><span class="n">p</span><span class="p">.</span><span class="n">name</span><span class="si">}</span><span class="s1">: স্টক </span><span class="si">${</span><span class="n">p</span><span class="p">.</span><span class="n">stock</span><span class="si">}</span><span class="s1">, মূল্য </span><span class="si">${</span><span class="n">p</span><span class="p">.</span><span class="n">stockValue</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Redmi 13: স্টক 3, মূল্য 52500</pre></div><div class="code php"><div class="code-h php"><span>PHP 8-এ তুলনা</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="cp">&lt;?php</span>
+<span class="k">class</span> <span class="nc">Product</span> <span class="p">{</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="fm">__construct</span><span class="p">(</span>
+        <span class="k">public</span> <span class="k">readonly</span> <span class="nx">string</span> <span class="nv">$name</span><span class="p">,</span>
+        <span class="k">public</span> <span class="k">readonly</span> <span class="nx">int</span> <span class="nv">$price</span><span class="p">,</span>
+        <span class="k">public</span> <span class="nx">int</span> <span class="nv">$stock</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="p">{}</span>
+<span class="p">}</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Class" data-title="Named আর factory constructor"><div class="inner"><div class="head"><span class="tag">পাঠ ২</span><h2>Named আর factory constructor</h2></div><div class="body two"><div class="txt"><p>একাধিক উপায়ে object বানাতে named constructor: <code>Product.used(...)</code>। <code>factory</code> চাইলে নতুন object না বানিয়ে অন্য কিছু ফেরত দিতে পারে — যেমন Map থেকে বানানো।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>Product::make([...])</code> বা static constructor-এর মতো। <code>toString()</code> = PHP-র <code>__toString()</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kd">class</span><span class="w"> </span><span class="nc">Product</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">price</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">used</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">Product</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">used</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span>
+<span class="w">  </span><span class="n">Product</span><span class="p">.</span><span class="n">used</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">used</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kd">factory</span><span class="w"> </span><span class="n">Product</span><span class="p">.</span><span class="n">fromMap</span><span class="p">(</span><span class="n">Map</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">dynamic</span><span class="o">&gt;</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">      </span><span class="n">Product</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;price&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">int</span><span class="p">);</span>
+
+<span class="w">  </span><span class="nd">@override</span>
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="n">toString</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;</span><span class="si">$</span><span class="n">name</span><span class="s1"> (</span><span class="si">$</span><span class="n">price</span><span class="s1"> টাকা</span><span class="si">${</span><span class="n">used</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">&#39;, used&#39;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">Product</span><span class="p">(</span><span class="s1">&#39;Galaxy A15&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">21000</span><span class="p">));</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">Product</span><span class="p">.</span><span class="n">used</span><span class="p">(</span><span class="s1">&#39;iPhone 12&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">48000</span><span class="p">));</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">Product</span><span class="p">.</span><span class="n">fromMap</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Vivo Y28&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;price&#39;</span><span class="o">:</span><span class="w"> </span><span class="m">18000</span><span class="p">}));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Galaxy A15 (21000 টাকা)
+iPhone 12 (48000 টাকা, used)
+Vivo Y28 (18000 টাকা)</pre></div></div></div></div></section>
+<section class="slide" data-part="Class" data-title="Private: নামের আগে _"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>Private: নামের আগে _</h2></div><div class="body two"><div class="txt"><p>Dart-এ <code>private</code> keyword নেই — নাম <code>_</code> দিয়ে শুরু হলে সেটা ঐ file-এর বাইরে দেখা যায় না। Getter/setter দিয়ে নিয়ন্ত্রিত প্রবেশ।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kd">class</span><span class="w"> </span><span class="nc">Wallet</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">_balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">_balance</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kd">set</span><span class="w"> </span><span class="n">deposit</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">amount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="n">ArgumentError</span><span class="p">(</span><span class="s1">&#39;টাকা ০-এর বেশি দিন&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">_balance</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">amount</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Wallet</span><span class="p">();</span>
+<span class="w">  </span><span class="n">w</span><span class="p">.</span><span class="n">deposit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">500</span><span class="p">;</span>
+<span class="w">  </span><span class="n">w</span><span class="p">.</span><span class="n">deposit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">200</span><span class="p">;</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;ব্যালেন্স: </span><span class="si">${</span><span class="n">w</span><span class="p">.</span><span class="n">balance</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">w</span><span class="p">.</span><span class="n">deposit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="m">50</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="kd">on</span><span class="w"> </span><span class="n">ArgumentError</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;আটকাল: </span><span class="si">${</span><span class="n">e</span><span class="p">.</span><span class="n">message</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>ব্যালেন্স: 700
+আটকাল: টাকা ০-এর বেশি দিন</pre></div></div></div></div></section>
+<section class="slide" data-part="Inheritance ও Interface" data-title="extends আর abstract"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>extends আর abstract</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র <code>abstract class</code> আর <code>extends</code> একই। <code>@override</code> শুধু চিহ্ন, ভুল নাম লিখলে Dart সতর্ক করে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kd">abstract</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">Payable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">amount</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">label</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="n">describe</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;</span><span class="si">$</span><span class="n">label</span><span class="s1">: </span><span class="si">$</span><span class="n">amount</span><span class="s1"> টাকা&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">class</span><span class="w"> </span><span class="nc">Invoice</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">Invoice</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">no</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">amount</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">no</span><span class="p">;</span>
+<span class="w">  </span><span class="nd">@override</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">amount</span><span class="p">;</span>
+<span class="w">  </span><span class="nd">@override</span>
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;Invoice #</span><span class="si">$</span><span class="n">no</span><span class="s1">&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">class</span><span class="w"> </span><span class="nc">ServiceBill</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">ServiceBill</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">parts</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">labour</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">parts</span><span class="p">,</span><span class="w"> </span><span class="n">labour</span><span class="p">;</span>
+<span class="w">  </span><span class="nd">@override</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">parts</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">labour</span><span class="p">;</span>
+<span class="w">  </span><span class="nd">@override</span>
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;Service&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Payable</span><span class="o">&gt;</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">Invoice</span><span class="p">(</span><span class="m">101</span><span class="p">,</span><span class="w"> </span><span class="m">23500</span><span class="p">),</span><span class="w"> </span><span class="n">ServiceBill</span><span class="p">(</span><span class="m">1800</span><span class="p">,</span><span class="w"> </span><span class="m">500</span><span class="p">)];</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">items</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="n">i</span><span class="p">.</span><span class="n">describe</span><span class="p">());</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Invoice #101: 23500 টাকা
+Service: 2300 টাকা</pre></div></div></div></div></section>
+<section class="slide" data-part="Inheritance ও Interface" data-title="implements: যেকোনো class-ই interface"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>implements: যেকোনো class-ই interface</h2></div><div class="body two"><div class="txt"><p>Dart-এ আলাদা <code>interface</code> keyword লাগে না — যেকোনো class <code>implements</code> করা যায়, তখন তার সব method নিজে লিখতে হয়।</p><div class="callout">💡 Laravel-এ যেমন interface bind করে test-এ fake দেন, Dart/Flutter-এও একই কৌশল।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kd">abstract</span><span class="w"> </span><span class="n">interface</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">SmsSender</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="n">send</span><span class="p">(</span><span class="kt">String</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">text</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">class</span><span class="w"> </span><span class="nc">FakeSms</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">SmsSender</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nd">@override</span>
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="n">send</span><span class="p">(</span><span class="kt">String</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;SMS → </span><span class="si">$</span><span class="n">phone</span><span class="s1">: </span><span class="si">$</span><span class="n">text</span><span class="s1">&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">notifyCustomer</span><span class="p">(</span><span class="n">SmsSender</span><span class="w"> </span><span class="n">sms</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">sms</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;01711000001&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;আপনার invoice তৈরি হয়েছে&#39;</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">notifyCustomer</span><span class="p">(</span><span class="n">FakeSms</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>SMS → 01711000001: আপনার invoice তৈরি হয়েছে</pre></div></div></div></div></section>
+<section class="slide" data-part="Inheritance ও Interface" data-title="Mixin = PHP trait"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>Mixin = PHP trait</h2></div><div class="body two"><div class="txt"><p><code>mixin</code> হলো এমন কোড যা অনেক class-এ <code>with</code> দিয়ে মিশিয়ে দেওয়া যায় — inheritance ছাড়াই। PHP-র <code>trait</code>।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>class Customer { use Timestamps, SoftDeletes; }</code> — Laravel model-এর trait-গুলোর মতোই। <code>..</code> হলো cascade: একই object-এ পরপর method ডাকা।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kd">mixin</span><span class="w"> </span><span class="nc">Timestamps</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">DateTime</span><span class="o">?</span><span class="w"> </span><span class="n">createdAt</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">touch</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">createdAt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DateTime</span><span class="p">(</span><span class="m">2026</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">21</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">30</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">mixin</span><span class="w"> </span><span class="nc">SoftDeletes</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">deleted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">softDelete</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">deleted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">class</span><span class="w"> </span><span class="nc">Customer</span><span class="w"> </span><span class="kd">with</span><span class="w"> </span><span class="n">Timestamps</span><span class="p">,</span><span class="w"> </span><span class="n">SoftDeletes</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">Customer</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">name</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Customer</span><span class="p">(</span><span class="s1">&#39;Karim&#39;</span><span class="p">)..</span><span class="n">touch</span><span class="p">()..</span><span class="n">softDelete</span><span class="p">();</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">${</span><span class="n">c</span><span class="p">.</span><span class="n">name</span><span class="si">}</span><span class="s1">: তৈরি </span><span class="si">${</span><span class="n">c</span><span class="p">.</span><span class="n">createdAt</span><span class="si">}</span><span class="s1">, মোছা? </span><span class="si">${</span><span class="n">c</span><span class="p">.</span><span class="n">deleted</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Karim: তৈরি 2026-10-21 10:30:00.000, মোছা? true</pre></div></div></div></div></section>
+<section class="slide" data-part="Enum, Extension, Generic" data-title="Enhanced enum"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>Enhanced enum</h2></div><div class="body two"><div class="txt"><p>Dart enum-এ field আর method থাকতে পারে — PHP 8.1-এর backed enum-এর চেয়েও শক্তিশালী।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="n">enum</span><span class="w"> </span><span class="n">PaymentMethod</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">cash</span><span class="p">(</span><span class="s1">&#39;নগদ&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">),</span>
+<span class="w">  </span><span class="n">bkash</span><span class="p">(</span><span class="s1">&#39;bKash&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">1.5</span><span class="p">),</span>
+<span class="w">  </span><span class="n">nagad</span><span class="p">(</span><span class="s1">&#39;Nagad&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">1.5</span><span class="p">),</span>
+<span class="w">  </span><span class="n">card</span><span class="p">(</span><span class="s1">&#39;Card&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">2.0</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">PaymentMethod</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">feePercent</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">label</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">feePercent</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">double</span><span class="w"> </span><span class="n">feeOn</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">feePercent</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">PaymentMethod</span><span class="p">.</span><span class="n">values</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">${</span><span class="n">m</span><span class="p">.</span><span class="n">label</span><span class="p">.</span><span class="n">padRight</span><span class="p">(</span><span class="m">6</span><span class="p">)</span><span class="si">}</span><span class="s1"> ১০,০০০ টাকায় চার্জ </span><span class="si">${</span><span class="n">m</span><span class="p">.</span><span class="n">feeOn</span><span class="p">(</span><span class="m">10000</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">PaymentMethod</span><span class="p">.</span><span class="n">values</span><span class="p">.</span><span class="n">byName</span><span class="p">(</span><span class="s1">&#39;bkash&#39;</span><span class="p">).</span><span class="n">label</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>নগদ    ১০,০০০ টাকায় চার্জ 0.0
+bKash  ১০,০০০ টাকায় চার্জ 150.0
+Nagad  ১০,০০০ টাকায় চার্জ 150.0
+Card   ১০,০০০ টাকায় চার্জ 200.0
+bKash</pre></div></div></div></div></section>
+<section class="slide" data-part="Enum, Extension, Generic" data-title="Extension: পুরনো type-এ নতুন method"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>Extension: পুরনো type-এ নতুন method</h2></div><div class="body two"><div class="txt"><p>নিজের লেখা না এমন class-এও method যোগ করা যায় — যেমন <code>int</code>-এ টাকা লেখার format।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে এটা সম্ভব না (built-in type-এ method যোগ)। Laravel-এর <code>Str::macro()</code> কাছাকাছি ধারণা।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kd">extension</span><span class="w"> </span><span class="nc">Taka</span><span class="w"> </span><span class="kd">on</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">taka</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toString</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">length</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s1">&#39;৳</span><span class="si">$</span><span class="n">s</span><span class="s1">&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">last3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">substring</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">length</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">3</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">rest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">substring</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">length</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">3</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">parts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">[];</span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">rest</span><span class="p">.</span><span class="n">length</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">parts</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">rest</span><span class="p">.</span><span class="n">substring</span><span class="p">(</span><span class="n">rest</span><span class="p">.</span><span class="n">length</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">2</span><span class="p">));</span>
+<span class="w">      </span><span class="n">rest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rest</span><span class="p">.</span><span class="n">substring</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">rest</span><span class="p">.</span><span class="n">length</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">2</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rest</span><span class="p">.</span><span class="n">isNotEmpty</span><span class="p">)</span><span class="w"> </span><span class="n">parts</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">rest</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="s1">&#39;৳</span><span class="si">${</span><span class="n">parts</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span><span class="si">}</span><span class="s1">,</span><span class="si">$</span><span class="n">last3</span><span class="s1">&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="m">170400.</span><span class="n">taka</span><span class="p">);</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="m">12500000.</span><span class="n">taka</span><span class="p">);</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="m">650.</span><span class="n">taka</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>৳1,70,400
+৳1,25,00,000
+৳650</pre></div></div></div></div></section>
+<section class="slide" data-part="Enum, Extension, Generic" data-title="Generic"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>Generic</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kd">class</span><span class="w"> </span><span class="nc">Paginated</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">Paginated</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="kd">required</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">page</span><span class="p">,</span><span class="w"> </span><span class="kd">required</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">total</span><span class="p">});</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">items</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">page</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">hasNext</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">perPage</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">page</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">perPage</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">total</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">T</span><span class="w"> </span><span class="n">firstOr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="n">fallback</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">list</span><span class="p">.</span><span class="n">isEmpty</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">fallback</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">list</span><span class="p">.</span><span class="n">first</span><span class="p">;</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">phones</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Paginated</span><span class="p">([</span><span class="s1">&#39;Redmi&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Vivo&#39;</span><span class="p">],</span><span class="w"> </span><span class="nl">page:</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="nl">total:</span><span class="w"> </span><span class="m">5</span><span class="p">);</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">${</span><span class="n">phones</span><span class="p">.</span><span class="n">items</span><span class="si">}</span><span class="s1"> → পরের পাতা? </span><span class="si">${</span><span class="n">phones</span><span class="p">.</span><span class="n">hasNext</span><span class="p">(</span><span class="m">2</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">firstOr</span><span class="p">(</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">[],</span><span class="w"> </span><span class="m">0</span><span class="p">));</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">firstOr</span><span class="p">([</span><span class="s1">&#39;Dhaka&#39;</span><span class="p">],</span><span class="w"> </span><span class="s1">&#39;নেই&#39;</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>[Redmi, Vivo] → পরের পাতা? true
+0
+Dhaka</pre></div></div></div></div></section>
+<section class="slide" data-part="Record ও Pattern (Dart 3)" data-title="Record: কয়েকটা মান একসাথে ফেরত"><div class="inner"><div class="head"><span class="tag">পাঠ ১০</span><h2>Record: কয়েকটা মান একসাথে ফেরত</h2></div><div class="body two"><div class="txt"><p><code>(int, String)</code> বা নামসহ <code>({int total, int count})</code> — ছোট class না বানিয়েই কয়েকটা মান ফেরত।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে array ফেরত দিয়ে <code>[$name, $price] = cheapest()</code> করতাম — Dart-এ এটা type-নিরাপদ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="p">({</span><span class="kt">int</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">count</span><span class="p">})</span><span class="w"> </span><span class="n">summarize</span><span class="p">(</span><span class="n">List</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sales</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="p">(</span><span class="nl">total:</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">fold</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="p">),</span><span class="w"> </span><span class="nl">count:</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">length</span><span class="p">);</span>
+
+<span class="p">(</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="n">cheapest</span><span class="p">(</span><span class="n">Map</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">prices</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prices</span><span class="p">.</span><span class="n">entries</span><span class="p">.</span><span class="n">reduce</span><span class="p">((</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">value</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summarize</span><span class="p">([</span><span class="m">18150</span><span class="p">,</span><span class="w"> </span><span class="m">2100</span><span class="p">,</span><span class="w"> </span><span class="m">24150</span><span class="p">]);</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;মোট </span><span class="si">${</span><span class="n">s</span><span class="p">.</span><span class="n">total</span><span class="si">}</span><span class="s1">, invoice </span><span class="si">${</span><span class="n">s</span><span class="p">.</span><span class="n">count</span><span class="si">}</span><span class="s1">টা&#39;</span><span class="p">);</span>
+
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cheapest</span><span class="p">({</span><span class="s1">&#39;Redmi 13&#39;</span><span class="o">:</span><span class="w"> </span><span class="m">17500</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Nokia 105&#39;</span><span class="o">:</span><span class="w"> </span><span class="m">2100</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Vivo Y28&#39;</span><span class="o">:</span><span class="w"> </span><span class="m">18000</span><span class="p">});</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;সবচেয়ে সস্তা: </span><span class="si">$</span><span class="n">name</span><span class="s1"> (</span><span class="si">$</span><span class="n">price</span><span class="s1">)&#39;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>মোট 44400, invoice 3টা
+সবচেয়ে সস্তা: Nokia 105 (2100)</pre></div></div></div></div></section>
+<section class="slide" data-part="Record ও Pattern (Dart 3)" data-title="Pattern matching"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>Pattern matching</h2></div><div class="body two"><div class="txt"><p>switch-এ শুধু মান না, আকৃতিও মেলানো যায়: list, map, record, type — আর সাথে <code>when</code> শর্ত।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kt">String</span><span class="w"> </span><span class="n">describe</span><span class="p">(</span><span class="kt">Object</span><span class="o">?</span><span class="w"> </span><span class="n">command</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">command</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">[</span><span class="s1">&#39;sell&#39;</span><span class="p">,</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">qty</span><span class="p">]</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">qty</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;</span><span class="si">$</span><span class="n">item</span><span class="s1"> × </span><span class="si">$</span><span class="n">qty</span><span class="s1"> বিক্রি&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">[</span><span class="s1">&#39;sell&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">]</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;পরিমাণ ভুল&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;refund&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;amount&#39;</span><span class="o">:</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">}</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;</span><span class="si">$</span><span class="n">a</span><span class="s1"> টাকা ফেরত&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;শুধু একটা সংখ্যা: </span><span class="si">$</span><span class="n">n</span><span class="s1">&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="kc">null</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;কিছু নেই&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;বুঝিনি&#39;</span><span class="p">,</span>
+<span class="p">};</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">describe</span><span class="p">([</span><span class="s1">&#39;sell&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Charger&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">]));</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">describe</span><span class="p">([</span><span class="s1">&#39;sell&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Charger&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">]));</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">describe</span><span class="p">({</span><span class="s1">&#39;type&#39;</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;refund&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;amount&#39;</span><span class="o">:</span><span class="w"> </span><span class="m">650</span><span class="p">}));</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">describe</span><span class="p">(</span><span class="m">42</span><span class="p">));</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">describe</span><span class="p">(</span><span class="kc">null</span><span class="p">));</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">describe</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Charger × 2 বিক্রি
+পরিমাণ ভুল
+650 টাকা ফেরত
+শুধু একটা সংখ্যা: 42
+কিছু নেই
+বুঝিনি</pre></div></div></div></div></section>
+<section class="slide" data-part="Record ও Pattern (Dart 3)" data-title="Sealed class: সব ক্ষেত্র ধরা বাধ্যতামূলক"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>Sealed class: সব ক্ষেত্র ধরা বাধ্যতামূলক</h2></div><div class="body two"><div class="txt"><p><code>sealed</code> class-এর সব subclass একই file-এ থাকে, তাই switch-এ কোনোটা বাদ পড়লে compiler ধরে। Flutter-এ loading/success/error state-এর জন্য দারুণ।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="n">sealed</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">Payment</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="kd">class</span><span class="w"> </span><span class="nc">Cash</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Payment</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="kd">class</span><span class="w"> </span><span class="nc">Bkash</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Payment</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">Bkash</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">trxId</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">trxId</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">class</span><span class="w"> </span><span class="nc">Card</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Payment</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">Card</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">last4</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">last4</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">String</span><span class="w"> </span><span class="n">receipt</span><span class="p">(</span><span class="n">Payment</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">Cash</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;নগদ&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">Bkash</span><span class="p">(</span><span class="o">:</span><span class="kd">final</span><span class="w"> </span><span class="n">trxId</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;bKash TrxID </span><span class="si">$</span><span class="n">trxId</span><span class="s1">&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">Card</span><span class="p">(</span><span class="o">:</span><span class="kd">final</span><span class="w"> </span><span class="n">last4</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;Card ****</span><span class="si">$</span><span class="n">last4</span><span class="s1">&#39;</span><span class="p">,</span>
+<span class="p">};</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="n">Cash</span><span class="p">(),</span><span class="w"> </span><span class="n">Bkash</span><span class="p">(</span><span class="s1">&#39;BK7X9&#39;</span><span class="p">),</span><span class="w"> </span><span class="n">Card</span><span class="p">(</span><span class="s1">&#39;4421&#39;</span><span class="p">)])</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="n">receipt</span><span class="p">(</span><span class="n">p</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>নগদ
+bKash TrxID BK7X9
+Card ****4421</pre></div><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="n">sealed</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">Payment</span><span class="w"> </span><span class="p">{}</span>
+<span class="kd">class</span><span class="w"> </span><span class="nc">Cash</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Payment</span><span class="w"> </span><span class="p">{}</span>
+<span class="kd">class</span><span class="w"> </span><span class="nc">Card</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Payment</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="kt">String</span><span class="w"> </span><span class="n">receipt</span><span class="p">(</span><span class="n">Payment</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">Cash</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;নগদ&#39;</span><span class="p">,</span>
+<span class="p">};</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">print</span><span class="p">(</span><span class="n">receipt</span><span class="p">(</span><span class="n">Card</span><span class="p">()));</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Dart compiler বলছে (ইচ্ছাকৃত ভুল)</div><pre>main.dart:5:38: Error: The type &#x27;Payment&#x27; is not exhaustively matched by the switch cases since it doesn&#x27;t match &#x27;Card()&#x27;.
+ - &#x27;Payment&#x27; is from &#x27;main.dart&#x27;.
+Try adding a wildcard pattern or cases that match &#x27;Card()&#x27;.
+String receipt(Payment p) =&gt; switch (p) {
+                                     ^</pre></div></div></div></div></section>
+<section class="slide" data-part="Collection ও Exception" data-title="Spread, collection-if আর for"><div class="inner"><div class="head"><span class="tag">পাঠ ১৩</span><h2>Spread, collection-if আর for</h2></div><div class="body two"><div class="txt"><p>List বানানোর সময়ই শর্ত আর loop — Flutter-এ widget-এর তালিকা বানাতে প্রতিদিন লাগে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র spread <code>[...$base]</code> একই। শর্ত দিয়ে item যোগ — PHP-তে <code>array_filter</code> বা আলাদা <code>if</code> লাগে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">isVip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;Invoice&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Products&#39;</span><span class="p">];</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;Mirpur&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Uttara&#39;</span><span class="p">];</span>
+
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">menu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s1">&#39;Dashboard&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">...</span><span class="n">base</span><span class="p">,</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">isVip</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;Reports&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">branches</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;POS — </span><span class="si">$</span><span class="n">b</span><span class="s1">&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">];</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">menu</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>[Dashboard, Invoice, Products, Reports, POS — Mirpur, POS — Uttara]</pre></div></div></div></div></section>
+<section class="slide" data-part="Collection ও Exception" data-title="Exception: throw, try, catch"><div class="inner"><div class="head"><span class="tag">পাঠ ১৪</span><h2>Exception: throw, try, catch</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>try { } catch (OutOfStock $e) { } finally { }</code> — Dart-এ <code>on Type catch (e)</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kd">class</span><span class="w"> </span><span class="nc">OutOfStock</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">OutOfStock</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">product</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">have</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">product</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">have</span><span class="p">;</span>
+<span class="w">  </span><span class="nd">@override</span>
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="n">toString</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;</span><span class="si">$</span><span class="n">product</span><span class="s1">: আছে মাত্র </span><span class="si">$</span><span class="n">have</span><span class="s1"> টা&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">sell</span><span class="p">(</span><span class="n">Map</span><span class="o">&lt;</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stock</span><span class="p">,</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">qty</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">have</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stock</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">have</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">qty</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="n">OutOfStock</span><span class="p">(</span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">have</span><span class="p">);</span>
+<span class="w">  </span><span class="n">stock</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">have</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">qty</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s1">&#39;iPhone 12&#39;</span><span class="o">:</span><span class="w"> </span><span class="m">1</span><span class="p">};</span>
+<span class="w">  </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">sell</span><span class="p">(</span><span class="n">stock</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;iPhone 12&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">);</span>
+<span class="w">    </span><span class="n">sell</span><span class="p">(</span><span class="n">stock</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;iPhone 12&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="kd">on</span><span class="w"> </span><span class="n">OutOfStock</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;বিক্রি হলো না — </span><span class="si">$</span><span class="n">e</span><span class="s1">&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;এখন স্টক: </span><span class="si">$</span><span class="n">stock</span><span class="s1">&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>বিক্রি হলো না — iPhone 12: আছে মাত্র 0 টা
+এখন স্টক: {iPhone 12: 0}</pre></div></div></div></div></section>
+<section class="slide" data-part="Collection ও Exception" data-title="Project: দোকানের cart"><div class="inner"><div class="head"><span class="tag">পাঠ ১৫</span><h2>Project: দোকানের cart</h2></div><div class="body two"><div class="txt"><div class="callout task"><b>নিজে করুন</b> <code>sealed class Discount</code> বানান: <code>Percent(5)</code> আর <code>Flat(500)</code> — <code>checkout</code> যেকোনোটা নেবে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="n">enum</span><span class="w"> </span><span class="n">Pay</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cash</span><span class="p">,</span><span class="w"> </span><span class="n">bkash</span><span class="w"> </span><span class="p">}</span>
+
+<span class="kd">class</span><span class="w"> </span><span class="nc">Item</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Item</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="k">this</span><span class="p">.</span><span class="n">qty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">]);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">qty</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">qty</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">class</span><span class="w"> </span><span class="nc">Cart</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">_items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="n">Item</span><span class="o">&gt;</span><span class="p">[];</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">add</span><span class="p">(</span><span class="n">Item</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">_items</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="kd">get</span><span class="w"> </span><span class="n">subtotal</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">_items</span><span class="p">.</span><span class="n">fold</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="n">total</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">discount</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">subtotal</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">20000</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">subtotal</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="o">~/</span><span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kt">String</span><span class="w"> </span><span class="n">checkout</span><span class="p">(</span><span class="n">Pay</span><span class="w"> </span><span class="n">pay</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">lines</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">_items</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;</span><span class="si">${</span><span class="n">i</span><span class="p">.</span><span class="n">name</span><span class="p">.</span><span class="n">padRight</span><span class="p">(</span><span class="m">10</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="si">${</span><span class="n">i</span><span class="p">.</span><span class="n">qty</span><span class="si">}</span><span class="s1"> × </span><span class="si">${</span><span class="n">i</span><span class="p">.</span><span class="n">price</span><span class="si">}</span><span class="s1"> = </span><span class="si">${</span><span class="n">i</span><span class="p">.</span><span class="n">total</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;Subtotal: </span><span class="si">$</span><span class="n">subtotal</span><span class="s1">&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">discount</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;ছাড় (৫%): -</span><span class="si">${</span><span class="n">discount</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;দেবেন: </span><span class="si">${</span><span class="n">subtotal</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">discount</span><span class="p">()</span><span class="si">}</span><span class="s1"> (</span><span class="si">${</span><span class="n">pay</span><span class="p">.</span><span class="n">name</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">];</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">lines</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">cart</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Cart</span><span class="p">()</span>
+<span class="w">    </span><span class="p">..</span><span class="n">add</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Item</span><span class="p">(</span><span class="s1">&#39;Redmi 13&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">17500</span><span class="p">))</span>
+<span class="w">    </span><span class="p">..</span><span class="n">add</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Item</span><span class="p">(</span><span class="s1">&#39;Charger&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">650</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span>
+<span class="w">    </span><span class="p">..</span><span class="n">add</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Item</span><span class="p">(</span><span class="s1">&#39;Cover&#39;</span><span class="p">,</span><span class="w"> </span><span class="m">250</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">));</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="n">cart</span><span class="p">.</span><span class="n">checkout</span><span class="p">(</span><span class="n">Pay</span><span class="p">.</span><span class="n">bkash</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Redmi 13   1 × 17500 = 17500
+Charger    2 × 650 = 1300
+Cover      5 × 250 = 1250
+Subtotal: 20050
+ছাড় (৫%): -1002
+দেবেন: 19048 (bkash)</pre></div></div></div></div></section>
+<section class="slide hero end" data-part="Collection ও Exception" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>Dart 102 শেষ! 🎉</h1><p class="lead">Class থেকে sealed class — Dart-এর গঠন এখন জানা। শেষ ধাপ: async, Future, Stream, JSON আর test।</p><div class="steps done"><div><i>✓</i><span><code>this.name</code> constructor, named/factory constructor</span></div><div><i>✓</i><span><code>_name</code> = private</span></div><div><i>✓</i><span><code>extends</code>, <code>implements</code>, <code>mixin</code> (= trait)</span></div><div><i>✓</i><span>Enum-এ field/method, extension দিয়ে নতুন method</span></div><div><i>✓</i><span>Record আর pattern matching</span></div><div><i>✓</i><span>Sealed class + exhaustive switch</span></div></div><div class="btns"><a class="btn" href="../dart-103/index.html">পরের কোর্স: Dart 103 — Async, JSON ও Test →</a><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+</main>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>window.COURSE="dart-102";
+(function(){
+  var B=function(n){return String(n).replace(/\d/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0,root=document.documentElement;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),menu=document.getElementById('menu');
+  var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'%)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
+    st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function buildMenu(){var h='',last=null;slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){h+='<h3>'+p+'</h3>';last=p}
+    h+='<a data-go="'+j+'" class="'+(st.seen[j]?'seen ':'')+(j===i?'cur':'')+'"><span>'+B(j+1)+'.</span><span>'+s.getAttribute('data-title')+'</span></a>'});menu.innerHTML=h}
+  function toggleMenu(){if(!menu.classList.contains('open'))buildMenu();menu.classList.toggle('open')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var dark=getComputedStyle(root).getPropertyValue('--bg').trim()==='#0B1220';var t=dark?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tut-theme',t)}catch(e){}}
+  try{var th=localStorage.getItem('tut-theme');if(th)root.setAttribute('data-theme',th)}catch(e){}
+  menu.addEventListener('click',function(e){var a=e.target.closest('a');if(a){go(+a.getAttribute('data-go'));menu.classList.remove('open')}else if(e.target===menu)menu.classList.remove('open')});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;
+    var pre=b.closest('.code').querySelector('pre');var t=pre.innerText.replace(/^\$ /gm,'');
+    var done=function(){b.textContent='কপি হয়েছে ✓';setTimeout(function(){b.textContent='কপি'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done()});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  // Swipe left/right changes slide; vertical drags scroll the slide. A swipe that actually scrolled a wide
+  // code block or table sideways is treated as scrolling that block, not as a slide change.
+  var x0=null,y0=null,box=null,box0=0;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY;
+    box=e.target.closest('pre,.tbl');box0=box?box.scrollLeft:0},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+    var scrolledBox=box&&Math.abs(box.scrollLeft-box0)>2;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5&&!scrolledBox)go(i+(dx<0?1:-1));x0=null;box=null});
+  var h=parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
+    if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';
+      r.classList.add('show');document.getElementById('resumeGo').onclick=function(){go(last);r.classList.remove('show')};
+      document.getElementById('resumeNo').onclick=function(){r.classList.remove('show')};}}
+})();
+</script>
+</body>
+</html>

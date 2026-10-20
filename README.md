@@ -6,6 +6,7 @@ at build time, and the real output (or real compiler error) is shown on the slid
 | Folder | Tutorial |
 |---|---|
 | `rust-tutorial/` | Rust 101, 102, 103 and Rust Web Development (axum), with PHP/Laravel comparisons |
+| `dart-tutorial/` | Dart 101, 102, 103 and Flutter (screenshots rendered by `flutter test`) |
 | `mysql-tutorial/` | MySQL from the first table to joins, indexes and transactions |
 | `postgresql-tutorial/` | PostgreSQL, including JSONB, window functions and full-text search |
 | `accounts-101/` | Accounting basics with a mobile-shop example (Dokani) |

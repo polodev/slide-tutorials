@@ -8,7 +8,7 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "tutorial-kit"))
 sys.path.insert(0, str(HERE.parent))
 from kit import Course, code, php_note, points, say, table, task, tip, warn  # noqa: E402
-from shop_schema import SCHEMA, SEED  # noqa: E402
+from pg_shop_schema import SCHEMA, SEED  # noqa: E402
 
 
 def sql(src, **kw):

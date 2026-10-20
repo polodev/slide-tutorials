@@ -1,0 +1,7 @@
+{
+ "slug": "dart-101",
+ "title": "Dart 101 — শূন্য থেকে শুরু",
+ "subtitle": "Flutter-এর ভাষা Dart: variable, type, null safety, string, if/switch/loop, function আর List/Map — PHP-র পাশাপাশি",
+ "lessons": 19,
+ "slides": 21
+}
