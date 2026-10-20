@@ -13,7 +13,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "tutorial-kit"))
 from kit import build_hub, series_meta  # noqa: E402
 
-SERIES = ["rust-tutorial", "go-tutorial", "dart-tutorial", "mysql-tutorial", "postgresql-tutorial", "accounts-101"]
+SERIES = ["rust-tutorial", "go-tutorial", "dart-tutorial", "mysql-tutorial", "postgresql-tutorial", "devops-tutorial", "accounts-101"]
 
 
 def tutorials():
@@ -28,6 +28,8 @@ def tutorials():
          series_meta(HERE / "mysql-tutorial")),
         ("postgresql-tutorial", "🐘", "PostgreSQL", "PostgreSQL-এর শক্তি: JSONB, window function, CTE, full-text search।",
          series_meta(HERE / "postgresql-tutorial")),
+        ("devops-tutorial", "🚀", "DevOps", "Linux, Docker, Kubernetes, CI/CD, Prometheus/Grafana আর OpenTofu — সব আসল টুলে চালানো।",
+         series_meta(HERE / "devops-tutorial")),
         ("accounts-101", "📒", "Accounts 101", "হিসাবের মূল ধারণা একটা মোবাইল দোকানের উদাহরণে: লাভ, ক্যাশ, Balance sheet।",
          "একটি কোর্স · Dokani-র সাথে"),
     ]

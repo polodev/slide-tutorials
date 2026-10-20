@@ -10,6 +10,7 @@ at build time, and the real output (or real compiler error) is shown on the slid
 | `dart-tutorial/` | Dart 101, 102, 103 and Flutter (screenshots rendered by `flutter test`) |
 | `mysql-tutorial/` | MySQL from the first table to joins, indexes and transactions |
 | `postgresql-tutorial/` | PostgreSQL, including JSONB, window functions and full-text search |
+| `devops-tutorial/` | DevOps 101, Docker, Kubernetes, CI/CD, Monitoring, Infrastructure as Code |
 | `accounts-101/` | Accounting basics with a mobile-shop example (Dokani) |
 
 Open `index.html` (or the GitHub Pages site). Keys: `→`/`←` change slide, `M` lesson list, `D` dark mode,

@@ -97,7 +97,7 @@ class Code:
     def __init__(self, src, lang="rust", *, run=None, err=None, panic=False, stdin=None, file=None,
                  deps=None, requests=None, hl=(), args=None, show_output=True, label=None, test=False,
                  server_log=False, eloquent=False, flutter=False, app=None, actions=None,
-                 save=False, validate=None, timeout=300, max_lines=40):
+                 save=False, validate=None, timeout=300, max_lines=40, hidden=False):
         self.src = src.strip("\n")
         self.lang = lang
         self.run = (lang in ("rust", "php", "mysql", "postgresql", "dart", "go")) if run is None else run
@@ -107,6 +107,7 @@ class Code:
         self.eloquent = eloquent   # php block that runs with Eloquent booted against the course database
         self.flutter, self.app, self.actions = flutter, app, actions   # Flutter: screenshot, or test against app
         self.save, self.validate, self.timeout, self.max_lines = save, validate, timeout, max_lines   # shell sessions
+        self.hidden = hidden   # setup file: saved into the session but not shown on the slide
         self.result = None   # filled by the runner: dict(kind, text)
         if lang == "go" and shutil.which("gofmt"):   # show canonical Go formatting, like every Go editor does
             f = subprocess.run(["gofmt"], input=self.src + "\n", capture_output=True, text=True)
@@ -547,7 +548,8 @@ class ShellSession:
                     "DOCKER_CLI_HINTS": "false", "BUILDKIT_PROGRESS": "plain", **(env or {})}
 
     def save(self, c: Code):
-        path = self.dir / c.file
+        path = self.dir / c.file.lstrip("/~")   # never outside the sandbox, even for /etc/... style names
+        assert self.dir in path.resolve().parents, f"refusing to write outside the sandbox: {c.file}"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(c.src + "\n")
         if self.container and c.file.startswith("/"):   # absolute path: a file inside the Linux container
@@ -893,7 +895,7 @@ class Course:
                     f'<div class="inner">{s["body"]}</div></section>')
         tag = f'পাঠ {bn(s["no"])}' + (f' · {s["tag"]}' if s.get("tag") else "")
         left = "".join(s["left"])
-        right = "".join(render_code(c) for c in s["codes"])
+        right = "".join(render_code(c) for c in s["codes"] if not c.hidden)
         cols = "two" if left and right else "one"
         return (f'<section class="slide" data-part="{e(s["part"])}" data-title="{e(s["title"])}">'
                 f'<div class="inner"><div class="head"><span class="tag">{tag}</span><h2>{s["title"]}</h2></div>'
@@ -998,6 +1000,8 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 .phone-shot{margin:0;align-self:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .phone-shot img{width:min(260px,60vw);border-radius:22px;border:6px solid #111827;box-shadow:0 12px 30px rgba(0,0,0,.3);background:#fff}
 .phone-shot figcaption{font-size:13px;color:var(--muted)}
+.dash-shot{margin:0;display:flex;flex-direction:column;gap:6px}.dash-shot img{width:100%;border-radius:12px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.dash-shot figcaption{font-size:13px;color:var(--muted)}
 .codecol:has(.phone-shot){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:1.2vw}
 @media (max-width:900px){.codecol:has(.phone-shot){grid-template-columns:1fr}}
 .stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
