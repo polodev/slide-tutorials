@@ -57,7 +57,7 @@ code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;backgrou
 .term.error .term-h,.term.panic .term-h{background:#B83434}
 .term.http .term-h{background:#1F5FA8}
 .term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
-pre,code{font-variant-ligatures:none;font-feature-settings:'liga' 0,'calt' 0}  /* show <= -> => as typed */
+pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
 .term.error pre,.term.panic pre{color:#FFB4B4}
 .stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
 .hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}

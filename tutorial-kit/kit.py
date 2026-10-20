@@ -35,6 +35,7 @@ from pygments.lexers import get_lexer_by_name
 
 KIT = Path(__file__).resolve().parent
 CACHE = KIT / ".cache"
+TEST_PORT = 3787   # servers in lessons listen on 3000 on the slide, 3787 while verifying
 DIG = str.maketrans("0123456789", "০১২৩৪৫৬৭৮৯")
 e = html.escape
 
@@ -94,13 +95,14 @@ class Code:
     `panic` = expected runtime panic; `stdin` feeds input; `file` labels the block."""
 
     def __init__(self, src, lang="rust", *, run=None, err=None, panic=False, stdin=None, file=None,
-                 deps=None, requests=None, hl=(), args=None, show_output=True, label=None, test=False):
+                 deps=None, requests=None, hl=(), args=None, show_output=True, label=None, test=False,
+                 server_log=False):
         self.src = src.strip("\n")
         self.lang = lang
         self.run = (lang in ("rust", "php", "mysql", "postgresql")) if run is None else run
         self.err, self.panic, self.stdin = err, panic, stdin
         self.file, self.deps, self.requests, self.hl, self.args = file, deps, requests, hl, args or []
-        self.show_output, self.label, self.test = show_output, label, test
+        self.show_output, self.label, self.test, self.server_log = show_output, label, test, server_log
         self.result = None   # filled by the runner: dict(kind, text)
 
 
@@ -192,14 +194,15 @@ def _wait_port(port, timeout=60):
 
 
 def run_cargo(c: Code, res: Results):
-    key = _hash("cargo", c.src, c.deps, c.requests, c.stdin, c.err)
+    key = _hash("cargo", c.src, c.deps, c.requests, c.stdin, c.err, c.server_log, 2)
     if key in res.data:
         return res.data[key]
     d = CACHE / "cargo" / key
     (d / "src").mkdir(parents=True, exist_ok=True)
     deps = "\n".join(f"{k} = {v if v.startswith('{') else json.dumps(v)}" for k, v in (c.deps or {}).items())
     (d / "Cargo.toml").write_text(f'[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\n{deps}\n')
-    (d / "src/main.rs").write_text(c.src + "\n")
+    # Slides show port 3000; verification runs on TEST_PORT so it never talks to another local app.
+    (d / "src/main.rs").write_text(c.src.replace(":3000", f":{TEST_PORT}") + "\n")
     env = {**os.environ, "CARGO_TARGET_DIR": str(CACHE / "target")}
     b = subprocess.run(["cargo", "build", "--color", "never", "-q"], cwd=d, capture_output=True, text=True, env=env)
     if c.err:
@@ -215,19 +218,38 @@ def run_cargo(c: Code, res: Results):
         if c.requests:
             for f in ("shop.db", "shop.db-wal", "shop.db-shm"):
                 (d / f).unlink(missing_ok=True)
+            with socket.socket() as s:
+                if s.connect_ex(("127.0.0.1", TEST_PORT)) == 0:
+                    raise SystemExit(f"port {TEST_PORT} is busy; stop that process first")
             p = subprocess.Popen([str(exe)], cwd=d, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                                  env={**env, "RUST_LOG": "info", "NO_COLOR": "1"}, start_new_session=True)
             try:
-                if not _wait_port(3000):
+                if not _wait_port(TEST_PORT):
                     raise SystemExit(f"server did not start:\n{c.src}")
                 parts = []
                 for cmd in c.requests:
-                    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=20)
-                    parts.append(f"$ {cmd}\n{r.stdout.rstrip()}")
+                    actual = cmd.replace(":3000", f":{TEST_PORT}")
+                    status_mark = "\n@@STATUS@@"
+                    if actual.startswith("curl") and " -i" not in actual:
+                        actual += f" -w '{status_mark}%{{http_code}}'"
+                    r = subprocess.run(actual, shell=True, capture_output=True, text=True, timeout=20)
+                    body = r.stdout.replace(f":{TEST_PORT}", ":3000")
+                    body = re.sub(r"(?im)^date: .*\r?\n?", "", body)   # date header changes every run
+                    status = ""
+                    if status_mark in body:
+                        body, status = body.rsplit(status_mark, 1)
+                    try:
+                        body = json.dumps(json.loads(body), ensure_ascii=False, indent=2)
+                    except ValueError:
+                        pass
+                    parts.append(f"$ {cmd}\n{body.rstrip()}" + (f"\n← HTTP {status}" if status else ""))
                 out = dict(kind="http", text="\n\n".join(parts))
             finally:
                 os.killpg(p.pid, signal.SIGTERM)
                 p.wait(timeout=10)
+            if c.server_log:
+                log = re.sub(r"\x1b\[[0-9;]*m", "", p.stdout.read()).rstrip().replace(f":{TEST_PORT}", ":3000")
+                out["text"] += "\n\n── server log ──\n" + log
         else:
             r = subprocess.run([str(exe)], cwd=d, input=c.stdin, capture_output=True, text=True, timeout=30, env=env)
             if r.returncode != 0 and not c.panic:
@@ -490,7 +512,7 @@ code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;backgrou
 .term.error .term-h,.term.panic .term-h{background:#B83434}
 .term.http .term-h{background:#1F5FA8}
 .term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
-pre,code{font-variant-ligatures:none;font-feature-settings:'liga' 0,'calt' 0}  /* show <= -> => as typed */
+pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
 .term.error pre,.term.panic pre{color:#FFB4B4}
 .stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
 .hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
