@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MySQL 102 — Relationship ও JOIN</title>
+<meta name="description" content="অনেক table একসাথে: foreign key, GROUP BY, JOIN, subquery আর view — Eloquent relationship-এর পিছনের SQL">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.6vh);--navy:#0C1E38;--accent:#0D8A4A;--accent2:#E8F6EE;--amber:#B7791F;--red:#C53030;--php:#4F5B93;
+  --bg:#F4F7FA;--ink:#18263A;--muted:#5B6B80;--card:#fff;--line:#DCE4EE;--codebg:#1E2430}
+:root[data-theme=dark]{--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+.deck html,.deck body{height:100%}
+body.deck{height:100vh;overflow:hidden}
+#deck{height:100%;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100vw;height:100%;overflow-y:auto;padding:60px 4vw 84px}
+.slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
+h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(15px,calc(var(--u)*1.9),28px);color:var(--muted);max-width:36em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--accent);color:#fff;font-weight:600;font-size:clamp(12px,calc(var(--u)*1.15),17px);padding:.3em 1em;border-radius:999px}
+.head{display:flex;flex-direction:column;gap:1vh}
+.body.two{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:3vw;align-items:start}
+.body.one{max-width:1100px}
+.txt{display:flex;flex-direction:column;gap:1.6vh}
+.txt p,.txt li{font-size:clamp(15px,calc(var(--u)*1.6),24px);line-height:1.7}
+.txt ul{list-style:none;padding:0;display:grid;gap:1vh}
+.txt li{padding-left:1.3em;position:relative}
+.txt li::before{content:"";position:absolute;left:0;top:.7em;width:.45em;height:.45em;border-radius:50%;background:var(--accent)}
+code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
+.callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.callout.warn{border-left-color:var(--amber)}
+.callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
+.callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
+.quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.quiz summary{cursor:pointer;font-weight:600;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--accent);font-weight:600;font-size:clamp(14px,calc(var(--u)*1.4),21px);line-height:1.6}
+.tbl{border-collapse:collapse;width:100%;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.tbl th,.tbl td{padding:.9vh .9vw;text-align:left;font-size:clamp(13px,calc(var(--u)*1.35),20px);border-bottom:1px solid var(--line);line-height:1.5}
+.tbl th{background:var(--accent2);font-weight:600}
+.steps{display:grid;gap:1vh}
+.steps div{background:var(--card);border-radius:10px;padding:1.1vh 1vw;font-size:clamp(14px,calc(var(--u)*1.5),22px);display:flex;gap:.9vw;align-items:center;box-shadow:0 3px 12px rgba(12,30,56,.07);line-height:1.5}
+.steps i{flex:0 0 auto;width:2em;height:2em;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.codecol{display:flex;flex-direction:column;gap:1.2vh;min-width:0}
+.code{background:var(--codebg);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#151A23;color:#9AA7B8;font:600 13px 'JetBrains Mono',monospace}
+.code-h.php{background:#262B47;color:#C3C9EE}
+.copy{border:0;background:#2A3242;color:#C9D4E3;font:600 12px 'Hind Siliguri',sans-serif;padding:3px 10px;border-radius:6px;cursor:pointer}
+.copy:hover{background:var(--accent);color:#fff}
+.hl pre{margin:0;padding:12px 16px;overflow-x:auto;font:clamp(12.5px,calc(var(--u)*1.08),17px)/1.55 'JetBrains Mono',monospace;color:#E3E8EF;tab-size:4}
+.hl .hll{background:rgba(255,214,102,.13);display:inline-block;width:100%}
+.term{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0F141C}
+.term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
+.term.error .term-h,.term.panic .term-h{background:#B83434}
+.term.http .term-h{background:#1F5FA8}
+.term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
+pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
+.term.error pre,.term.panic pre{color:#FFB4B4}
+.stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
+.hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
+.hero .inner{justify-content:center;max-width:1100px}
+.hero h1{color:#fff}.hero .lead{color:#CFDDEE}
+.hero .learn{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1vh 2vw}
+.hero .learn li{font-size:clamp(14px,calc(var(--u)*1.55),23px);padding-left:1.4em;position:relative;line-height:1.5;color:#E6EEF8}
+.hero .learn li::before{content:"✓";position:absolute;left:0;color:#4ADE80;font-weight:700}
+.hero .need,.hero .howto{color:#AFC2D8;font-size:clamp(13px,calc(var(--u)*1.35),20px)}
+.hero .need b{color:#fff}
+.hero.end .steps div{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.hero.end .steps i{background:#4ADE80;color:#0C1E38}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:#4ADE80;color:#0C1E38;font-weight:700;text-decoration:none;padding:.7em 1.4em;border-radius:999px;font-size:clamp(14px,calc(var(--u)*1.5),21px)}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+#top{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px}
+#top a{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+#top .crumb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#top .hub{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+#bar{position:fixed;left:0;top:44px;height:3px;background:var(--accent);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:600 14px 'Hind Siliguri',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.9);padding:6px 10px;border-radius:999px;white-space:nowrap}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--accent)}
+#count{min-width:64px;text-align:center}
+#menu{position:fixed;inset:0;background:rgba(8,15,28,.94);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:20px;margin:2.4vh 0 .8vh}
+#menu a{display:flex;gap:.6em;color:#dbe7f5;text-decoration:none;padding:.55vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a.seen::after{content:"✓";color:#4ADE80;margin-left:auto}
+#menu a.cur{background:rgba(74,222,128,.18)}
+#menu a:hover{background:var(--accent);color:#fff}
+#resume{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25);border-radius:14px;padding:12px 16px;z-index:8;display:none;gap:10px;align-items:center;font-size:15px;flex-wrap:wrap;justify-content:center}
+#resume.show{display:flex}
+#resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
+#resume button.alt{background:var(--line);color:var(--ink)}
+@media (max-width:900px){body.deck{overflow:hidden}.slide{padding:56px 5vw 96px}.body.two{grid-template-columns:1fr}.hero .learn{grid-template-columns:1fr}}
+@media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
+
+.hl .c,.hl .c1,.hl .cm,.hl .cs,.hl .ch,.hl .cp,.hl .cpf{color:#7F8C98;font-style:italic}
+.hl .k,.hl .kd,.hl .kn,.hl .kr,.hl .kp,.hl .ow{color:#C678DD}
+.hl .kc{color:#D19A66}
+.hl .kt,.hl .nc,.hl .nn{color:#E5C07B}
+.hl .s,.hl .s1,.hl .s2,.hl .sb,.hl .sc,.hl .sd,.hl .sh,.hl .sx,.hl .dl{color:#98C379}
+.hl .se,.hl .si,.hl .sa{color:#56B6C2}
+.hl .m,.hl .mi,.hl .mf,.hl .mh,.hl .mb,.hl .il,.hl .mo{color:#D19A66}
+.hl .nf,.hl .fm{color:#61AFEF}
+.hl .nb,.hl .bp{color:#56B6C2}
+.hl .nd,.hl .nl{color:#E06C75}
+.hl .nt{color:#E06C75}.hl .na{color:#D19A66}
+.hl .nv,.hl .vi,.hl .vc,.hl .vg{color:#E06C75}
+.hl .o{color:#ABB2BF}.hl .p{color:#ABB2BF}
+.hl .gp{color:#4ADE80;font-weight:600;user-select:none}.hl .go{color:#9AA7B8}
+.hl .err{color:#E3E8EF;background:none}
+</style>
+</head>
+<body class="deck">
+<div id="top"><a href="../index.html">← সব কোর্স</a><span class="crumb">MySQL 102 · <b id="part"></b></span><a class="hub" href="../../index.html">সব টিউটোরিয়াল</a></div>
+<div id="bar"></div>
+<div id="resume"><span id="resumeText"></span><button id="resumeGo">চালিয়ে যান</button><button class="alt" id="resumeNo">শুরু থেকে</button></div>
+<main id="deck">
+<section class="slide hero" data-part="শুরু" data-title="MySQL 102Relationship ও JOIN"><div class="inner"><span class="tag">MySQL 102</span><h1>MySQL 102<br>Relationship ও JOIN</h1><p class="lead">আসল দোকানের data এক table-এ থাকে না। শাখা, কর্মচারী, customer, product, বিক্রি — সব আলাদা table, id দিয়ে যুক্ত। এগুলো জোড়া লাগিয়ে রিপোর্ট বানানোই এই কোর্স।</p><ul class="learn"><li>কেন table ভাগ করি</li><li>Primary key আর foreign key</li><li>COUNT, SUM, AVG আর GROUP BY</li><li>HAVING আর WITH ROLLUP</li><li>INNER JOIN আর LEFT JOIN</li><li>কখনো বিক্রি হয়নি এমন product খোঁজা</li><li>Subquery, EXISTS, UNION</li><li>VIEW আর Eloquent relationship-এর SQL</li></ul><p class="need"><b>আগে জানা দরকার:</b> MySQL 101 (SELECT, WHERE, ORDER BY, INSERT)।</p><p class="howto">→ তীর চাপুন বা swipe করুন · <b>M</b> সব পাঠের তালিকা · অগ্রগতি নিজে থেকেই সেভ হয়</p></div></section>
+<section class="slide" data-part="আজকের Database" data-title="কেন একাধিক table?"><div class="inner"><div class="head"><span class="tag">পাঠ ১</span><h2>কেন একাধিক table?</h2></div><div class="body one"><div class="txt"><p>সব কিছু এক table-এ রাখলে একই তথ্য বারবার লিখতে হয়, আর একটা বদলালে সব জায়গায় বদলাতে হয়।</p><table class="tbl"><tr><th>invoice</th><th>customer</th><th>customer_phone</th><th>branch</th><th>product</th></tr><tr><td>INV-1001</td><td>Karim Uddin</td><td>01711000001</td><td>Mirpur</td><td>Redmi 13</td></tr><tr><td>INV-1007</td><td>Karim Uddin</td><td>01711000001</td><td>Mirpur</td><td>Vivo Y28</td></tr><tr><td>INV-1003</td><td>Nusrat Jahan</td><td>01811000002</td><td>Uttara</td><td>Redmi Note 13</td></tr></table><ul><li>Karim-এর ফোন বদলালে সব row খুঁজে বদলাতে হবে — একটা ভুললেই অমিল</li><li>সমাধান: customer আলাদা table-এ একবার, বিক্রিতে শুধু <code>customer_id</code></li><li>এটাকে বলে <b>normalization</b></li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এ <code>Sale belongsTo Customer</code> — ঠিক এই <code>customer_id</code> column-টাই সম্পর্ক।</div></div></div></div></section>
+<section class="slide" data-part="আজকের Database" data-title="Table গুলো: Rahim Mobile"><div class="inner"><div class="head"><span class="tag">পাঠ ২</span><h2>Table গুলো: Rahim Mobile</h2></div><div class="body two"><div class="txt"><p>ছয়টা table। <code>FOREIGN KEY</code> লাইনগুলো বলছে কোন column অন্য কোন table-এর <code>id</code>-কে নির্দেশ করে।</p><table class="tbl"><tr><th>সম্পর্ক</th><th>ধরন</th><th>Eloquent</th></tr><tr><td>branch → employees</td><td>এক শাখায় অনেক কর্মচারী</td><td><code>hasMany</code></td></tr><tr><td>sale → customer</td><td>প্রতিটি বিক্রি একজন customer-এর (বা walk-in)</td><td><code>belongsTo</code></td></tr><tr><td>sale → sale_items → product</td><td>এক বিক্রিতে অনেক product, এক product অনেক বিক্রিতে</td><td><code>belongsToMany</code> (pivot)</td></tr></table></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL — schema</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">   </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">AUTO_INCREMENT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">name</span><span class="w"> </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">       </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">AUTO_INCREMENT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">name</span><span class="w">     </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">phone</span><span class="w">    </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="w">  </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">district</span><span class="w"> </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">categories</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">   </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">AUTO_INCREMENT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">name</span><span class="w"> </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">          </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">AUTO_INCREMENT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">category_id</span><span class="w"> </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">name</span><span class="w">        </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">brand</span><span class="w">       </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w">  </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cost</span><span class="w">        </span><span class="kt">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">price</span><span class="w">       </span><span class="kt">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">stock</span><span class="w">       </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">category_id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">categories</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">employees</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">        </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">AUTO_INCREMENT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">branch_id</span><span class="w"> </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">name</span><span class="w">      </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">branch_id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">          </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">AUTO_INCREMENT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">invoice_no</span><span class="w">  </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">branch_id</span><span class="w">   </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">employee_id</span><span class="w"> </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">customer_id</span><span class="w"> </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span><span class="w">            </span><span class="c1">-- walk-in হলে NULL</span>
+<span class="w">    </span><span class="n">sold_at</span><span class="w">     </span><span class="kt">DATETIME</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">total</span><span class="w">       </span><span class="kt">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">branch_id</span><span class="p">)</span><span class="w">   </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">),</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">employee_id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">employees</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">),</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">customer_id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">sale_items</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">         </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">AUTO_INCREMENT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">sale_id</span><span class="w">    </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">product_id</span><span class="w"> </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">qty</span><span class="w">        </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">unit_price</span><span class="w"> </span><span class="kt">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">sale_id</span><span class="p">)</span><span class="w">    </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">product_id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<span class="p">);</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="আজকের Database" data-title="Data ঢোকানো"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>Data ঢোকানো</h2></div><div class="body two"><div class="txt"><p>৩টা শাখা, ৬ জন customer, ১১টা product, ১০টা বিক্রি। পুরো কোর্স এই data নিয়ে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এ এটাই <code>DatabaseSeeder</code> — <code>php artisan db:seed</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL — seed data</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Mirpur&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Uttara&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Gulshan&#39;</span><span class="p">);</span>
+
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Karim Uddin&#39;</span><span class="p">,</span><span class="w">  </span><span class="s1">&#39;01711000001&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Dhaka&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Nusrat Jahan&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01811000002&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Sylhet&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Rahim Mia&#39;</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;01911000003&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Khulna&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Sadia Islam&#39;</span><span class="p">,</span><span class="w">  </span><span class="s1">&#39;01611000004&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Dhaka&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Tanvir Hasan&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01511000005&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Gazipur&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Mitu Akter&#39;</span><span class="p">,</span><span class="w">   </span><span class="s1">&#39;01311000006&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Dhaka&#39;</span><span class="p">);</span>
+
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">categories</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Smartphone&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Feature phone&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Accessories&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Tablet&#39;</span><span class="p">);</span>
+
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="p">(</span><span class="n">category_id</span><span class="p">,</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Redmi 13&#39;</span><span class="p">,</span><span class="w">       </span><span class="s1">&#39;Xiaomi&#39;</span><span class="p">,</span><span class="w">  </span><span class="mi">15800</span><span class="p">,</span><span class="w"> </span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Redmi Note 13&#39;</span><span class="p">,</span><span class="w">  </span><span class="s1">&#39;Xiaomi&#39;</span><span class="p">,</span><span class="w">  </span><span class="mi">21500</span><span class="p">,</span><span class="w"> </span><span class="mi">23500</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Galaxy A15&#39;</span><span class="p">,</span><span class="w">     </span><span class="s1">&#39;Samsung&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">19000</span><span class="p">,</span><span class="w"> </span><span class="mi">21000</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;iPhone 12&#39;</span><span class="p">,</span><span class="w">      </span><span class="s1">&#39;Apple&#39;</span><span class="p">,</span><span class="w">   </span><span class="mi">44000</span><span class="p">,</span><span class="w"> </span><span class="mi">48000</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Vivo Y28&#39;</span><span class="p">,</span><span class="w">       </span><span class="s1">&#39;Vivo&#39;</span><span class="p">,</span><span class="w">    </span><span class="mi">16300</span><span class="p">,</span><span class="w"> </span><span class="mi">18000</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Nokia 105&#39;</span><span class="p">,</span><span class="w">      </span><span class="s1">&#39;Nokia&#39;</span><span class="p">,</span><span class="w">    </span><span class="mi">1750</span><span class="p">,</span><span class="w">  </span><span class="mi">2100</span><span class="p">,</span><span class="w"> </span><span class="mi">12</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Walton Olvio&#39;</span><span class="p">,</span><span class="w">   </span><span class="s1">&#39;Walton&#39;</span><span class="p">,</span><span class="w">   </span><span class="mi">1400</span><span class="p">,</span><span class="w">  </span><span class="mi">1750</span><span class="p">,</span><span class="w"> </span><span class="mi">9</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Charger 20W&#39;</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;Anker&#39;</span><span class="p">,</span><span class="w">     </span><span class="mi">480</span><span class="p">,</span><span class="w">   </span><span class="mi">650</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Earbuds Q20i&#39;</span><span class="p">,</span><span class="w">   </span><span class="s1">&#39;Soundcore&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2600</span><span class="p">,</span><span class="w"> </span><span class="mi">3300</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Glass Protector&#39;</span><span class="p">,</span><span class="s1">&#39;Generic&#39;</span><span class="p">,</span><span class="w">    </span><span class="mi">60</span><span class="p">,</span><span class="w">   </span><span class="mi">150</span><span class="p">,</span><span class="w"> </span><span class="mi">50</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Realme C67&#39;</span><span class="p">,</span><span class="w">     </span><span class="s1">&#39;Realme&#39;</span><span class="p">,</span><span class="w">  </span><span class="mi">16500</span><span class="p">,</span><span class="w"> </span><span class="mi">18500</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">);</span>
+
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">employees</span><span class="w"> </span><span class="p">(</span><span class="n">branch_id</span><span class="p">,</span><span class="w"> </span><span class="k">name</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Sabbir&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Lima&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Fahim&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Riya&#39;</span><span class="p">);</span>
+
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="p">(</span><span class="n">invoice_no</span><span class="p">,</span><span class="w"> </span><span class="n">branch_id</span><span class="p">,</span><span class="w"> </span><span class="n">employee_id</span><span class="p">,</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">sold_at</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1001&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;2026-10-15 11:20:00&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">18150</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1002&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;2026-10-15 16:05:00&#39;</span><span class="p">,</span><span class="w">  </span><span class="mi">2100</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1003&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;2026-10-16 12:40:00&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">24150</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1004&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;2026-10-16 18:10:00&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">48000</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1005&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;2026-10-17 10:30:00&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">21300</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1006&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;2026-10-17 19:45:00&#39;</span><span class="p">,</span><span class="w">  </span><span class="mi">3450</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1007&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;2026-10-18 13:15:00&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">18000</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1008&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;2026-10-18 17:30:00&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">21650</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1009&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;2026-10-19 11:00:00&#39;</span><span class="p">,</span><span class="w">  </span><span class="mi">1750</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;INV-1010&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;2026-10-19 20:10:00&#39;</span><span class="p">,</span><span class="w">  </span><span class="mi">1300</span><span class="p">);</span>
+
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">sale_items</span><span class="w"> </span><span class="p">(</span><span class="n">sale_id</span><span class="p">,</span><span class="w"> </span><span class="n">product_id</span><span class="p">,</span><span class="w"> </span><span class="n">qty</span><span class="p">,</span><span class="w"> </span><span class="n">unit_price</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">17500</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2100</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">23500</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">48000</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">21000</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">150</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3300</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">150</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">18000</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">21000</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1750</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">);</span>
+</pre></div>
+</div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">branches</span><span class="p">)</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">branches</span><span class="p">,</span>
+<span class="w">       </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">customers</span><span class="p">,</span>
+<span class="w">       </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="p">)</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">products</span><span class="p">,</span>
+<span class="w">       </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="p">)</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">sales</span><span class="p">,</span>
+<span class="w">       </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">sale_items</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sale_items</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------+-----------+----------+-------+------------+
+| branches | customers | products | sales | sale_items |
++----------+-----------+----------+-------+------------+
+|        3 |         6 |       11 |    10 |         15 |
++----------+-----------+----------+-------+------------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="হিসাব: GROUP BY" data-title="COUNT, SUM, AVG, MIN, MAX"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>COUNT, SUM, AVG, MIN, MAX</h2></div><div class="body two"><div class="txt"><p>Aggregate function অনেক row থেকে একটা মান বানায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">            </span><span class="k">AS</span><span class="w"> </span><span class="n">invoices</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">ROUND</span><span class="p">(</span><span class="k">AVG</span><span class="p">(</span><span class="n">total</span><span class="p">))</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">avg_invoice</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">MIN</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">smallest</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">MAX</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">biggest</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------+-----------+-------------+----------+----------+
+| invoices | revenue   | avg_invoice | smallest | biggest  |
++----------+-----------+-------------+----------+----------+
+|       10 | 159850.00 |       15985 |  1300.00 | 48000.00 |
++----------+-----------+-------------+----------+----------+
+1 row in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Sale</span><span class="o">::</span><span class="na">count</span><span class="p">();</span>  <span class="nx">Sale</span><span class="o">::</span><span class="na">sum</span><span class="p">(</span><span class="s1">&#39;total&#39;</span><span class="p">);</span>  <span class="nx">Sale</span><span class="o">::</span><span class="na">avg</span><span class="p">(</span><span class="s1">&#39;total&#39;</span><span class="p">);</span>  <span class="nx">Sale</span><span class="o">::</span><span class="na">max</span><span class="p">(</span><span class="s1">&#39;total&#39;</span><span class="p">);</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="হিসাব: GROUP BY" data-title="GROUP BY: শাখা ধরে"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>GROUP BY: শাখা ধরে</h2></div><div class="body two"><div class="txt"><p><code>GROUP BY branch_id</code> — প্রতিটি শাখার row আলাদা দলে, তারপর প্রতিটি দলের হিসাব।</p><div class="callout warn">⚠️ SELECT-এ যে column থাকবে তা হয় <code>GROUP BY</code>-এ থাকবে, নয়তো aggregate-এর ভিতরে। নইলে MySQL error দেয় (ONLY_FULL_GROUP_BY)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">branch_id</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">invoices</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">branch_id</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-----------+----------+----------+
+| branch_id | invoices | revenue  |
++-----------+----------+----------+
+|         3 |        2 | 69650.00 |
+|         1 |        5 | 60850.00 |
+|         2 |        3 | 29350.00 |
++-----------+----------+----------+
+3 rows in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Sale</span><span class="o">::</span><span class="na">selectRaw</span><span class="p">(</span><span class="s1">&#39;branch_id, COUNT(*) AS invoices, SUM(total) AS revenue&#39;</span><span class="p">)</span>
+    <span class="o">-&gt;</span><span class="na">groupBy</span><span class="p">(</span><span class="s1">&#39;branch_id&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">orderByDesc</span><span class="p">(</span><span class="s1">&#39;revenue&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="হিসাব: GROUP BY" data-title="তারিখ ধরে: দৈনিক বিক্রি"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>তারিখ ধরে: দৈনিক বিক্রি</h2></div><div class="body two"><div class="txt"><div class="callout">💡 মাসিক চাইলে <code>DATE_FORMAT(sold_at, '%Y-%m')</code> দিয়ে GROUP BY করুন।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="kt">DATE</span><span class="p">(</span><span class="n">sold_at</span><span class="p">)</span><span class="w">                </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">DAYNAME</span><span class="p">(</span><span class="n">sold_at</span><span class="p">)</span><span class="w">             </span><span class="k">AS</span><span class="w"> </span><span class="n">weekday</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                     </span><span class="k">AS</span><span class="w"> </span><span class="n">invoices</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="w">                   </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="kt">DATE</span><span class="p">(</span><span class="n">sold_at</span><span class="p">),</span><span class="w"> </span><span class="nf">DAYNAME</span><span class="p">(</span><span class="n">sold_at</span><span class="p">)</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">day</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+----------+----------+----------+
+| day        | weekday  | invoices | revenue  |
++------------+----------+----------+----------+
+| 2026-10-15 | Thursday |        2 | 20250.00 |
+| 2026-10-16 | Friday   |        2 | 72150.00 |
+| 2026-10-17 | Saturday |        2 | 24750.00 |
+| 2026-10-18 | Sunday   |        2 | 39650.00 |
+| 2026-10-19 | Monday   |        2 |  3050.00 |
++------------+----------+----------+----------+
+5 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="হিসাব: GROUP BY" data-title="HAVING: দলের উপর শর্ত"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>HAVING: দলের উপর শর্ত</h2></div><div class="body two"><div class="txt"><p><code>WHERE</code> row বাছাই করে দল বানানোর <b>আগে</b>। <code>HAVING</code> দল বানানোর <b>পরে</b> — aggregate-এর উপর শর্ত।</p><details class="quiz"><summary>❓ "৫০ হাজারের বেশি বিক্রি করেছে এমন শাখা" — WHERE না HAVING?</summary><p>HAVING SUM(total) &gt; 50000 — কারণ শর্তটা যোগফলের উপর।</p></details></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">visits</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">spent</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">customer_id</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-------------+--------+----------+
+| customer_id | visits | spent    |
++-------------+--------+----------+
+|           1 |      2 | 36150.00 |
+|           2 |      2 | 25900.00 |
++-------------+--------+----------+
+2 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="হিসাব: GROUP BY" data-title="WITH ROLLUP: মোট যোগফল সহ"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>WITH ROLLUP: মোট যোগফল সহ</h2></div><div class="body two"><div class="txt"><p>শেষ লাইনে সব দলের যোগফল। Excel-এর subtotal-এর মতো।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">IFNULL</span><span class="p">(</span><span class="n">branch_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;মোট&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">branch</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="w">               </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">branch_id</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="k">ROLLUP</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-----------+-----------+
+| branch    | revenue   |
++-----------+-----------+
+| 1         |  60850.00 |
+| 2         |  29350.00 |
+| 3         |  69650.00 |
+| মোট       | 159850.00 |
++-----------+-----------+
+4 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Foreign key" data-title="Foreign key: ভুল id ঢুকতে দেয় না"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>Foreign key: ভুল id ঢুকতে দেয় না</h2></div><div class="body two"><div class="txt"><p><code>sales.branch_id</code> অবশ্যই <code>branches</code>-এ থাকা কোনো id হতে হবে। নেই এমন শাখা দিলে MySQL আটকায়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এ <code>$table-&gt;foreignId('branch_id')-&gt;constrained();</code> এই নিয়মটাই বানায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="p">(</span><span class="n">invoice_no</span><span class="p">,</span><span class="w"> </span><span class="n">branch_id</span><span class="p">,</span><span class="w"> </span><span class="n">employee_id</span><span class="p">,</span><span class="w"> </span><span class="n">sold_at</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">)</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;INV-9999&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nf">NOW</span><span class="p">(),</span><span class="w"> </span><span class="mi">500</span><span class="p">);</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Database বলছে (ইচ্ছাকৃত ভুল)</div><pre>ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`tut_mysql_102`.`sales`, CONSTRAINT `sales_ibfk_1` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`))</pre></div></div></div></div></section>
+<section class="slide" data-part="Foreign key" data-title="Parent মুছতে বাধা"><div class="inner"><div class="head"><span class="tag">পাঠ ১০</span><h2>Parent মুছতে বাধা</h2></div><div class="body two"><div class="txt"><p>Gulshan শাখার কর্মচারী আর বিক্রি আছে, তাই শাখাটা মোছা যায় না — নইলে সেগুলো "অনাথ" হয়ে যেত। Error-এ দেখুন কোন constraint আটকাল (<code>employees_ibfk_1</code>)।</p><table class="tbl"><tr><th>নিয়ম</th><th>Parent মুছলে child-এর কী হয়</th><th>Laravel</th></tr><tr><td><code>RESTRICT</code> (ডিফল্ট)</td><td>মোছা আটকায়</td><td><code>-&gt;restrictOnDelete()</code></td></tr><tr><td><code>CASCADE</code></td><td>child-ও মুছে যায়</td><td><code>-&gt;cascadeOnDelete()</code></td></tr><tr><td><code>SET NULL</code></td><td>child-এ id NULL হয়</td><td><code>-&gt;nullOnDelete()</code></td></tr></table></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Gulshan&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Database বলছে (ইচ্ছাকৃত ভুল)</div><pre>ERROR 1451 (23000): Cannot delete or update a parent row: a foreign key constraint fails (`tut_mysql_102`.`employees`, CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`))</pre></div></div></div></div></section>
+<section class="slide" data-part="Foreign key" data-title="ON DELETE CASCADE"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>ON DELETE CASCADE</h2></div><div class="body two"><div class="txt"><p><code>sale_items</code> বানানো হয়েছে <code>ON DELETE CASCADE</code> দিয়ে: বিক্রি মুছলে তার লাইনগুলোও যায়। একটা পরীক্ষামূলক বিক্রি দিয়ে দেখি।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="p">(</span><span class="n">invoice_no</span><span class="p">,</span><span class="w"> </span><span class="n">branch_id</span><span class="p">,</span><span class="w"> </span><span class="n">employee_id</span><span class="p">,</span><span class="w"> </span><span class="n">sold_at</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">)</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;INV-TEST&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;2026-10-19 21:00:00&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">);</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">sale_items</span><span class="w"> </span><span class="p">(</span><span class="n">sale_id</span><span class="p">,</span><span class="w"> </span><span class="n">product_id</span><span class="p">,</span><span class="w"> </span><span class="n">qty</span><span class="p">,</span><span class="w"> </span><span class="n">unit_price</span><span class="p">)</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="nf">LAST_INSERT_ID</span><span class="p">(),</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">);</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">items_before</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">sale_items</span><span class="p">;</span>
+<span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">invoice_no</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;INV-TEST&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">items_after</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">sale_items</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 1 row affected
+
+Query OK, 1 row affected
+
++--------------+
+| items_before |
++--------------+
+|           16 |
++--------------+
+1 row in set
+
+Query OK, 1 row affected
+
++-------------+
+| items_after |
++-------------+
+|          15 |
++-------------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="INNER JOIN: দুই table জোড়া"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>INNER JOIN: দুই table জোড়া</h2></div><div class="body two"><div class="txt"><p><code>JOIN ... ON</code> দিয়ে বলি কোন column মিলিয়ে জোড়া হবে। এখন branch_id-এর বদলে শাখার নাম দেখাতে পারি।</p><div class="callout">💡 <code>sales AS s</code> — ছোট নাম (alias) দিলে লম্বা query পড়তে সহজ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">invoice_no</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="k">name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">branch</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">total</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">branch_id</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">sold_at</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+---------+----------+
+| invoice_no | branch  | total    |
++------------+---------+----------+
+| INV-1001   | Mirpur  | 18150.00 |
+| INV-1002   | Mirpur  |  2100.00 |
+| INV-1003   | Uttara  | 24150.00 |
+| INV-1004   | Gulshan | 48000.00 |
+| INV-1005   | Mirpur  | 21300.00 |
++------------+---------+----------+
+5 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="শাখার নাম দিয়ে রিপোর্ট"><div class="inner"><div class="head"><span class="tag">পাঠ ১৩</span><h2>শাখার নাম দিয়ে রিপোর্ট</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="k">name</span><span class="w">     </span><span class="k">AS</span><span class="w"> </span><span class="n">branch</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">invoices</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">branch_id</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="k">name</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------+----------+----------+
+| branch  | invoices | revenue  |
++---------+----------+----------+
+| Gulshan |        2 | 69650.00 |
+| Mirpur  |        5 | 60850.00 |
+| Uttara  |        3 | 29350.00 |
++---------+----------+----------+
+3 rows in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Sale</span><span class="o">::</span><span class="na">join</span><span class="p">(</span><span class="s1">&#39;branches&#39;</span><span class="p">,</span> <span class="s1">&#39;branches.id&#39;</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="s1">&#39;sales.branch_id&#39;</span><span class="p">)</span>
+    <span class="o">-&gt;</span><span class="na">selectRaw</span><span class="p">(</span><span class="s1">&#39;branches.name AS branch, COUNT(*) AS invoices, SUM(sales.total) AS revenue&#39;</span><span class="p">)</span>
+    <span class="o">-&gt;</span><span class="na">groupBy</span><span class="p">(</span><span class="s1">&#39;branches.id&#39;</span><span class="p">,</span> <span class="s1">&#39;branches.name&#39;</span><span class="p">)</span>
+    <span class="o">-&gt;</span><span class="na">orderByDesc</span><span class="p">(</span><span class="s1">&#39;revenue&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="অনেক table: পুরো invoice"><div class="inner"><div class="head"><span class="tag">পাঠ ১৪</span><h2>অনেক table: পুরো invoice</h2></div><div class="body two"><div class="txt"><p>একটা invoice-এর সব লাইন: sale → items → product, সাথে customer আর কর্মচারী।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">invoice_no</span><span class="p">,</span>
+<span class="w">       </span><span class="n">c</span><span class="p">.</span><span class="k">name</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">customer</span><span class="p">,</span>
+<span class="w">       </span><span class="n">e</span><span class="p">.</span><span class="k">name</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">sold_by</span><span class="p">,</span>
+<span class="w">       </span><span class="n">p</span><span class="p">.</span><span class="k">name</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">product</span><span class="p">,</span>
+<span class="w">       </span><span class="n">si</span><span class="p">.</span><span class="n">qty</span><span class="p">,</span>
+<span class="w">       </span><span class="n">si</span><span class="p">.</span><span class="n">unit_price</span><span class="p">,</span>
+<span class="w">       </span><span class="n">si</span><span class="p">.</span><span class="n">qty</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">unit_price</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">line_total</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">employees</span><span class="w">  </span><span class="n">e</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">employee_id</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">customers</span><span class="w">  </span><span class="n">c</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">customer_id</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">sale_items</span><span class="w"> </span><span class="n">si</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">sale_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">products</span><span class="w">   </span><span class="n">p</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">product_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">invoice_no</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;INV-1001&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INV-1005&#39;</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+-------------+---------+-----------------+-----+------------+------------+
+| invoice_no | customer    | sold_by | product         | qty | unit_price | line_total |
++------------+-------------+---------+-----------------+-----+------------+------------+
+| INV-1001   | Karim Uddin | Sabbir  | Redmi 13        |   1 |   17500.00 |   17500.00 |
+| INV-1001   | Karim Uddin | Sabbir  | Charger 20W     |   1 |     650.00 |     650.00 |
+| INV-1005   | Sadia Islam | Sabbir  | Galaxy A15      |   1 |   21000.00 |   21000.00 |
+| INV-1005   | Sadia Islam | Sabbir  | Glass Protector |   2 |     150.00 |     300.00 |
++------------+-------------+---------+-----------------+-----+------------+------------+
+4 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="INNER JOIN কী বাদ দেয়?"><div class="inner"><div class="head"><span class="tag">পাঠ ১৫</span><h2>INNER JOIN কী বাদ দেয়?</h2></div><div class="body two"><div class="txt"><p>INNER JOIN শুধু দুই দিকে মিল আছে এমন row রাখে। walk-in বিক্রির <code>customer_id</code> NULL — তাই নিচের query-তে সেগুলো <b>হারিয়ে গেছে</b>।</p><div class="callout warn">⚠️ রিপোর্টে মোট মেলে না? প্রথমে দেখুন কোনো INNER JOIN নীরবে row বাদ দিচ্ছে কিনা।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">all_sales</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="p">;</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sales_with_customer_join</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">customer_id</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-----------+
+| all_sales |
++-----------+
+|        10 |
++-----------+
+1 row in set
+
++--------------------------+
+| sales_with_customer_join |
++--------------------------+
+|                        7 |
++--------------------------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="LEFT JOIN: বাম দিকের সব রাখা"><div class="inner"><div class="head"><span class="tag">পাঠ ১৬</span><h2>LEFT JOIN: বাম দিকের সব রাখা</h2></div><div class="body two"><div class="txt"><p><code>LEFT JOIN</code> বাম table-এর সব row রাখে; ডানে মিল না থাকলে সেখানে <code>NULL</code>।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">invoice_no</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">IFNULL</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Walk-in&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer</span><span class="p">,</span>
+<span class="w">       </span><span class="n">s</span><span class="p">.</span><span class="n">total</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">customer_id</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+--------------+----------+
+| invoice_no | customer     | total    |
++------------+--------------+----------+
+| INV-1001   | Karim Uddin  | 18150.00 |
+| INV-1002   | Walk-in      |  2100.00 |
+| INV-1003   | Nusrat Jahan | 24150.00 |
+| INV-1004   | Rahim Mia    | 48000.00 |
+| INV-1005   | Sadia Islam  | 21300.00 |
+| INV-1006   | Walk-in      |  3450.00 |
+| INV-1007   | Karim Uddin  | 18000.00 |
+| INV-1008   | Tanvir Hasan | 21650.00 |
+| INV-1009   | Nusrat Jahan |  1750.00 |
+| INV-1010   | Walk-in      |  1300.00 |
++------------+--------------+----------+
+10 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="কখনো কেনেনি এমন customer"><div class="inner"><div class="head"><span class="tag">পাঠ ১৭</span><h2>কখনো কেনেনি এমন customer</h2></div><div class="body two"><div class="txt"><p>LEFT JOIN করে ডান দিক <code>IS NULL</code> খুঁজলে পাই "মিল নেই" এমন row — একে বলে anti-join।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">phone</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="n">c</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="no">NULL</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+-------------+
+| name       | phone       |
++------------+-------------+
+| Mitu Akter | 01311000006 |
++------------+-------------+
+1 row in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Customer</span><span class="o">::</span><span class="na">doesntHave</span><span class="p">(</span><span class="s1">&#39;sales&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="কখনো বিক্রি হয়নি এমন product"><div class="inner"><div class="head"><span class="tag">পাঠ ১৮</span><h2>কখনো বিক্রি হয়নি এমন product</h2></div><div class="body two"><div class="txt"><div class="callout">💡 দ্বিতীয় query-তে <code>COUNT(p.id)</code> — <code>COUNT(*)</code> দিলে খালি category-ও ১ দেখাত, কারণ LEFT JOIN-এ একটা NULL row থাকে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">stock</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="n">p</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">sale_items</span><span class="w"> </span><span class="n">si</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">product_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="no">NULL</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+--------+-------+
+| name       | brand  | stock |
++------------+--------+-------+
+| Realme C67 | Realme |     3 |
++------------+--------+-------+
+1 row in set</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">cat</span><span class="p">.</span><span class="k">name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">products</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">categories</span><span class="w"> </span><span class="n">cat</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">category_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cat</span><span class="p">.</span><span class="n">id</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">cat</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">cat</span><span class="p">.</span><span class="k">name</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------------+----------+
+| category      | products |
++---------------+----------+
+| Smartphone    |        6 |
+| Feature phone |        2 |
+| Accessories   |        3 |
+| Tablet        |        0 |
++---------------+----------+
+4 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="Leaderboard: কে কত বিক্রি করল"><div class="inner"><div class="head"><span class="tag">পাঠ ১৯</span><h2>Leaderboard: কে কত বিক্রি করল</h2></div><div class="body two"><div class="txt"><div class="callout task"><b>নিজে করুন</b> Product ধরে leaderboard বানান: কোন product মোট কয়টা বিক্রি হয়েছে আর কত টাকার (<code>sale_items</code> + <code>products</code>)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="k">name</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">employee</span><span class="p">,</span>
+<span class="w">       </span><span class="n">b</span><span class="p">.</span><span class="k">name</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">branch</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">COUNT</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">invoices</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">IFNULL</span><span class="p">(</span><span class="nf">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">total</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">employees</span><span class="w"> </span><span class="n">e</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">branch_id</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">employee_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">id</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="k">name</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------+---------+----------+----------+
+| employee | branch  | invoices | revenue  |
++----------+---------+----------+----------+
+| Riya     | Gulshan |        2 | 69650.00 |
+| Sabbir   | Mirpur  |        3 | 40750.00 |
+| Fahim    | Uttara  |        3 | 29350.00 |
+| Lima     | Mirpur  |        2 | 20100.00 |
++----------+---------+----------+----------+
+4 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="লাভ: বিক্রির দাম − কেনার দাম"><div class="inner"><div class="head"><span class="tag">পাঠ ২০</span><h2>লাভ: বিক্রির দাম − কেনার দাম</h2></div><div class="body two"><div class="txt"><div class="callout">💡 আসল app-এ বিক্রির সময়কার কেনা দাম <code>sale_items</code>-এ কপি করে রাখুন — পরে product-এর cost বদলালে পুরনো লাভ যেন না বদলায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="k">name</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">si</span><span class="p">.</span><span class="n">qty</span><span class="p">)</span><span class="w">                              </span><span class="k">AS</span><span class="w"> </span><span class="n">sold</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">si</span><span class="p">.</span><span class="n">qty</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">unit_price</span><span class="p">)</span><span class="w">              </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">si</span><span class="p">.</span><span class="n">qty</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">si</span><span class="p">.</span><span class="n">unit_price</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">cost</span><span class="p">))</span><span class="w">   </span><span class="k">AS</span><span class="w"> </span><span class="n">profit</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sale_items</span><span class="w"> </span><span class="n">si</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">product_id</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="k">name</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">profit</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------------+------+----------+---------+
+| name          | sold | revenue  | profit  |
++---------------+------+----------+---------+
+| iPhone 12     |    1 | 48000.00 | 4000.00 |
+| Galaxy A15    |    2 | 42000.00 | 4000.00 |
+| Redmi Note 13 |    1 | 23500.00 | 2000.00 |
+| Redmi 13      |    1 | 17500.00 | 1700.00 |
+| Vivo Y28      |    1 | 18000.00 | 1700.00 |
++---------------+------+----------+---------+
+5 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="JOIN" data-title="JOIN-এর ধরন এক নজরে"><div class="inner"><div class="head"><span class="tag">পাঠ ২১</span><h2>JOIN-এর ধরন এক নজরে</h2></div><div class="body one"><div class="txt"><table class="tbl"><tr><th>JOIN</th><th>কী ফেরত দেয়</th><th>কখন</th></tr><tr><td><code>INNER JOIN</code> (<code>JOIN</code>)</td><td>দুই দিকে মিল আছে এমন row</td><td>বেশিরভাগ রিপোর্ট</td></tr><tr><td><code>LEFT JOIN</code></td><td>বাম দিকের সব + ডানের মিল</td><td>"যাদের নেই" তাদেরও দেখাতে</td></tr><tr><td><code>RIGHT JOIN</code></td><td>ডান দিকের সব + বামের মিল</td><td>কম ব্যবহার; LEFT উল্টে লিখুন</td></tr><tr><td><code>CROSS JOIN</code></td><td>সব জোড়া (গুণফল)</td><td>তারিখ × শাখা grid বানাতে</td></tr></table><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel: <code>join()</code>, <code>leftJoin()</code>, <code>rightJoin()</code>, <code>crossJoin()</code>।</div></div></div></div></section>
+<section class="slide" data-part="Subquery ও View" data-title="Subquery: query-র ভিতরে query"><div class="inner"><div class="head"><span class="tag">পাঠ ২২</span><h2>Subquery: query-র ভিতরে query</h2></div><div class="body two"><div class="txt"><p>ভিতরের query আগে চলে (গড় দাম), তারপর বাইরের query সেটা ব্যবহার করে।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">products</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">AVG</span><span class="p">(</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="p">)</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------------+----------+
+| name          | price    |
++---------------+----------+
+| iPhone 12     | 48000.00 |
+| Redmi Note 13 | 23500.00 |
+| Galaxy A15    | 21000.00 |
+| Realme C67    | 18500.00 |
+| Vivo Y28      | 18000.00 |
+| Redmi 13      | 17500.00 |
++---------------+----------+
+6 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Subquery ও View" data-title="IN আর EXISTS"><div class="inner"><div class="head"><span class="tag">পাঠ ২৩</span><h2>IN আর EXISTS</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="c1">-- Mirpur শাখা থেকে কিনেছেন এমন customer</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">branch_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-------------+
+| name        |
++-------------+
+| Karim Uddin |
+| Sadia Islam |
++-------------+
+2 rows in set</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="k">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="n">c</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">total</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">20000</span>
+<span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+--------------+
+| name         |
++--------------+
+| Nusrat Jahan |
+| Rahim Mia    |
+| Sadia Islam  |
+| Tanvir Hasan |
++--------------+
+4 rows in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel whereHas — ভিতরে এই EXISTS-ই</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Customer</span><span class="o">::</span><span class="na">whereHas</span><span class="p">(</span><span class="s1">&#39;sales&#39;</span><span class="p">,</span> <span class="nx">fn</span> <span class="p">(</span><span class="nv">$q</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nv">$q</span><span class="o">-&gt;</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;total&#39;</span><span class="p">,</span> <span class="s1">&#39;&gt;&#39;</span><span class="p">,</span> <span class="mi">20000</span><span class="p">))</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Subquery ও View" data-title="Derived table: subquery-কে table বানানো"><div class="inner"><div class="head"><span class="tag">পাঠ ২৪</span><h2>Derived table: subquery-কে table বানানো</h2></div><div class="body two"><div class="txt"><p>প্রথমে দৈনিক যোগফল, তারপর সেই ফলাফলের গড় — দুই ধাপের হিসাব এক query-তে।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">ROUND</span><span class="p">(</span><span class="k">AVG</span><span class="p">(</span><span class="n">daily</span><span class="p">.</span><span class="n">revenue</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">avg_daily_revenue</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">MAX</span><span class="p">(</span><span class="n">daily</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w">        </span><span class="k">AS</span><span class="w"> </span><span class="n">best_day</span>
+<span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="kt">DATE</span><span class="p">(</span><span class="n">sold_at</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span><span class="w"> </span><span class="nf">SUM</span><span class="p">(</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">sales</span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="kt">DATE</span><span class="p">(</span><span class="n">sold_at</span><span class="p">)</span>
+<span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">daily</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-------------------+----------+
+| avg_daily_revenue | best_day |
++-------------------+----------+
+|             31970 | 72150.00 |
++-------------------+----------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Subquery ও View" data-title="UNION: দুই ফলাফল এক তালিকায়"><div class="inner"><div class="head"><span class="tag">পাঠ ২৫</span><h2>UNION: দুই ফলাফল এক তালিকায়</h2></div><div class="body two"><div class="txt"><ul><li><code>UNION</code> — duplicate বাদ দেয়</li><li><code>UNION ALL</code> — সব রাখে, দ্রুত</li><li>দুই দিকে column-এর সংখ্যা ও ক্রম একই হতে হবে</li></ul></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;customer&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Dhaka&#39;</span>
+<span class="k">UNION</span><span class="w"> </span><span class="k">ALL</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;employee&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">employees</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">branch_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-------------+----------+
+| name        | type     |
++-------------+----------+
+| Karim Uddin | customer |
+| Sadia Islam | customer |
+| Mitu Akter  | customer |
+| Sabbir      | employee |
+| Lima        | employee |
++-------------+----------+
+5 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Subquery ও View" data-title="VIEW: query-কে নাম দিয়ে রাখা"><div class="inner"><div class="head"><span class="tag">পাঠ ২৬</span><h2>VIEW: query-কে নাম দিয়ে রাখা</h2></div><div class="body two"><div class="txt"><p>বারবার লাগে এমন জটিল query <code>VIEW</code> বানিয়ে রাখলে table-এর মতো ব্যবহার করা যায়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> View-এর জন্যও Eloquent model বানানো যায় (<code>protected $table = 'branch_daily_sales';</code>) — শুধু পড়ার জন্য।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">branch_daily_sales</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="k">name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">branch</span><span class="p">,</span><span class="w"> </span><span class="kt">DATE</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">sold_at</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span><span class="w"> </span><span class="nf">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">branch_id</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="kt">DATE</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">sold_at</span><span class="p">);</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">branch_daily_sales</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">branch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Mirpur&#39;</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">day</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 0 rows affected
+
++--------+------------+----------+
+| branch | day        | revenue  |
++--------+------------+----------+
+| Mirpur | 2026-10-15 | 20250.00 |
+| Mirpur | 2026-10-17 | 21300.00 |
+| Mirpur | 2026-10-18 | 18000.00 |
+| Mirpur | 2026-10-19 |  1300.00 |
++--------+------------+----------+
+4 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Eloquent-এর পিছনে" data-title="Eloquent relationship আসলে কোন SQL"><div class="inner"><div class="head"><span class="tag">পাঠ ২৭</span><h2>Eloquent relationship আসলে কোন SQL</h2></div><div class="body two"><div class="txt"><p>প্রতিটি relationship property ধরলেই একটা আলাদা query চলে। একটা sale-এর জন্য সমস্যা নেই — কিন্তু ১০০টা sale-এর loop-এ?</p></div><div class=codecol><div class="code php"><div class="code-h php"><span>Laravel model</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">class</span> <span class="nc">Sale</span> <span class="k">extends</span> <span class="nx">Model</span> <span class="p">{</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="nf">customer</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">belongsTo</span><span class="p">(</span><span class="nx">Customer</span><span class="o">::</span><span class="na">class</span><span class="p">);</span> <span class="p">}</span>
+    <span class="k">public</span> <span class="k">function</span> <span class="nf">items</span><span class="p">()</span>    <span class="p">{</span> <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">hasMany</span><span class="p">(</span><span class="nx">SaleItem</span><span class="o">::</span><span class="na">class</span><span class="p">);</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nv">$sale</span> <span class="o">=</span> <span class="nx">Sale</span><span class="o">::</span><span class="na">find</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="nv">$sale</span><span class="o">-&gt;</span><span class="na">customer</span><span class="p">;</span>   <span class="c1">// select * from customers where id = ? limit 1</span>
+<span class="nv">$sale</span><span class="o">-&gt;</span><span class="na">items</span><span class="p">;</span>      <span class="c1">// select * from sale_items where sale_id = ?</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Eloquent-এর পিছনে" data-title="N+1 সমস্যা আর with()"><div class="inner"><div class="head"><span class="tag">পাঠ ২৮</span><h2>N+1 সমস্যা আর with()</h2></div><div class="body two"><div class="txt"><p>Loop-এ <code>$sale-&gt;customer</code> দিলে প্রতিটি sale-এর জন্য একটা করে query (customer থাকলে): N টা sale = ১ + N query। <code>with('customer')</code> দিলে মাত্র ২টা। আসল query log দেখুন MySQL for Laravel কোর্সে।</p><div class="callout">💡 <code>Model::preventLazyLoading()</code> development-এ চালু রাখুন — N+1 হলে Laravel নিজেই exception দেবে। বিস্তারিত MySQL for Laravel-এ।</div></div><div class=codecol><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="c1">// N+1: 1 + N queries</span>
+<span class="k">foreach</span> <span class="p">(</span><span class="nx">Sale</span><span class="o">::</span><span class="na">all</span><span class="p">()</span> <span class="k">as</span> <span class="nv">$sale</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="nv">$sale</span><span class="o">-&gt;</span><span class="na">customer</span><span class="o">?-&gt;</span><span class="na">name</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="c1">// Eager loading: 2 queries (যত sale-ই হোক)</span>
+<span class="k">foreach</span> <span class="p">(</span><span class="nx">Sale</span><span class="o">::</span><span class="na">with</span><span class="p">(</span><span class="s1">&#39;customer&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">()</span> <span class="k">as</span> <span class="nv">$sale</span><span class="p">)</span> <span class="p">{</span> <span class="k">echo</span> <span class="nv">$sale</span><span class="o">-&gt;</span><span class="na">customer</span><span class="o">?-&gt;</span><span class="na">name</span><span class="p">;</span> <span class="p">}</span>
+</pre></div>
+</div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="c1">-- with(&#39;customer&#39;) এর দ্বিতীয় query দেখতে এরকম:</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----+--------------+-------------+----------+
+| id | name         | phone       | district |
++----+--------------+-------------+----------+
+|  1 | Karim Uddin  | 01711000001 | Dhaka    |
+|  2 | Nusrat Jahan | 01811000002 | Sylhet   |
+|  3 | Rahim Mia    | 01911000003 | Khulna   |
+|  4 | Sadia Islam  | 01611000004 | Dhaka    |
+|  5 | Tanvir Hasan | 01511000005 | Gazipur  |
++----+--------------+-------------+----------+
+5 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Eloquent-এর পিছনে" data-title="Project: সপ্তাহের রিপোর্ট"><div class="inner"><div class="head"><span class="tag">পাঠ ২৯</span><h2>Project: সপ্তাহের রিপোর্ট</h2></div><div class="body two"><div class="txt"><p>মালিকের জন্য এক query-তে: শাখা, কর্মচারী, invoice সংখ্যা, বিক্রি আর লাভ — বেশি লাভ আগে।</p><div class="callout task"><b>নিজে করুন</b> একই রিপোর্টে customer-এর district ধরে ভাগ করুন — walk-in বিক্রি যেন বাদ না পড়ে (কোন JOIN লাগবে?)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="k">name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">branch</span><span class="p">,</span>
+<span class="w">       </span><span class="n">e</span><span class="p">.</span><span class="k">name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">employee</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w">                      </span><span class="k">AS</span><span class="w"> </span><span class="n">invoices</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">si</span><span class="p">.</span><span class="n">qty</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">unit_price</span><span class="p">)</span><span class="w">               </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">SUM</span><span class="p">(</span><span class="n">si</span><span class="p">.</span><span class="n">qty</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">si</span><span class="p">.</span><span class="n">unit_price</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">cost</span><span class="p">))</span><span class="w">    </span><span class="k">AS</span><span class="w"> </span><span class="n">profit</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">branches</span><span class="w">   </span><span class="n">b</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">branch_id</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">employees</span><span class="w">  </span><span class="n">e</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">employee_id</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">sale_items</span><span class="w"> </span><span class="n">si</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">sale_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">products</span><span class="w">   </span><span class="n">p</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">product_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">sold_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2026-10-15&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">sold_at</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="s1">&#39;2026-10-20&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="k">name</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">profit</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------+----------+----------+----------+---------+
+| branch  | employee | invoices | revenue  | profit  |
++---------+----------+----------+----------+---------+
+| Gulshan | Riya     |        2 | 69650.00 | 6170.00 |
+| Mirpur  | Sabbir   |        3 | 40750.00 | 4390.00 |
+| Uttara  | Fahim    |        3 | 29350.00 | 3310.00 |
+| Mirpur  | Lima     |        2 | 20100.00 | 2050.00 |
++---------+----------+----------+----------+---------+
+4 rows in set</pre></div></div></div></div></section>
+<section class="slide hero end" data-part="Eloquent-এর পিছনে" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>MySQL 102 শেষ! 🎉</h1><p class="lead">এখন আপনি অনেক table জুড়ে রিপোর্ট বানাতে পারেন। এরপর: বড় data-তে দ্রুত চালানো (index), ভুল হলে ফিরিয়ে আনা (transaction) আর window function।</p><div class="steps done"><div><i>✓</i><span>Table ভাগ করে id দিয়ে যুক্ত — normalization</span></div><div><i>✓</i><span>Foreign key: ভুল id আর অনাথ row আটকায়</span></div><div><i>✓</i><span><code>GROUP BY</code> + aggregate; দলের শর্ত <code>HAVING</code></span></div><div><i>✓</i><span><code>JOIN</code> মিল রাখে, <code>LEFT JOIN</code> সব রাখে</span></div><div><i>✓</i><span><code>LEFT JOIN ... IS NULL</code> = যাদের নেই</span></div><div><i>✓</i><span>Eloquent relationship = আলাদা query; loop-এ <code>with()</code></span></div></div><div class="btns"><a class="btn" href="../mysql-103/index.html">পরের কোর্স: MySQL 103 — Index, Transaction ও Window function →</a><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+</main>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>window.COURSE="mysql-102";
+(function(){
+  var B=function(n){return String(n).replace(/\d/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0,root=document.documentElement;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),menu=document.getElementById('menu');
+  var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'vw)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
+    st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function buildMenu(){var h='',last=null;slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){h+='<h3>'+p+'</h3>';last=p}
+    h+='<a data-go="'+j+'" class="'+(st.seen[j]?'seen ':'')+(j===i?'cur':'')+'"><span>'+B(j+1)+'.</span><span>'+s.getAttribute('data-title')+'</span></a>'});menu.innerHTML=h}
+  function toggleMenu(){if(!menu.classList.contains('open'))buildMenu();menu.classList.toggle('open')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var dark=getComputedStyle(root).getPropertyValue('--bg').trim()==='#0B1220';var t=dark?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tut-theme',t)}catch(e){}}
+  try{var th=localStorage.getItem('tut-theme');if(th)root.setAttribute('data-theme',th)}catch(e){}
+  menu.addEventListener('click',function(e){var a=e.target.closest('a');if(a){go(+a.getAttribute('data-go'));menu.classList.remove('open')}else if(e.target===menu)menu.classList.remove('open')});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;
+    var pre=b.closest('.code').querySelector('pre');var t=pre.innerText.replace(/^\$ /gm,'');
+    var done=function(){b.textContent='কপি হয়েছে ✓';setTimeout(function(){b.textContent='কপি'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done()});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  var x0=null,y0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!e.target.closest('pre'))go(i+(dx<0?1:-1));x0=null});
+  var h=parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
+    if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';
+      r.classList.add('show');document.getElementById('resumeGo').onclick=function(){go(last);r.classList.remove('show')};
+      document.getElementById('resumeNo').onclick=function(){r.classList.remove('show')};}}
+})();
+</script>
+</body>
+</html>

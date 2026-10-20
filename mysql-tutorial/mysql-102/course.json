@@ -1,0 +1,7 @@
+{
+ "slug": "mysql-102",
+ "title": "MySQL 102 — Relationship ও JOIN",
+ "subtitle": "অনেক table একসাথে: foreign key, GROUP BY, JOIN, subquery আর view — Eloquent relationship-এর পিছনের SQL",
+ "lessons": 29,
+ "slides": 31
+}

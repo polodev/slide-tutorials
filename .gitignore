@@ -1,3 +1,4 @@
 tutorial-kit/.cache/
 __pycache__/
 .DS_Store
+tutorial-kit/eloquent/vendor/

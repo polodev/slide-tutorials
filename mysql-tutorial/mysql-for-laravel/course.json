@@ -1,0 +1,7 @@
+{
+ "slug": "mysql-for-laravel",
+ "title": "MySQL for Laravel — Eloquent-এর ভিতরে",
+ "subtitle": "Eloquent আসলে কোন SQL পাঠায়: N+1, eager loading, transaction, pagination, migration আর schema design — সব আসল query log সহ",
+ "lessons": 25,
+ "slides": 27
+}

@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MySQL 101 — শূন্য থেকে শুরু</title>
+<meta name="description" content="Table বানানো, data রাখা, খোঁজা, বদলানো আর মোছা — Laravel-এর Eloquent পাশে রেখে">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.6vh);--navy:#0C1E38;--accent:#0D8A4A;--accent2:#E8F6EE;--amber:#B7791F;--red:#C53030;--php:#4F5B93;
+  --bg:#F4F7FA;--ink:#18263A;--muted:#5B6B80;--card:#fff;--line:#DCE4EE;--codebg:#1E2430}
+:root[data-theme=dark]{--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+.deck html,.deck body{height:100%}
+body.deck{height:100vh;overflow:hidden}
+#deck{height:100%;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100vw;height:100%;overflow-y:auto;padding:60px 4vw 84px}
+.slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
+h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(15px,calc(var(--u)*1.9),28px);color:var(--muted);max-width:36em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--accent);color:#fff;font-weight:600;font-size:clamp(12px,calc(var(--u)*1.15),17px);padding:.3em 1em;border-radius:999px}
+.head{display:flex;flex-direction:column;gap:1vh}
+.body.two{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:3vw;align-items:start}
+.body.one{max-width:1100px}
+.txt{display:flex;flex-direction:column;gap:1.6vh}
+.txt p,.txt li{font-size:clamp(15px,calc(var(--u)*1.6),24px);line-height:1.7}
+.txt ul{list-style:none;padding:0;display:grid;gap:1vh}
+.txt li{padding-left:1.3em;position:relative}
+.txt li::before{content:"";position:absolute;left:0;top:.7em;width:.45em;height:.45em;border-radius:50%;background:var(--accent)}
+code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
+.callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.callout.warn{border-left-color:var(--amber)}
+.callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
+.callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
+.quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.quiz summary{cursor:pointer;font-weight:600;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--accent);font-weight:600;font-size:clamp(14px,calc(var(--u)*1.4),21px);line-height:1.6}
+.tbl{border-collapse:collapse;width:100%;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.tbl th,.tbl td{padding:.9vh .9vw;text-align:left;font-size:clamp(13px,calc(var(--u)*1.35),20px);border-bottom:1px solid var(--line);line-height:1.5}
+.tbl th{background:var(--accent2);font-weight:600}
+.steps{display:grid;gap:1vh}
+.steps div{background:var(--card);border-radius:10px;padding:1.1vh 1vw;font-size:clamp(14px,calc(var(--u)*1.5),22px);display:flex;gap:.9vw;align-items:center;box-shadow:0 3px 12px rgba(12,30,56,.07);line-height:1.5}
+.steps i{flex:0 0 auto;width:2em;height:2em;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.codecol{display:flex;flex-direction:column;gap:1.2vh;min-width:0}
+.code{background:var(--codebg);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#151A23;color:#9AA7B8;font:600 13px 'JetBrains Mono',monospace}
+.code-h.php{background:#262B47;color:#C3C9EE}
+.copy{border:0;background:#2A3242;color:#C9D4E3;font:600 12px 'Hind Siliguri',sans-serif;padding:3px 10px;border-radius:6px;cursor:pointer}
+.copy:hover{background:var(--accent);color:#fff}
+.hl pre{margin:0;padding:12px 16px;overflow-x:auto;font:clamp(12.5px,calc(var(--u)*1.08),17px)/1.55 'JetBrains Mono',monospace;color:#E3E8EF;tab-size:4}
+.hl .hll{background:rgba(255,214,102,.13);display:inline-block;width:100%}
+.term{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0F141C}
+.term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
+.term.error .term-h,.term.panic .term-h{background:#B83434}
+.term.http .term-h{background:#1F5FA8}
+.term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
+pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
+.term.error pre,.term.panic pre{color:#FFB4B4}
+.stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
+.hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
+.hero .inner{justify-content:center;max-width:1100px}
+.hero h1{color:#fff}.hero .lead{color:#CFDDEE}
+.hero .learn{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1vh 2vw}
+.hero .learn li{font-size:clamp(14px,calc(var(--u)*1.55),23px);padding-left:1.4em;position:relative;line-height:1.5;color:#E6EEF8}
+.hero .learn li::before{content:"✓";position:absolute;left:0;color:#4ADE80;font-weight:700}
+.hero .need,.hero .howto{color:#AFC2D8;font-size:clamp(13px,calc(var(--u)*1.35),20px)}
+.hero .need b{color:#fff}
+.hero.end .steps div{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.hero.end .steps i{background:#4ADE80;color:#0C1E38}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:#4ADE80;color:#0C1E38;font-weight:700;text-decoration:none;padding:.7em 1.4em;border-radius:999px;font-size:clamp(14px,calc(var(--u)*1.5),21px)}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+#top{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px}
+#top a{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+#top .crumb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#top .hub{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+#bar{position:fixed;left:0;top:44px;height:3px;background:var(--accent);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:600 14px 'Hind Siliguri',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.9);padding:6px 10px;border-radius:999px;white-space:nowrap}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--accent)}
+#count{min-width:64px;text-align:center}
+#menu{position:fixed;inset:0;background:rgba(8,15,28,.94);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:20px;margin:2.4vh 0 .8vh}
+#menu a{display:flex;gap:.6em;color:#dbe7f5;text-decoration:none;padding:.55vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a.seen::after{content:"✓";color:#4ADE80;margin-left:auto}
+#menu a.cur{background:rgba(74,222,128,.18)}
+#menu a:hover{background:var(--accent);color:#fff}
+#resume{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25);border-radius:14px;padding:12px 16px;z-index:8;display:none;gap:10px;align-items:center;font-size:15px;flex-wrap:wrap;justify-content:center}
+#resume.show{display:flex}
+#resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
+#resume button.alt{background:var(--line);color:var(--ink)}
+@media (max-width:900px){body.deck{overflow:hidden}.slide{padding:56px 5vw 96px}.body.two{grid-template-columns:1fr}.hero .learn{grid-template-columns:1fr}}
+@media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
+
+.hl .c,.hl .c1,.hl .cm,.hl .cs,.hl .ch,.hl .cp,.hl .cpf{color:#7F8C98;font-style:italic}
+.hl .k,.hl .kd,.hl .kn,.hl .kr,.hl .kp,.hl .ow{color:#C678DD}
+.hl .kc{color:#D19A66}
+.hl .kt,.hl .nc,.hl .nn{color:#E5C07B}
+.hl .s,.hl .s1,.hl .s2,.hl .sb,.hl .sc,.hl .sd,.hl .sh,.hl .sx,.hl .dl{color:#98C379}
+.hl .se,.hl .si,.hl .sa{color:#56B6C2}
+.hl .m,.hl .mi,.hl .mf,.hl .mh,.hl .mb,.hl .il,.hl .mo{color:#D19A66}
+.hl .nf,.hl .fm{color:#61AFEF}
+.hl .nb,.hl .bp{color:#56B6C2}
+.hl .nd,.hl .nl{color:#E06C75}
+.hl .nt{color:#E06C75}.hl .na{color:#D19A66}
+.hl .nv,.hl .vi,.hl .vc,.hl .vg{color:#E06C75}
+.hl .o{color:#ABB2BF}.hl .p{color:#ABB2BF}
+.hl .gp{color:#4ADE80;font-weight:600;user-select:none}.hl .go{color:#9AA7B8}
+.hl .err{color:#E3E8EF;background:none}
+</style>
+</head>
+<body class="deck">
+<div id="top"><a href="../index.html">← সব কোর্স</a><span class="crumb">MySQL 101 · <b id="part"></b></span><a class="hub" href="../../index.html">সব টিউটোরিয়াল</a></div>
+<div id="bar"></div>
+<div id="resume"><span id="resumeText"></span><button id="resumeGo">চালিয়ে যান</button><button class="alt" id="resumeNo">শুরু থেকে</button></div>
+<main id="deck">
+<section class="slide hero" data-part="শুরু" data-title="MySQL 101শূন্য থেকে শুরু"><div class="inner"><span class="tag">MySQL 101</span><h1>MySQL 101<br>শূন্য থেকে শুরু</h1><p class="lead">Laravel-এ Eloquent দিয়ে কাজ করেন, কিন্তু ভিতরে আসলে কী SQL চলে? এই কোর্সে একটা মোবাইল দোকানের database দিয়ে SQL হাতে-কলমে শিখব।</p><ul class="learn"><li>Database, table, row, column</li><li>CREATE TABLE আর data type</li><li>INSERT, SELECT, UPDATE, DELETE</li><li>WHERE, LIKE, IN, BETWEEN, NULL</li><li>ORDER BY আর LIMIT</li><li>NOT NULL, UNIQUE, DEFAULT</li><li>String, date আর number function</li><li>বাংলা লেখা ঠিকভাবে রাখা (utf8mb4)</li></ul><p class="need"><b>আগে জানা দরকার:</b> কিছুই না। Laravel জানলে তুলনাগুলো বাড়তি সুবিধা।</p><p class="howto">→ তীর চাপুন বা swipe করুন · <b>M</b> সব পাঠের তালিকা · অগ্রগতি নিজে থেকেই সেভ হয়</p></div></section>
+<section class="slide" data-part="শুরু" data-title="Database আসলে কী?"><div class="inner"><div class="head"><span class="tag">পাঠ ১</span><h2>Database আসলে কী?</h2></div><div class="body one"><div class="txt"><p>Database হলো সাজানো data-র ভাণ্ডার। MySQL-এ data থাকে <b>table</b>-এ — Excel sheet-এর মতো: প্রতিটি <b>row</b> একটা জিনিস, প্রতিটি <b>column</b> একটা তথ্য।</p><table class="tbl"><tr><th>id</th><th>name</th><th>phone</th><th>district</th></tr><tr><td>1</td><td>Karim</td><td>01711000001</td><td>Dhaka</td></tr><tr><td>2</td><td>Nusrat</td><td>01811000002</td><td>Sylhet</td></tr><tr><td>3</td><td>Rahim</td><td>01911000003</td><td>Khulna</td></tr></table><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর একটা <b>Model</b> (<code>Customer</code>) মানে একটা <b>table</b> (<code>customers</code>), আর একটা object মানে একটা row।</div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="MySQL install আর connect"><div class="inner"><div class="head"><span class="tag">পাঠ ২</span><h2>MySQL install আর connect</h2></div><div class="body two"><div class="txt"><ul><li><b>Windows:</b> Laragon বা XAMPP — MySQL সাথেই আসে</li><li><b>macOS:</b> <code>brew install mysql</code> অথবা Laravel Herd Pro / DBngin</li><li><b>Ubuntu:</b> <code>sudo apt install mysql-server</code></li><li>GUI চাইলে: TablePlus, DBeaver, phpMyAdmin</li></ul><div class="callout">💡 এই কোর্সের প্রতিটি query আসল MySQL 8-এ চালিয়ে ফলাফল বসানো হয়েছে। আপনিও terminal বা TablePlus-এ কপি করে চালান।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>mysql<span class="w"> </span>-u<span class="w"> </span>root<span class="w"> </span>-p
+<span class="go">mysql&gt; SELECT VERSION();</span>
+</pre></div>
+</div><div class="term"><div class="term-h">উদাহরণ আউটপুট</div><pre>+-----------+
+| VERSION() |
++-----------+
+| 8.0.43    |
++-----------+</pre></div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="প্রথম query"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>প্রথম query</h2></div><div class="body two"><div class="txt"><p>SQL-এ <code>SELECT</code> মানে "দেখাও"। Table ছাড়াও হিসাব করা যায়। প্রতিটি statement-এর শেষে <code>;</code>।</p><ul><li><code>AS</code> দিয়ে column-এর নাম দেওয়া যায়</li><li>SQL keyword ছোট-বড় হাতের যেকোনো অক্ষরে লেখা যায়; বড় হাতের অক্ষরে লেখা প্রচলিত</li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এ <code>DB::select('SELECT 2 + 3 AS total')</code> দিয়ে সরাসরি SQL চালানো যায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="nf">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">&#39;2020-01-01&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">is_after_2020</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Assalamu Alaikum&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">greeting</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-------+---------------+------------------+
+| total | is_after_2020 | greeting         |
++-------+---------------+------------------+
+|     5 |             1 | Assalamu Alaikum |
++-------+---------------+------------------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="Database বানানো"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>Database বানানো</h2></div><div class="body two"><div class="txt"><p>একটা app-এর সব table একটা database-এ থাকে। বাংলা লেখার জন্য character set অবশ্যই <code>utf8mb4</code>।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>.env</code>-এ <code>DB_DATABASE=shop</code> — database আগে নিজে বানিয়ে নিতে হয়, তারপর <code>php artisan migrate</code>।</div><div class="callout warn">⚠️ পুরনো <code>utf8</code> (utf8mb3) emoji রাখতে পারে না। সবসময় <code>utf8mb4</code> — Laravel-এর ডিফল্টও এটাই।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="go">mysql&gt; CREATE DATABASE shop CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;</span>
+<span class="go">mysql&gt; SHOW DATABASES;</span>
+<span class="go">mysql&gt; USE shop;</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Table" data-title="CREATE TABLE: প্রথম table"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>CREATE TABLE: প্রথম table</h2></div><div class="body two"><div class="txt"><p>প্রতিটি column-এর নাম আর type বলতে হয়। <code>id</code> হলো <b>PRIMARY KEY</b> — প্রতিটি row-এর আলাদা পরিচয়, <code>AUTO_INCREMENT</code> নিজেই ১, ২, ৩ বসায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">         </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">AUTO_INCREMENT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">name</span><span class="w">       </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">phone</span><span class="w">      </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="w">  </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">district</span><span class="w">   </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="kt">DATETIME</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">CURRENT_TIMESTAMP</span>
+<span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 0 rows affected</pre></div><div class="code php"><div class="code-h php"><span>Laravel migration-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Schema</span><span class="o">::</span><span class="na">create</span><span class="p">(</span><span class="s1">&#39;customers&#39;</span><span class="p">,</span> <span class="k">function</span> <span class="p">(</span><span class="nx">Blueprint</span> <span class="nv">$table</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$table</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">();</span>
+    <span class="nv">$table</span><span class="o">-&gt;</span><span class="na">string</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="p">);</span>
+    <span class="nv">$table</span><span class="o">-&gt;</span><span class="na">string</span><span class="p">(</span><span class="s1">&#39;phone&#39;</span><span class="p">,</span> <span class="mi">15</span><span class="p">);</span>
+    <span class="nv">$table</span><span class="o">-&gt;</span><span class="na">string</span><span class="p">(</span><span class="s1">&#39;district&#39;</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">nullable</span><span class="p">();</span>
+    <span class="nv">$table</span><span class="o">-&gt;</span><span class="na">timestamps</span><span class="p">();</span>
+<span class="p">});</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Table" data-title="DESCRIBE: table-এর গঠন দেখা"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>DESCRIBE: table-এর গঠন দেখা</h2></div><div class="body two"><div class="txt"><ul><li><code>Null</code> — খালি রাখা যাবে কিনা</li><li><code>Key: PRI</code> — primary key</li><li><code>Extra</code> — auto_increment ইত্যাদি</li></ul><div class="callout">💡 <code>SHOW CREATE TABLE customers;</code> দিলে পুরো CREATE statement দেখায় — অন্য জায়গায় একই table বানাতে কাজে লাগে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">DESCRIBE</span><span class="w"> </span><span class="n">customers</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+--------------+------+-----+-------------------+-------------------+
+| Field      | Type         | Null | Key | Default           | Extra             |
++------------+--------------+------+-----+-------------------+-------------------+
+| id         | int unsigned | NO   | PRI | NULL              | auto_increment    |
+| name       | varchar(100) | NO   |     | NULL              |                   |
+| phone      | varchar(15)  | NO   |     | NULL              |                   |
+| district   | varchar(50)  | YES  |     | NULL              |                   |
+| created_at | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++------------+--------------+------+-----+-------------------+-------------------+
+5 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Table" data-title="Data type বেছে নেওয়া"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>Data type বেছে নেওয়া</h2></div><div class="body one"><div class="txt"><table class="tbl"><tr><th>কী রাখবেন</th><th>Type</th><th>Laravel migration</th></tr><tr><td>id, পরিমাণ</td><td><code>INT</code> / <code>BIGINT UNSIGNED</code></td><td><code>id()</code>, <code>integer()</code></td></tr><tr><td>টাকা</td><td><code>DECIMAL(12,2)</code> — কখনো FLOAT না</td><td><code>decimal('price', 12, 2)</code></td></tr><tr><td>নাম, ফোন</td><td><code>VARCHAR(n)</code></td><td><code>string()</code></td></tr><tr><td>বড় লেখা</td><td><code>TEXT</code></td><td><code>text()</code></td></tr><tr><td>হ্যাঁ/না</td><td><code>BOOLEAN</code> (আসলে <code>TINYINT(1)</code>)</td><td><code>boolean()</code></td></tr><tr><td>তারিখ / সময়</td><td><code>DATE</code>, <code>DATETIME</code>, <code>TIMESTAMP</code></td><td><code>date()</code>, <code>timestamps()</code></td></tr><tr><td>নির্দিষ্ট কয়েকটা মান</td><td><code>ENUM('new','used')</code></td><td><code>enum()</code></td></tr></table><div class="callout warn">⚠️ ফোন নম্বর number না, <code>VARCHAR</code> — শুরুর <code>0</code> হারিয়ে যাবে নইলে (<code>01711...</code> → <code>1711...</code>)।</div></div></div></div></section>
+<section class="slide" data-part="Table" data-title="products table"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>products table</h2></div><div class="body two"><div class="txt"><p>এই table-টা পুরো কোর্সে ব্যবহার করব। দামের জন্য <code>DECIMAL</code>, অবস্থার জন্য <code>ENUM</code>।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">        </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">AUTO_INCREMENT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">name</span><span class="w">      </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">brand</span><span class="w">     </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w">  </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">price</span><span class="w">     </span><span class="kt">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">stock</span><span class="w">     </span><span class="kt">INT</span><span class="w"> </span><span class="k">UNSIGNED</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">condition_type</span><span class="w"> </span><span class="kt">ENUM</span><span class="p">(</span><span class="s1">&#39;new&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;used&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;new&#39;</span>
+<span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 0 rows affected</pre></div></div></div></div></section>
+<section class="slide" data-part="INSERT ও SELECT" data-title="INSERT: data রাখা"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>INSERT: data রাখা</h2></div><div class="body two"><div class="txt"><p>Column-এর নাম দিয়ে মান দিই। <code>id</code> দিতে হয় না — AUTO_INCREMENT নিজেই বসায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">)</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Karim Uddin&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01711000001&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Dhaka&#39;</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 1 row affected</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Customer</span><span class="o">::</span><span class="na">create</span><span class="p">([</span><span class="s1">&#39;name&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Karim Uddin&#39;</span><span class="p">,</span> <span class="s1">&#39;phone&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;01711000001&#39;</span><span class="p">,</span> <span class="s1">&#39;district&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Dhaka&#39;</span><span class="p">]);</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="INSERT ও SELECT" data-title="একসাথে অনেক row"><div class="inner"><div class="head"><span class="tag">পাঠ ১০</span><h2>একসাথে অনেক row</h2></div><div class="body two"><div class="txt"><p>একটা <code>INSERT</code>-এ কমা দিয়ে অনেক row — অনেক দ্রুত।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Nusrat Jahan&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01811000002&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Sylhet&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Rahim Mia&#39;</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;01911000003&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Khulna&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Sadia Islam&#39;</span><span class="p">,</span><span class="w">  </span><span class="s1">&#39;01611000004&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Dhaka&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Tanvir Hasan&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01511000005&#39;</span><span class="p">,</span><span class="w"> </span><span class="no">NULL</span><span class="p">);</span>
+
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="p">,</span><span class="w"> </span><span class="n">condition_type</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Redmi 13&#39;</span><span class="p">,</span><span class="w">        </span><span class="s1">&#39;Xiaomi&#39;</span><span class="p">,</span><span class="w">  </span><span class="mf">17500.00</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;new&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Redmi Note 13&#39;</span><span class="p">,</span><span class="w">   </span><span class="s1">&#39;Xiaomi&#39;</span><span class="p">,</span><span class="w">  </span><span class="mf">23500.00</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;new&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Galaxy A15&#39;</span><span class="p">,</span><span class="w">      </span><span class="s1">&#39;Samsung&#39;</span><span class="p">,</span><span class="w"> </span><span class="mf">21000.00</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;new&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Galaxy S21&#39;</span><span class="p">,</span><span class="w">      </span><span class="s1">&#39;Samsung&#39;</span><span class="p">,</span><span class="w"> </span><span class="mf">32000.00</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;used&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;iPhone 12&#39;</span><span class="p">,</span><span class="w">       </span><span class="s1">&#39;Apple&#39;</span><span class="p">,</span><span class="w">   </span><span class="mf">48000.00</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;used&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Vivo Y28&#39;</span><span class="p">,</span><span class="w">        </span><span class="s1">&#39;Vivo&#39;</span><span class="p">,</span><span class="w">    </span><span class="mf">18000.00</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;new&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Walton NEXG N9&#39;</span><span class="p">,</span><span class="w">  </span><span class="s1">&#39;Walton&#39;</span><span class="p">,</span><span class="w">   </span><span class="mf">9990.00</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;new&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Charger 20W&#39;</span><span class="p">,</span><span class="w">     </span><span class="s1">&#39;Anker&#39;</span><span class="p">,</span><span class="w">     </span><span class="mf">650.00</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;new&#39;</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 4 rows affected
+Records: 4  Duplicates: 0  Warnings: 0
+
+Query OK, 8 rows affected
+Records: 8  Duplicates: 0  Warnings: 0</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Product</span><span class="o">::</span><span class="na">insert</span><span class="p">([</span><span class="o">...</span><span class="p">]);</span>   <span class="c1">// অথবা DB::table(&#39;products&#39;)-&gt;insert([...])</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="INSERT ও SELECT" data-title="SELECT: সব দেখা"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>SELECT: সব দেখা</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>Customer::all()</code> ভিতরে ঠিক এই query-টাই চালায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----+--------------+-------------+----------+---------------------+
+| id | name         | phone       | district | created_at          |
++----+--------------+-------------+----------+---------------------+
+|  1 | Karim Uddin  | 01711000001 | Dhaka    | 2026-10-21 00:34:57 |
+|  2 | Nusrat Jahan | 01811000002 | Sylhet   | 2026-10-21 00:34:57 |
+|  3 | Rahim Mia    | 01911000003 | Khulna   | 2026-10-21 00:34:57 |
+|  4 | Sadia Islam  | 01611000004 | Dhaka    | 2026-10-21 00:34:57 |
+|  5 | Tanvir Hasan | 01511000005 | NULL     | 2026-10-21 00:34:57 |
++----+--------------+-------------+----------+---------------------+
+5 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="INSERT ও SELECT" data-title="শুধু দরকারি column"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>শুধু দরকারি column</h2></div><div class="body two"><div class="txt"><p><code>*</code> না দিয়ে column-এর নাম দিন — কম data আসে, query দ্রুত হয়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>Product::select('name', 'brand', 'price')-&gt;get()</code></div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------------+---------+----------+
+| name           | brand   | price    |
++----------------+---------+----------+
+| Redmi 13       | Xiaomi  | 17500.00 |
+| Redmi Note 13  | Xiaomi  | 23500.00 |
+| Galaxy A15     | Samsung | 21000.00 |
+| Galaxy S21     | Samsung | 32000.00 |
+| iPhone 12      | Apple   | 48000.00 |
+| Vivo Y28       | Vivo    | 18000.00 |
+| Walton NEXG N9 | Walton  |  9990.00 |
+| Charger 20W    | Anker   |   650.00 |
++----------------+---------+----------+
+8 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা ও সাজানো" data-title="WHERE: শর্ত দিয়ে খোঁজা"><div class="inner"><div class="head"><span class="tag">পাঠ ১৩</span><h2>WHERE: শর্ত দিয়ে খোঁজা</h2></div><div class="body two"><div class="txt"><p><code>=</code>, <code>&lt;&gt;</code> (সমান না), <code>&gt;</code>, <code>&lt;=</code> — আর একাধিক শর্ত <code>AND</code> / <code>OR</code> দিয়ে।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Xiaomi&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">20000</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------+----------+-------+
+| name     | price    | stock |
++----------+----------+-------+
+| Redmi 13 | 17500.00 |     5 |
++----------+----------+-------+
+1 row in set</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Apple&#39;</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">condition_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;used&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+---------+
+| name       | brand   |
++------------+---------+
+| Galaxy S21 | Samsung |
+| iPhone 12  | Apple   |
++------------+---------+
+2 rows in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Product</span><span class="o">::</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;brand&#39;</span><span class="p">,</span> <span class="s1">&#39;Xiaomi&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;price&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;&#39;</span><span class="p">,</span> <span class="mi">20000</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="খোঁজা ও সাজানো" data-title="LIKE: অংশ মিলিয়ে খোঁজা"><div class="inner"><div class="head"><span class="tag">পাঠ ১৪</span><h2>LIKE: অংশ মিলিয়ে খোঁজা</h2></div><div class="body two"><div class="txt"><p><code>%</code> মানে "যেকোনো কিছু"। <code>'Redmi%'</code> = Redmi দিয়ে শুরু, <code>'%13'</code> = 13 দিয়ে শেষ, <code>'%Note%'</code> = মাঝে কোথাও।</p><div class="callout">💡 ডিফল্ট collation-এ (<code>_ai_ci</code>) ছোট-বড় হাতের অক্ষর আলাদা ধরে না — <code>'redmi%'</code> দিলেও মিলবে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;Redmi%&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------------+
+| name          |
++---------------+
+| Redmi 13      |
+| Redmi Note 13 |
++---------------+
+2 rows in set</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">phone</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;017%&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-------------+-------------+
+| name        | phone       |
++-------------+-------------+
+| Karim Uddin | 01711000001 |
++-------------+-------------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা ও সাজানো" data-title="IN আর BETWEEN"><div class="inner"><div class="head"><span class="tag">পাঠ ১৫</span><h2>IN আর BETWEEN</h2></div><div class="body two"><div class="txt"><p><code>IN (...)</code> — তালিকার যেকোনো একটা। <code>BETWEEN a AND b</code> — a থেকে b (দুটোই সহ)।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Samsung&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Vivo&#39;</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+---------+
+| name       | brand   |
++------------+---------+
+| Galaxy A15 | Samsung |
+| Galaxy S21 | Samsung |
+| Vivo Y28   | Vivo    |
++------------+---------+
+3 rows in set</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">15000</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="mi">25000</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------------+----------+
+| name          | price    |
++---------------+----------+
+| Redmi 13      | 17500.00 |
+| Redmi Note 13 | 23500.00 |
+| Galaxy A15    | 21000.00 |
+| Vivo Y28      | 18000.00 |
++---------------+----------+
+4 rows in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Product</span><span class="o">::</span><span class="na">whereIn</span><span class="p">(</span><span class="s1">&#39;brand&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Samsung&#39;</span><span class="p">,</span> <span class="s1">&#39;Vivo&#39;</span><span class="p">])</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+<span class="nx">Product</span><span class="o">::</span><span class="na">whereBetween</span><span class="p">(</span><span class="s1">&#39;price&#39;</span><span class="p">,</span> <span class="p">[</span><span class="mi">15000</span><span class="p">,</span> <span class="mi">25000</span><span class="p">])</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="খোঁজা ও সাজানো" data-title="NULL: &quot;জানা নেই&quot;"><div class="inner"><div class="head"><span class="tag">পাঠ ১৬</span><h2>NULL: "জানা নেই"</h2></div><div class="body two"><div class="txt"><p><code>NULL</code> মানে মান নেই। এটা <code>=</code> দিয়ে খোঁজা যায় না — লিখতে হয় <code>IS NULL</code> / <code>IS NOT NULL</code>।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>IFNULL(district, '...')</code> হলো PHP-র <code>$district ?? '...'</code>। Laravel-এ <code>whereNull('district')</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">NULL</span><span class="p">;</span><span class="w">   </span><span class="c1">-- ভুল: কিছুই আসবে না</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Empty set</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="no">NULL</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+--------------+
+| name         |
++--------------+
+| Tanvir Hasan |
++--------------+
+1 row in set</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="nf">IFNULL</span><span class="p">(</span><span class="n">district</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;জানা নেই&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+--------------+------------------------+
+| name         | district               |
++--------------+------------------------+
+| Karim Uddin  | Dhaka                  |
+| Nusrat Jahan | Sylhet                 |
+| Rahim Mia    | Khulna                 |
+| Sadia Islam  | Dhaka                  |
+| Tanvir Hasan | জানা নেই               |
++--------------+------------------------+
+5 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা ও সাজানো" data-title="ORDER BY আর LIMIT"><div class="inner"><div class="head"><span class="tag">পাঠ ১৭</span><h2>ORDER BY আর LIMIT</h2></div><div class="body two"><div class="txt"><p><code>ORDER BY</code> দিয়ে সাজাই (<code>ASC</code> ছোট→বড়, <code>DESC</code> বড়→ছোট)। <code>LIMIT</code> কয়টা দেখাবে, <code>OFFSET</code> কয়টা বাদ দিয়ে শুরু।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------------+----------+
+| name          | price    |
++---------------+----------+
+| iPhone 12     | 48000.00 |
+| Galaxy S21    | 32000.00 |
+| Redmi Note 13 | 23500.00 |
++---------------+----------+
+3 rows in set</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="k">OFFSET</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">   </span><span class="c1">-- দ্বিতীয় পাতা</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+----------+
+| name       | price    |
++------------+----------+
+| Galaxy A15 | 21000.00 |
+| Vivo Y28   | 18000.00 |
+| Redmi 13   | 17500.00 |
++------------+----------+
+3 rows in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Product</span><span class="o">::</span><span class="na">orderByDesc</span><span class="p">(</span><span class="s1">&#39;price&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">limit</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+<span class="nx">Product</span><span class="o">::</span><span class="na">orderByDesc</span><span class="p">(</span><span class="s1">&#39;price&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">paginate</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>   <span class="c1">// LIMIT/OFFSET নিজেই করে</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="খোঁজা ও সাজানো" data-title="হিসাব করা column"><div class="inner"><div class="head"><span class="tag">পাঠ ১৮</span><h2>হিসাব করা column</h2></div><div class="body two"><div class="txt"><p>SELECT-এ সরাসরি হিসাব করা যায়। নতুন column-এর নাম দিই <code>AS</code> দিয়ে।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span>
+<span class="w">       </span><span class="n">price</span><span class="p">,</span>
+<span class="w">       </span><span class="n">stock</span><span class="p">,</span>
+<span class="w">       </span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">stock</span><span class="w">               </span><span class="k">AS</span><span class="w"> </span><span class="n">stock_value</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">ROUND</span><span class="p">(</span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">1.15</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">price_with_vat</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">CONCAT</span><span class="p">(</span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; — &#39;</span><span class="p">,</span><span class="w"> </span><span class="k">name</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">label</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">products</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">stock_value</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------------+----------+-------+-------------+----------------+---------------------------+
+| name           | price    | stock | stock_value | price_with_vat | label                     |
++----------------+----------+-------+-------------+----------------+---------------------------+
+| iPhone 12      | 48000.00 |     2 |    96000.00 |       55200.00 | Apple — iPhone 12         |
+| Redmi 13       | 17500.00 |     5 |    87500.00 |       20125.00 | Xiaomi — Redmi 13         |
+| Vivo Y28       | 18000.00 |     4 |    72000.00 |       20700.00 | Vivo — Vivo Y28           |
+| Walton NEXG N9 |  9990.00 |     7 |    69930.00 |       11488.50 | Walton — Walton NEXG N9   |
+| Redmi Note 13  | 23500.00 |     2 |    47000.00 |       27025.00 | Xiaomi — Redmi Note 13    |
+| Galaxy S21     | 32000.00 |     1 |    32000.00 |       36800.00 | Samsung — Galaxy S21      |
+| Charger 20W    |   650.00 |    30 |    19500.00 |         747.50 | Anker — Charger 20W       |
++----------------+----------+-------+-------------+----------------+---------------------------+
+7 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা ও সাজানো" data-title="DISTINCT আর COUNT"><div class="inner"><div class="head"><span class="tag">পাঠ ১৯</span><h2>DISTINCT আর COUNT</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>Product::distinct()-&gt;pluck('brand')</code> আর <code>Product::count()</code>। গ্রুপ ধরে গোনা (<code>GROUP BY</code>) আছে MySQL 102-এ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">brand</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------+
+| brand   |
++---------+
+| Anker   |
+| Apple   |
+| Samsung |
+| Vivo    |
+| Walton  |
+| Xiaomi  |
++---------+
+6 rows in set</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_products</span><span class="p">,</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">brand</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">brands</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------------+--------+
+| total_products | brands |
++----------------+--------+
+|              8 |      6 |
++----------------+--------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা ও সাজানো" data-title="CASE: শর্ত অনুযায়ী মান"><div class="inner"><div class="head"><span class="tag">পাঠ ২০</span><h2>CASE: শর্ত অনুযায়ী মান</h2></div><div class="body two"><div class="txt"><p><code>CASE WHEN ... THEN ... ELSE ... END</code> — SQL-এর if/else।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র <code>match(true) { $stock === 0 =&gt; 'শেষ', ... }</code> এর মতো।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="p">,</span>
+<span class="w">       </span><span class="k">CASE</span>
+<span class="w">           </span><span class="k">WHEN</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;শেষ&#39;</span>
+<span class="w">           </span><span class="k">WHEN</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;কম&#39;</span>
+<span class="w">           </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;আছে&#39;</span>
+<span class="w">       </span><span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">stock_status</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">products</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">stock</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------------+-------+--------------+
+| name           | stock | stock_status |
++----------------+-------+--------------+
+| Galaxy A15     |     0 | শেষ          |
+| Galaxy S21     |     1 | কম           |
+| Redmi Note 13  |     2 | কম           |
+| iPhone 12      |     2 | কম           |
+| Vivo Y28       |     4 | আছে          |
+| Redmi 13       |     5 | আছে          |
+| Walton NEXG N9 |     7 | আছে          |
+| Charger 20W    |    30 | আছে          |
++----------------+-------+--------------+
+8 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="বদলানো ও মোছা" data-title="UPDATE: মান বদলানো"><div class="inner"><div class="head"><span class="tag">পাঠ ২১</span><h2>UPDATE: মান বদলানো</h2></div><div class="body two"><div class="txt"><p><code>SET</code> দিয়ে নতুন মান, <code>WHERE</code> দিয়ে কোন row। আউটপুটে কয়টা row মিলল আর বদলাল দেখায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">16999.00</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Redmi 13&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 1 row affected
+Rows matched: 1  Changed: 1  Warnings: 0</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Xiaomi&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 2 rows affected
+Rows matched: 2  Changed: 2  Warnings: 0</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Xiaomi&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+---------------+----------+-------+
+| name          | price    | stock |
++---------------+----------+-------+
+| Redmi 13      | 16999.00 |    15 |
+| Redmi Note 13 | 23500.00 |    12 |
++---------------+----------+-------+
+2 rows in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Product</span><span class="o">::</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;brand&#39;</span><span class="p">,</span> <span class="s1">&#39;Xiaomi&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">increment</span><span class="p">(</span><span class="s1">&#39;stock&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="বদলানো ও মোছা" data-title="সাবধান: WHERE ছাড়া UPDATE"><div class="inner"><div class="head"><span class="tag">পাঠ ২২</span><h2>সাবধান: WHERE ছাড়া UPDATE</h2></div><div class="body two"><div class="txt"><p><code>WHERE</code> ভুলে গেলে <b>সব</b> row বদলে যায়। আগে একই <code>WHERE</code> দিয়ে <code>SELECT</code> চালিয়ে দেখে নিন কোন row বদলাবে।</p><div class="callout">💡 <code>mysql --safe-updates</code> (বা <code>SET SQL_SAFE_UPDATES = 1;</code>) চালু রাখলে key-ভিত্তিক WHERE ছাড়া UPDATE/DELETE MySQL নিজেই আটকে দেয়।</div><div class="callout warn">⚠️ Production database-এ হাতে UPDATE চালানোর আগে backup নিন অথবা transaction-এর ভিতরে চালান (MySQL 103)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="go">mysql&gt; UPDATE products SET price = 0;</span>
+<span class="go">Query OK, 8 rows affected   ← সব product-এর দাম ০ হয়ে গেল!</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="বদলানো ও মোছা" data-title="DELETE: row মোছা"><div class="inner"><div class="head"><span class="tag">পাঠ ২৩</span><h2>DELETE: row মোছা</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>SoftDeletes</code> আসলে DELETE করে না — <code>deleted_at</code> column-এ সময় বসায় (UPDATE)। <code>forceDelete()</code> আসল DELETE চালায়।</div><div class="callout">💡 <code>TRUNCATE TABLE customers;</code> সব row মুছে AUTO_INCREMENT আবার ১ থেকে শুরু করে — শুধু test data মুছতে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Tanvir Hasan&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 1 row affected</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customers_left</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------------+
+| customers_left |
++----------------+
+|              4 |
++----------------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="নিয়ম ও পরিবর্তন" data-title="NOT NULL: খালি রাখা যাবে না"><div class="inner"><div class="head"><span class="tag">পাঠ ২৪</span><h2>NOT NULL: খালি রাখা যাবে না</h2></div><div class="body two"><div class="txt"><p>Database নিজেই ভুল data আটকায়। App-এ validation থাকলেও database-এর নিয়ম শেষ পাহারাদার।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Mitu&#39;</span><span class="p">,</span><span class="w"> </span><span class="no">NULL</span><span class="p">);</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Database বলছে (ইচ্ছাকৃত ভুল)</div><pre>ERROR 1048 (23000): Column &#x27;phone&#x27; cannot be null</pre></div></div></div></div></section>
+<section class="slide" data-part="নিয়ম ও পরিবর্তন" data-title="UNIQUE: একই মান দুইবার না"><div class="inner"><div class="head"><span class="tag">পাঠ ২৫</span><h2>UNIQUE: একই মান দুইবার না</h2></div><div class="body two"><div class="txt"><p>একই ফোন নম্বর দিয়ে দুইজন customer যেন না হয়। <code>ALTER TABLE</code> দিয়ে পরে নিয়ম যোগ করা যায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">customers_phone_unique</span><span class="w"> </span><span class="p">(</span><span class="n">phone</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 0 rows affected
+Records: 0  Duplicates: 0  Warnings: 0</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Another Karim&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01711000001&#39;</span><span class="p">);</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Database বলছে (ইচ্ছাকৃত ভুল)</div><pre>ERROR 1062 (23000): Duplicate entry &#x27;01711000001&#x27; for key &#x27;customers.customers_phone_unique&#x27;</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nv">$table</span><span class="o">-&gt;</span><span class="na">string</span><span class="p">(</span><span class="s1">&#39;phone&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">unique</span><span class="p">();</span>
+<span class="c1">// validation-এ: &#39;phone&#39; =&gt; &#39;unique:customers&#39;</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="নিয়ম ও পরিবর্তন" data-title="ALTER TABLE: column যোগ ও বদল"><div class="inner"><div class="head"><span class="tag">পাঠ ২৬</span><h2>ALTER TABLE: column যোগ ও বদল</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">due</span><span class="w"> </span><span class="kt">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="no">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">AFTER</span><span class="w"> </span><span class="n">district</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 0 rows affected
+Records: 0  Duplicates: 0  Warnings: 0</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">MODIFY</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="kt">VARCHAR</span><span class="p">(</span><span class="mi">80</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 4 rows affected
+Records: 4  Duplicates: 0  Warnings: 0</pre></div><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">due</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1500</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Rahim Mia&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">,</span><span class="w"> </span><span class="n">due</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 1 row affected
+Rows matched: 1  Changed: 1  Warnings: 0
+
++--------------+----------+---------+
+| name         | district | due     |
++--------------+----------+---------+
+| Karim Uddin  | Dhaka    |    0.00 |
+| Nusrat Jahan | Sylhet   |    0.00 |
+| Rahim Mia    | Khulna   | 1500.00 |
+| Sadia Islam  | Dhaka    |    0.00 |
++--------------+----------+---------+
+4 rows in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel migration-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Schema</span><span class="o">::</span><span class="na">table</span><span class="p">(</span><span class="s1">&#39;customers&#39;</span><span class="p">,</span> <span class="k">function</span> <span class="p">(</span><span class="nx">Blueprint</span> <span class="nv">$table</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$table</span><span class="o">-&gt;</span><span class="na">decimal</span><span class="p">(</span><span class="s1">&#39;due&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">default</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">after</span><span class="p">(</span><span class="s1">&#39;district&#39;</span><span class="p">);</span>
+<span class="p">});</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="String function আর বাংলা"><div class="inner"><div class="head"><span class="tag">পাঠ ২৭</span><h2>String function আর বাংলা</h2></div><div class="body two"><div class="txt"><p><code>LENGTH</code> byte গোনে, <code>CHAR_LENGTH</code> অক্ষর — বাংলায় পার্থক্য স্পষ্ট। (Terminal-এ বাংলা row-এর ঘর একটু বাঁকা দেখায় — client byte ধরে ফাঁকা দেয়, data ঠিকই আছে।)</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>strlen()</code> বনাম <code>mb_strlen()</code> — PHP-তেও একই ব্যাপার।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;রাশেদ খান&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01311000006&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;রাজশাহী&#39;</span><span class="p">);</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">LENGTH</span><span class="p">(</span><span class="k">name</span><span class="p">)</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">bytes</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">CHAR_LENGTH</span><span class="p">(</span><span class="k">name</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">chars</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">UPPER</span><span class="p">(</span><span class="k">name</span><span class="p">)</span><span class="w">       </span><span class="k">AS</span><span class="w"> </span><span class="n">upper_name</span><span class="p">,</span>
+<span class="w">       </span><span class="k">LEFT</span><span class="p">(</span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w">    </span><span class="k">AS</span><span class="w"> </span><span class="n">operator_code</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>Query OK, 1 row affected
+
++---------------------------+-------+-------+---------------------------+---------------+
+| name                      | bytes | chars | upper_name                | operator_code |
++---------------------------+-------+-------+---------------------------+---------------+
+| Karim Uddin               |    11 |    11 | KARIM UDDIN               | 017           |
+| Nusrat Jahan              |    12 |    12 | NUSRAT JAHAN              | 018           |
+| Rahim Mia                 |     9 |     9 | RAHIM MIA                 | 019           |
+| Sadia Islam               |    11 |    11 | SADIA ISLAM               | 016           |
+| রাশেদ খান                 |    25 |     9 | রাশেদ খান                 | 013           |
++---------------------------+-------+-------+---------------------------+---------------+
+5 rows in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="Date function"><div class="inner"><div class="head"><span class="tag">পাঠ ২৮</span><h2>Date function</h2></div><div class="body two"><div class="txt"><table class="tbl"><tr><th>MySQL</th><th>Laravel / Carbon</th></tr><tr><td><code>CURDATE()</code>, <code>NOW()</code></td><td><code>today()</code>, <code>now()</code></td></tr><tr><td><code>DATE_ADD(d, INTERVAL 7 DAY)</code></td><td><code>$d-&gt;addDays(7)</code></td></tr><tr><td><code>DATEDIFF(a, b)</code></td><td><code>$b-&gt;diffInDays($a)</code></td></tr><tr><td><code>WHERE DATE(created_at) = ...</code></td><td><code>whereDate('created_at', ...)</code></td></tr></table></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">CURDATE</span><span class="p">()</span><span class="w">                                      </span><span class="k">AS</span><span class="w"> </span><span class="n">today</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">DATE_FORMAT</span><span class="p">(</span><span class="s1">&#39;2026-10-21&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;%d/%m/%Y&#39;</span><span class="p">)</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">bd_format</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">DATE_ADD</span><span class="p">(</span><span class="s1">&#39;2026-10-21&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">INTERVAL</span><span class="w"> </span><span class="mi">7</span><span class="w"> </span><span class="k">DAY</span><span class="p">)</span><span class="w">         </span><span class="k">AS</span><span class="w"> </span><span class="n">warranty_check</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">DATEDIFF</span><span class="p">(</span><span class="s1">&#39;2026-12-16&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;2026-10-21&#39;</span><span class="p">)</span><span class="w">           </span><span class="k">AS</span><span class="w"> </span><span class="n">days_to_victory_day</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">DAYNAME</span><span class="p">(</span><span class="s1">&#39;2026-10-23&#39;</span><span class="p">)</span><span class="w">                          </span><span class="k">AS</span><span class="w"> </span><span class="n">day_name</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+------------+------------+----------------+---------------------+----------+
+| today      | bd_format  | warranty_check | days_to_victory_day | day_name |
++------------+------------+----------------+---------------------+----------+
+| 2026-10-21 | 21/10/2026 | 2026-10-28     |                  56 | Friday   |
++------------+------------+----------------+---------------------+----------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="Number function"><div class="inner"><div class="head"><span class="tag">পাঠ ২৯</span><h2>Number function</h2></div><div class="body two"><div class="txt"><div class="callout">💡 টাকার হিসাব <code>DECIMAL</code>-এ রাখলে <code>0.1 + 0.2</code> জাতীয় float-এর ভুল হয় না।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">ROUND</span><span class="p">(</span><span class="mf">17499.567</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">rounded</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">ROUND</span><span class="p">(</span><span class="mf">17499.567</span><span class="p">)</span><span class="w">     </span><span class="k">AS</span><span class="w"> </span><span class="n">whole</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">FLOOR</span><span class="p">(</span><span class="mf">17499.9</span><span class="p">)</span><span class="w">       </span><span class="k">AS</span><span class="w"> </span><span class="n">floor_value</span><span class="p">,</span>
+<span class="w">       </span><span class="nf">CEIL</span><span class="p">(</span><span class="mf">17499.1</span><span class="p">)</span><span class="w">        </span><span class="k">AS</span><span class="w"> </span><span class="n">ceil_value</span><span class="p">,</span>
+<span class="w">       </span><span class="mi">17500</span><span class="w"> </span><span class="k">DIV</span><span class="w"> </span><span class="mi">3</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">int_div</span><span class="p">,</span>
+<span class="w">       </span><span class="mi">17500</span><span class="w"> </span><span class="k">MOD</span><span class="w"> </span><span class="mi">3</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">remainder</span><span class="p">,</span>
+<span class="w">       </span><span class="k">FORMAT</span><span class="p">(</span><span class="mf">1234567.891</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">formatted</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----------+-------+-------------+------------+---------+-----------+--------------+
+| rounded  | whole | floor_value | ceil_value | int_div | remainder | formatted    |
++----------+-------+-------------+------------+---------+-----------+--------------+
+| 17499.57 | 17500 |       17499 |      17500 |    5833 |         1 | 1,234,567.89 |
++----------+-------+-------------+------------+---------+-----------+--------------+
+1 row in set</pre></div></div></div></div></section>
+<section class="slide" data-part="Project" data-title="Project: দোকানের প্রশ্নের উত্তর"><div class="inner"><div class="head"><span class="tag">পাঠ ৩০</span><h2>Project: দোকানের প্রশ্নের উত্তর</h2></div><div class="body two"><div class="txt"><p>মালিক জানতে চান: "স্টকে আছে এমন ২০ হাজারের নিচের নতুন ফোন কোনগুলো, সস্তা থেকে দামি?"</p><div class="callout task"><b>নিজে করুন</b> নিজে লিখুন: (১) used ফোনগুলোর মোট স্টকের দাম; (২) যে customer-দের district জানা নেই বা বাকি ১০০০-এর বেশি।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nf">CONCAT</span><span class="p">(</span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="w"> </span><span class="k">name</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span>
+<span class="w">       </span><span class="n">price</span><span class="p">,</span>
+<span class="w">       </span><span class="n">stock</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">products</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">condition_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;new&#39;</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">20000</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;Charger%&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">price</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-----------------------+----------+-------+
+| phone                 | price    | stock |
++-----------------------+----------+-------+
+| Walton Walton NEXG N9 |  9990.00 |     7 |
+| Xiaomi Redmi 13       | 16999.00 |    15 |
+| Vivo Vivo Y28         | 18000.00 |     4 |
++-----------------------+----------+-------+
+3 rows in set</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Product</span><span class="o">::</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;condition_type&#39;</span><span class="p">,</span> <span class="s1">&#39;new&#39;</span><span class="p">)</span>
+    <span class="o">-&gt;</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;stock&#39;</span><span class="p">,</span> <span class="s1">&#39;&gt;&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="o">-&gt;</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;price&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;&#39;</span><span class="p">,</span> <span class="mi">20000</span><span class="p">)</span>
+    <span class="o">-&gt;</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;not like&#39;</span><span class="p">,</span> <span class="s1">&#39;Charger%&#39;</span><span class="p">)</span>
+    <span class="o">-&gt;</span><span class="na">orderBy</span><span class="p">(</span><span class="s1">&#39;price&#39;</span><span class="p">)</span>
+    <span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Project" data-title="Backup আর restore"><div class="inner"><div class="head"><span class="tag">পাঠ ৩১</span><h2>Backup আর restore</h2></div><div class="body two"><div class="txt"><ul><li><code>mysqldump</code> পুরো database-কে SQL file বানায় (CREATE + INSERT)</li><li>নিয়মিত backup নিন, আর মাঝে মাঝে restore করে দেখুন সত্যি কাজ করে কিনা</li><li>শুধু গঠন চাইলে: <code>mysqldump --no-data</code></li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>spatie/laravel-backup</code> ভিতরে এই <code>mysqldump</code>-ই চালায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>mysqldump<span class="w"> </span>-u<span class="w"> </span>root<span class="w"> </span>-p<span class="w"> </span>shop<span class="w"> </span>&gt;<span class="w"> </span>shop-2026-10-21.sql
+<span class="gp">$ </span>mysql<span class="w"> </span>-u<span class="w"> </span>root<span class="w"> </span>-p<span class="w"> </span>shop_copy<span class="w"> </span>&lt;<span class="w"> </span>shop-2026-10-21.sql
+</pre></div>
+</div></div></div></div></section>
+<section class="slide hero end" data-part="Project" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>MySQL 101 শেষ! 🎉</h1><p class="lead">এক table-এর কাজ শেষ। কিন্তু আসল দোকানে customer, product, বিক্রি — সব আলাদা table, একে অপরের সাথে যুক্ত। সেটাই MySQL 102।</p><div class="steps done"><div><i>✓</i><span><code>CREATE TABLE</code>-এ ঠিক type: টাকা DECIMAL, ফোন VARCHAR</span></div><div><i>✓</i><span><code>INSERT</code> / <code>SELECT</code> / <code>UPDATE</code> / <code>DELETE</code></span></div><div><i>✓</i><span><code>WHERE</code> + <code>LIKE</code>, <code>IN</code>, <code>BETWEEN</code>, <code>IS NULL</code></span></div><div><i>✓</i><span>UPDATE/DELETE-এর আগে একই WHERE দিয়ে SELECT</span></div><div><i>✓</i><span>NOT NULL, UNIQUE — database-এর নিজের পাহারা</span></div><div><i>✓</i><span>বাংলার জন্য utf8mb4, অক্ষর গুনতে CHAR_LENGTH</span></div></div><div class="btns"><a class="btn" href="../mysql-102/index.html">পরের কোর্স: MySQL 102 — Relationship ও JOIN →</a><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+</main>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>window.COURSE="mysql-101";
+(function(){
+  var B=function(n){return String(n).replace(/\d/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0,root=document.documentElement;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),menu=document.getElementById('menu');
+  var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'vw)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
+    st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function buildMenu(){var h='',last=null;slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){h+='<h3>'+p+'</h3>';last=p}
+    h+='<a data-go="'+j+'" class="'+(st.seen[j]?'seen ':'')+(j===i?'cur':'')+'"><span>'+B(j+1)+'.</span><span>'+s.getAttribute('data-title')+'</span></a>'});menu.innerHTML=h}
+  function toggleMenu(){if(!menu.classList.contains('open'))buildMenu();menu.classList.toggle('open')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var dark=getComputedStyle(root).getPropertyValue('--bg').trim()==='#0B1220';var t=dark?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tut-theme',t)}catch(e){}}
+  try{var th=localStorage.getItem('tut-theme');if(th)root.setAttribute('data-theme',th)}catch(e){}
+  menu.addEventListener('click',function(e){var a=e.target.closest('a');if(a){go(+a.getAttribute('data-go'));menu.classList.remove('open')}else if(e.target===menu)menu.classList.remove('open')});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;
+    var pre=b.closest('.code').querySelector('pre');var t=pre.innerText.replace(/^\$ /gm,'');
+    var done=function(){b.textContent='কপি হয়েছে ✓';setTimeout(function(){b.textContent='কপি'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done()});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  var x0=null,y0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!e.target.closest('pre'))go(i+(dx<0?1:-1));x0=null});
+  var h=parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
+    if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';
+      r.classList.add('show');document.getElementById('resumeGo').onclick=function(){go(last);r.classList.remove('show')};
+      document.getElementById('resumeNo').onclick=function(){r.classList.remove('show')};}}
+})();
+</script>
+</body>
+</html>

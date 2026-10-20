@@ -96,13 +96,14 @@ class Code:
 
     def __init__(self, src, lang="rust", *, run=None, err=None, panic=False, stdin=None, file=None,
                  deps=None, requests=None, hl=(), args=None, show_output=True, label=None, test=False,
-                 server_log=False):
+                 server_log=False, eloquent=False):
         self.src = src.strip("\n")
         self.lang = lang
         self.run = (lang in ("rust", "php", "mysql", "postgresql")) if run is None else run
         self.err, self.panic, self.stdin = err, panic, stdin
         self.file, self.deps, self.requests, self.hl, self.args = file, deps, requests, hl, args or []
         self.show_output, self.label, self.test, self.server_log = show_output, label, test, server_log
+        self.eloquent = eloquent   # php block that runs with Eloquent booted against the course database
         self.result = None   # filled by the runner: dict(kind, text)
 
 
@@ -277,6 +278,21 @@ def run_php(c: Code, res: Results):
     return out
 
 
+def run_eloquent(c: Code, sql, models):
+    """Laravel snippet against the live course database (never cached: it depends on DB state)."""
+    d = CACHE / "php"
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / "eloquent_snippet.php"
+    src = re.sub(r"^<\?php\s*", "", c.src)
+    f.write_text(f"<?php\nrequire {json.dumps(str(KIT / 'eloquent_bootstrap.php'))};\n{src}\n")
+    env = {**os.environ, "TUT_DB": sql.db, "TUT_ENGINE": "pgsql" if sql.engine == "postgresql" else "mysql",
+           "TUT_MODELS": str(models) if models else ""}
+    r = subprocess.run(["php", str(f)], capture_output=True, text=True, timeout=60, env=env)
+    if r.returncode != 0 or "Fatal error" in r.stdout or "Uncaught" in r.stdout:
+        raise SystemExit(f"eloquent snippet failed:\n{r.stdout}{r.stderr}\n{c.src}")
+    return dict(kind="out", text=r.stdout.rstrip())
+
+
 class SqlSession:
     """One fresh database per course; blocks run in order so they can build on each other."""
 
@@ -288,14 +304,27 @@ class SqlSession:
             subprocess.run(["psql", "-X", "-q", "-d", "postgres", "-c", f"DROP DATABASE IF EXISTS {db}"], check=True, capture_output=True)
             subprocess.run(["psql", "-X", "-q", "-d", "postgres", "-c", f"CREATE DATABASE {db}"], check=True, capture_output=True)
 
-    def _mysql(self, sql, use_db=True):
-        cmd = ["mysql", "-uroot", "--default-character-set=utf8mb4", "-t"] + ([self.db] if use_db else [])
+    def _mysql(self, sql, use_db=True, verbose=False):
+        cmd = ["mysql", "-uroot", "--default-character-set=utf8mb4", "-t"] + (["-vvv"] if verbose else []) \
+            + ([self.db] if use_db else [])
         return subprocess.run(cmd, input=sql, capture_output=True, text=True, timeout=60)
+
+    @staticmethod
+    def _clean_mysql(text):
+        """mysql -vvv output, minus the echoed statements and timings — what a learner sees in the client."""
+        text = re.sub(r"-{14}\n.*?\n-{14}\n\n?", "", text, flags=re.S)
+        text = re.sub(r" \(\d+\.\d+ sec\)", "", text)
+        text = re.sub(r"(ERROR \d+ \(\w+\)) at line \d+", r"\1", text)
+        text = re.sub(r"(?m)^Bye\n?", "", text)
+        # EXPLAIN FORMAT=TREE comes back as a one-cell table; show the plan itself
+        text = re.sub(r"\+-+\+\n\| EXPLAIN\s*\|\n\+-+\+\n\| (.*?)\s*\|\n\+-+\+\n1 row in set",
+                      lambda m: m.group(1).rstrip(), text, flags=re.S)
+        return re.sub(r"\n{3,}", "\n\n", text).strip()
 
     def run(self, c: Code):
         if self.engine == "mysql":
-            r = self._mysql(c.src)
-            text = (r.stdout + r.stderr).rstrip()
+            r = self._mysql(c.src, verbose=True)
+            text = self._clean_mysql(r.stdout + r.stderr)
         else:
             r = subprocess.run(["psql", "-X", "-d", self.db, "-v", "ON_ERROR_STOP=1"], input=c.src,
                                capture_output=True, text=True, timeout=60)
@@ -342,7 +371,7 @@ def render_code(c: Code):
         if c.lang in ("mysql", "postgresql"):
             title = "ফলাফল" if r["kind"] == "out" else "Database বলছে (ইচ্ছাকৃত ভুল)"
         if c.lang == "php":
-            title = "PHP আউটপুট"
+            title = "Laravel চালিয়ে পাওয়া আউটপুট" if c.eloquent else "PHP আউটপুট"
         kind = r["kind"]
         r = {**r, "text": re.sub(r"thread '(\w+)' \(\d+\)", r"thread '\1'", r["text"])}   # drop the OS thread id
         stdin = f'<div class="stdin">ইনপুট: {e(r.get("stdin").strip())}</div>' if r.get("stdin") else ""
@@ -353,11 +382,12 @@ def render_code(c: Code):
 
 class Course:
     def __init__(self, *, slug, title, subtitle, folder, home="../index.html", hub="../../index.html", series="",
-                 next_course=None, prev_course=None, sql_engine=None):
+                 next_course=None, prev_course=None, sql_engine=None, models=None):
         self.slug, self.title, self.subtitle, self.folder = slug, title, subtitle, Path(folder)
         self.hub = hub
         self.home, self.series, self.next_course, self.prev_course = home, series, next_course, prev_course
         self.sql_engine = sql_engine
+        self.models = models   # PHP file with Eloquent models for eloquent=True blocks
         self.slides, self.part, self.lesson_no = [], "", 0
 
     def section(self, name):
@@ -404,6 +434,8 @@ class Course:
                     c.result = run_cargo(c, res)
                 elif c.lang == "rust":
                     c.result = run_rust(c, res)
+                elif c.lang == "php" and c.eloquent:
+                    c.result = run_eloquent(c, sql, self.models)
                 elif c.lang == "php":
                     c.result = run_php(c, res)
                 elif c.lang in ("mysql", "postgresql"):

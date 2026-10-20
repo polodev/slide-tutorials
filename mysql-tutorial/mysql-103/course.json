@@ -1,0 +1,7 @@
+{
+ "slug": "mysql-103",
+ "title": "MySQL 103 — Index, Transaction ও Window function",
+ "subtitle": "বড় data-তে দ্রুত query (index, EXPLAIN), নিরাপদ লেনদেন (transaction), window function, CTE, JSON আর trigger",
+ "lessons": 25,
+ "slides": 27
+}

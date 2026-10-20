@@ -23,7 +23,8 @@ python3 build.py --hub         # hub page only
 ```
 
 Requirements for verifying code: `rustc`/`cargo` (Rust), `php` (PHP comparisons), a local MySQL server
-(`mysql -uroot`) and PostgreSQL (`psql`). Results are cached in `tutorial-kit/.cache` (git-ignored).
+(`mysql -uroot`) and PostgreSQL (`psql`). Laravel snippets run through `illuminate/database`:
+run `composer install` in `tutorial-kit/eloquent` once. Results are cached in `tutorial-kit/.cache` (git-ignored).
 
 The shared engine is `tutorial-kit/kit.py`. A course is a `build.py` that creates a `Course`, adds
 `lesson(...)` slides with `say`, `points`, `php_note`, `code(...)`, `task`, `quiz`, and calls `build()`.

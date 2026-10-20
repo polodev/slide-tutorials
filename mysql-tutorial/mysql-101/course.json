@@ -1,0 +1,7 @@
+{
+ "slug": "mysql-101",
+ "title": "MySQL 101 — শূন্য থেকে শুরু",
+ "subtitle": "Table বানানো, data রাখা, খোঁজা, বদলানো আর মোছা — Laravel-এর Eloquent পাশে রেখে",
+ "lessons": 31,
+ "slides": 33
+}
