@@ -1,0 +1,34 @@
+# Slide Tutorials — বাংলায়
+
+Byte-size Bangla slide tutorials. Each slide is one small idea; every code example is compiled or run
+at build time, and the real output (or real compiler error) is shown on the slide.
+
+| Folder | Tutorial |
+|---|---|
+| `rust-tutorial/` | Rust 101, 102, 103 and Rust Web Development (axum), with PHP/Laravel comparisons |
+| `mysql-tutorial/` | MySQL from the first table to joins, indexes and transactions |
+| `postgresql-tutorial/` | PostgreSQL, including JSONB, window functions and full-text search |
+| `accounts-101/` | Accounting basics with a mobile-shop example (Dokani) |
+
+Open `index.html` (or the GitHub Pages site). Keys: `→`/`←` change slide, `M` lesson list, `D` dark mode,
+`F` fullscreen; swipe on mobile. Progress is saved in the browser, so learners can close the tab and continue later.
+
+## Build
+
+```bash
+pip3 install pygments          # highlighting
+python3 build.py               # build every tutorial + the hub page
+python3 rust-tutorial/build.py # one series
+python3 build.py --hub         # hub page only
+```
+
+Requirements for verifying code: `rustc`/`cargo` (Rust), `php` (PHP comparisons), a local MySQL server
+(`mysql -uroot`) and PostgreSQL (`psql`). Results are cached in `tutorial-kit/.cache` (git-ignored).
+
+The shared engine is `tutorial-kit/kit.py`. A course is a `build.py` that creates a `Course`, adds
+`lesson(...)` slides with `say`, `points`, `php_note`, `code(...)`, `task`, `quiz`, and calls `build()`.
+
+## GitHub Pages
+
+Settings → Pages → Deploy from a branch → `main` / `/ (root)`. The built `index.html` files are committed,
+so no build step runs on GitHub.

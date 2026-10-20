@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rust 101 — শূন্য থেকে শুরু</title>
+<meta name="description" content="Install, variables, types, function, if/loop/match আর keyboard input — PHP জানা থাকলেই যথেষ্ট">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.6vh);--navy:#0C1E38;--accent:#0D8A4A;--accent2:#E8F6EE;--amber:#B7791F;--red:#C53030;--php:#4F5B93;
+  --bg:#F4F7FA;--ink:#18263A;--muted:#5B6B80;--card:#fff;--line:#DCE4EE;--codebg:#1E2430}
+:root[data-theme=dark]{--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+.deck html,.deck body{height:100%}
+body.deck{height:100vh;overflow:hidden}
+#deck{height:100%;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100vw;height:100%;overflow-y:auto;padding:60px 4vw 84px}
+.slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
+h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(15px,calc(var(--u)*1.9),28px);color:var(--muted);max-width:36em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--accent);color:#fff;font-weight:600;font-size:clamp(12px,calc(var(--u)*1.15),17px);padding:.3em 1em;border-radius:999px}
+.head{display:flex;flex-direction:column;gap:1vh}
+.body.two{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:3vw;align-items:start}
+.body.one{max-width:1100px}
+.txt{display:flex;flex-direction:column;gap:1.6vh}
+.txt p,.txt li{font-size:clamp(15px,calc(var(--u)*1.6),24px);line-height:1.7}
+.txt ul{list-style:none;padding:0;display:grid;gap:1vh}
+.txt li{padding-left:1.3em;position:relative}
+.txt li::before{content:"";position:absolute;left:0;top:.7em;width:.45em;height:.45em;border-radius:50%;background:var(--accent)}
+code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
+.callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.callout.warn{border-left-color:var(--amber)}
+.callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
+.callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
+.quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.quiz summary{cursor:pointer;font-weight:600;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--accent);font-weight:600;font-size:clamp(14px,calc(var(--u)*1.4),21px);line-height:1.6}
+.tbl{border-collapse:collapse;width:100%;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.tbl th,.tbl td{padding:.9vh .9vw;text-align:left;font-size:clamp(13px,calc(var(--u)*1.35),20px);border-bottom:1px solid var(--line);line-height:1.5}
+.tbl th{background:var(--accent2);font-weight:600}
+.steps{display:grid;gap:1vh}
+.steps div{background:var(--card);border-radius:10px;padding:1.1vh 1vw;font-size:clamp(14px,calc(var(--u)*1.5),22px);display:flex;gap:.9vw;align-items:center;box-shadow:0 3px 12px rgba(12,30,56,.07);line-height:1.5}
+.steps i{flex:0 0 auto;width:2em;height:2em;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.codecol{display:flex;flex-direction:column;gap:1.2vh;min-width:0}
+.code{background:var(--codebg);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#151A23;color:#9AA7B8;font:600 13px 'JetBrains Mono',monospace}
+.code-h.php{background:#262B47;color:#C3C9EE}
+.copy{border:0;background:#2A3242;color:#C9D4E3;font:600 12px 'Hind Siliguri',sans-serif;padding:3px 10px;border-radius:6px;cursor:pointer}
+.copy:hover{background:var(--accent);color:#fff}
+.hl pre{margin:0;padding:12px 16px;overflow-x:auto;font:clamp(12.5px,calc(var(--u)*1.08),17px)/1.55 'JetBrains Mono',monospace;color:#E3E8EF;tab-size:4}
+.hl .hll{background:rgba(255,214,102,.13);display:inline-block;width:100%}
+.term{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0F141C}
+.term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
+.term.error .term-h,.term.panic .term-h{background:#B83434}
+.term.http .term-h{background:#1F5FA8}
+.term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
+pre,code{font-variant-ligatures:none;font-feature-settings:'liga' 0,'calt' 0}  /* show <= -> => as typed */
+.term.error pre,.term.panic pre{color:#FFB4B4}
+.stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
+.hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
+.hero .inner{justify-content:center;max-width:1100px}
+.hero h1{color:#fff}.hero .lead{color:#CFDDEE}
+.hero .learn{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1vh 2vw}
+.hero .learn li{font-size:clamp(14px,calc(var(--u)*1.55),23px);padding-left:1.4em;position:relative;line-height:1.5;color:#E6EEF8}
+.hero .learn li::before{content:"✓";position:absolute;left:0;color:#4ADE80;font-weight:700}
+.hero .need,.hero .howto{color:#AFC2D8;font-size:clamp(13px,calc(var(--u)*1.35),20px)}
+.hero .need b{color:#fff}
+.hero.end .steps div{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.hero.end .steps i{background:#4ADE80;color:#0C1E38}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:#4ADE80;color:#0C1E38;font-weight:700;text-decoration:none;padding:.7em 1.4em;border-radius:999px;font-size:clamp(14px,calc(var(--u)*1.5),21px)}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+#top{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px}
+#top a{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+#top .crumb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#top .hub{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+#bar{position:fixed;left:0;top:44px;height:3px;background:var(--accent);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:600 14px 'Hind Siliguri',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.9);padding:6px 10px;border-radius:999px;white-space:nowrap}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--accent)}
+#count{min-width:64px;text-align:center}
+#menu{position:fixed;inset:0;background:rgba(8,15,28,.94);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:20px;margin:2.4vh 0 .8vh}
+#menu a{display:flex;gap:.6em;color:#dbe7f5;text-decoration:none;padding:.55vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a.seen::after{content:"✓";color:#4ADE80;margin-left:auto}
+#menu a.cur{background:rgba(74,222,128,.18)}
+#menu a:hover{background:var(--accent);color:#fff}
+#resume{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25);border-radius:14px;padding:12px 16px;z-index:8;display:none;gap:10px;align-items:center;font-size:15px;flex-wrap:wrap;justify-content:center}
+#resume.show{display:flex}
+#resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
+#resume button.alt{background:var(--line);color:var(--ink)}
+@media (max-width:900px){body.deck{overflow:hidden}.slide{padding:56px 5vw 96px}.body.two{grid-template-columns:1fr}.hero .learn{grid-template-columns:1fr}}
+@media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
+
+.hl .c,.hl .c1,.hl .cm,.hl .cs,.hl .ch,.hl .cp,.hl .cpf{color:#7F8C98;font-style:italic}
+.hl .k,.hl .kd,.hl .kn,.hl .kr,.hl .kp,.hl .ow{color:#C678DD}
+.hl .kc{color:#D19A66}
+.hl .kt,.hl .nc,.hl .nn{color:#E5C07B}
+.hl .s,.hl .s1,.hl .s2,.hl .sb,.hl .sc,.hl .sd,.hl .sh,.hl .sx,.hl .dl{color:#98C379}
+.hl .se,.hl .si,.hl .sa{color:#56B6C2}
+.hl .m,.hl .mi,.hl .mf,.hl .mh,.hl .mb,.hl .il,.hl .mo{color:#D19A66}
+.hl .nf,.hl .fm{color:#61AFEF}
+.hl .nb,.hl .bp{color:#56B6C2}
+.hl .nd,.hl .nl{color:#E06C75}
+.hl .nt{color:#E06C75}.hl .na{color:#D19A66}
+.hl .nv,.hl .vi,.hl .vc,.hl .vg{color:#E06C75}
+.hl .o{color:#ABB2BF}.hl .p{color:#ABB2BF}
+.hl .gp{color:#4ADE80;font-weight:600;user-select:none}.hl .go{color:#9AA7B8}
+.hl .err{color:#E3E8EF;background:none}
+</style>
+</head>
+<body class="deck">
+<div id="top"><a href="../index.html">← সব কোর্স</a><span class="crumb">Rust 101 · <b id="part"></b></span><a class="hub" href="../../index.html">সব টিউটোরিয়াল</a></div>
+<div id="bar"></div>
+<div id="resume"><span id="resumeText"></span><button id="resumeGo">চালিয়ে যান</button><button class="alt" id="resumeNo">শুরু থেকে</button></div>
+<main id="deck">
+<section class="slide hero" data-part="শুরু" data-title="Rust 101শূন্য থেকে শুরু"><div class="inner"><span class="tag">Rust 101</span><h1>Rust 101<br>শূন্য থেকে শুরু</h1><p class="lead">PHP/Laravel জানেন? তাহলে Rust শেখা অনেক সহজ হবে। প্রতিটি স্লাইডে একটা ছোট ধারণা, একটা ছোট কোড আর তার আসল আউটপুট।</p><ul class="learn"><li>Rust install আর Cargo</li><li>Variable, mut, shadowing, const</li><li>Number, bool, char, String</li><li>Function আর return</li><li>if, loop, while, for, match</li><li>Keyboard থেকে input নেওয়া</li><li>Compiler error পড়তে শেখা</li><li>ছোট project: টাকার নোট ভাঙানো</li></ul><p class="need"><b>আগে জানা দরকার:</b> সাধারণ programming (PHP যথেষ্ট)। প্রতিটি পাঠ ২–৩ মিনিটের।</p><p class="howto">→ তীর চাপুন বা swipe করুন · <b>M</b> সব পাঠের তালিকা · অগ্রগতি নিজে থেকেই সেভ হয়</p></div></section>
+<section class="slide" data-part="শুরু" data-title="Rust কেন শিখবেন?"><div class="inner"><div class="head"><span class="tag">পাঠ ১</span><h2>Rust কেন শিখবেন?</h2></div><div class="body one"><div class="txt"><ul><li><b>দ্রুত:</b> সরাসরি machine code-এ compile হয়, C/C++-এর কাছাকাছি গতি</li><li><b>নিরাপদ:</b> null pointer, memory leak, data race — compile করার সময়ই ধরা পড়ে</li><li><b>Garbage collector নেই:</b> memory কখন ছাড়বে, সেটা compiler নিজেই ঠিক করে</li><li><b>কোথায় চলে:</b> web server, CLI tool, WebAssembly, embedded, এমনকি PHP extension</li></ul><table class="tbl"><tr><th></th><th>PHP</th><th>Rust</th></tr><tr><td>চলে কীভাবে</td><td>Interpreter (প্রতি request-এ)</td><td>আগে compile, তারপর binary</td></tr><tr><td>Type</td><td>Dynamic (চলার সময় ঠিক হয়)</td><td>Static (compile-এর সময় ঠিক হয়)</td></tr><tr><td>ভুল ধরা পড়ে</td><td>অনেক সময় production-এ</td><td>বেশিরভাগ compile-এর সময়েই</td></tr><tr><td>Package manager</td><td>Composer</td><td>Cargo</td></tr></table><div class="callout">💡 Rust শিখতে একটু সময় লাগে, কারণ compiler কড়া। কিন্তু compile হয়ে গেলে program সাধারণত ঠিকঠাক চলে।</div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="Install করুন (rustup)"><div class="inner"><div class="head"><span class="tag">পাঠ ২</span><h2>Install করুন (rustup)</h2></div><div class="body two"><div class="txt"><p>Rust install করার official উপায় হলো <code>rustup</code>। এটা compiler (<code>rustc</code>), <code>cargo</code> আর standard library একসাথে দেয়।</p><ul><li><b>macOS / Linux:</b> ডানের command চালান, তারপর terminal বন্ধ করে আবার খুলুন</li><li><b>Windows:</b> rustup.rs থেকে <code>rustup-init.exe</code> নামিয়ে চালান। Visual Studio C++ Build Tools চাইলে সেটাও install করুন</li><li>Update করতে: <code>rustup update</code></li></ul><div class="callout">💡 Editor হিসেবে VS Code + <b>rust-analyzer</b> extension নিন। Type, error আর auto-complete সাথে সাথে দেখাবে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>curl<span class="w"> </span>--proto<span class="w"> </span><span class="s1">&#39;=https&#39;</span><span class="w"> </span>--tlsv1.2<span class="w"> </span>-sSf<span class="w"> </span>https://sh.rustup.rs<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+<span class="gp">$ </span>rustc<span class="w"> </span>--version
+<span class="gp">$ </span>cargo<span class="w"> </span>--version
+</pre></div>
+</div><div class="term"><div class="term-h">উদাহরণ আউটপুট</div><pre>rustc 1.99.1 (58cf8f9c3 2026-10-13)
+cargo 1.99.1 (5f94df478 2026-08-27)</pre></div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="প্রথম program"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>প্রথম program</h2></div><div class="body two"><div class="txt"><p>প্রতিটি Rust program চলে <code>main</code> function থেকে। <code>println!</code> লেখা প্রিন্ট করে নতুন লাইনে যায়।</p><ul><li><code>fn</code> দিয়ে function বানানো হয়</li><li><code>println!</code>-এর শেষে <code>!</code> মানে এটা একটা <b>macro</b> (সাধারণ function না)</li><li>প্রতিটি statement-এর শেষে <code>;</code></li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>echo "Assalamu Alaikum\n";</code> — Rust-এ এর জন্য পুরো <code>main</code> function লাগে।</div><div class="callout task"><b>নিজে করুন</b> নিজের নাম আর জেলার নাম দুই লাইনে প্রিন্ট করুন।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Assalamu Alaikum, Bangladesh!&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Rust শেখা শুরু হলো 🚀&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Assalamu Alaikum, Bangladesh!
+Rust শেখা শুরু হলো 🚀</pre></div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="Cargo: Rust-এর Composer"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>Cargo: Rust-এর Composer</h2></div><div class="body two"><div class="txt"><p>বাস্তব project-এ আমরা <code>rustc</code> সরাসরি না চালিয়ে <code>cargo</code> ব্যবহার করি। এটা project বানায়, build করে, চালায়, আর package (crate) নামায়।</p><table class="tbl"><tr><th>Cargo</th><th>কাজ</th><th>Composer/Laravel-এ</th></tr><tr><td><code>cargo new hello</code></td><td>নতুন project</td><td><code>composer create-project</code></td></tr><tr><td><code>cargo run</code></td><td>build করে চালায়</td><td><code>php artisan serve</code> এর মতো</td></tr><tr><td><code>cargo build --release</code></td><td>দ্রুত, optimize করা binary</td><td>—</td></tr><tr><td><code>cargo add serde</code></td><td>crate যোগ</td><td><code>composer require</code></td></tr><tr><td><code>Cargo.toml</code></td><td>project-এর তথ্য ও dependency</td><td><code>composer.json</code></td></tr></table></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>cargo<span class="w"> </span>new<span class="w"> </span>hello
+<span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>hello
+<span class="gp">$ </span>cargo<span class="w"> </span>run
+</pre></div>
+</div><div class="term"><div class="term-h">উদাহরণ আউটপুট</div><pre>   Compiling hello v0.1.0 (/home/rahim/hello)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.52s
+     Running `target/debug/hello`
+Hello, world!</pre></div><div class="code"><div class="code-h"><span>Cargo.toml</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">[package]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;hello&quot;</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;0.1.0&quot;</span>
+<span class="n">edition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;2024&quot;</span>
+
+<span class="k">[dependencies]</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="println! দিয়ে সুন্দর করে প্রিন্ট"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>println! দিয়ে সুন্দর করে প্রিন্ট</h2></div><div class="body two"><div class="txt"><p><code>{}</code> জায়গায় মান বসে। Variable-এর নাম সরাসরি <code>{name}</code> লেখা যায়।</p><ul><li><code>{:.2}</code> — দশমিকের পর ২ ঘর</li><li><code>{:>8}</code> — ডানে সাজিয়ে ৮ ঘর জায়গা</li><li><code>{:?}</code> — debug আকারে (পরে কাজে লাগবে)</li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>printf("%.2f", $price)</code> বা <code>"Hello {$name}"</code> — Rust-এ সব <code>{}</code> দিয়ে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Rahim&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1250.5</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">qty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Customer: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Customer: {name}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Total: {:.2} টাকা&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">qty</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">f64</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;[{:&gt;8}] [{:&lt;8}]&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ডানে&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;বামে&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{:?}&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">qty</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Customer: Rahim
+Customer: Rahim
+Total: 3751.50 টাকা
+[    ডানে] [বামে    ]
+(&quot;Rahim&quot;, 3)</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="let: variable সাধারণত বদলানো যায় না"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>let: variable সাধারণত বদলানো যায় না</h2></div><div class="body two"><div class="txt"><p>Rust-এ <code>let</code> দিয়ে variable বানাই। ডিফল্টভাবে এটা <b>immutable</b> — একবার মান দিলে আর বদলানো যায় না।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে <code>$x = 5; $x = 6;</code> চলে। Rust-এ বদলাতে চাইলে আগে থেকে বলে দিতে হয়।</div><div class="callout">💡 Error message-এর শেষে compiler নিজেই সমাধান বলে দিচ্ছে: <code>let mut balance</code>। Rust compiler-এর error পড়তে শিখলে অর্ধেক কাজ শেষ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Balance: {balance}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">700</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Balance: {balance}&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Compiler বলছে (ইচ্ছাকৃত ভুল)</div><pre>error[E0384]: cannot assign twice to immutable variable `balance`
+ --&gt; src/main.rs:4:5
+  |
+2 |     let balance = 500;
+  |         ------- first assignment to `balance`
+3 |     println!(&quot;Balance: {balance}&quot;);
+4 |     balance = 700;
+  |     ^^^^^^^^^^^^^ cannot assign twice to immutable variable
+  |
+help: consider making this binding mutable
+  |
+2 |     let mut balance = 500;
+  |         +++</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="mut: বদলানোর অনুমতি"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>mut: বদলানোর অনুমতি</h2></div><div class="body two"><div class="txt"><p>বদলাতে চাইলে <code>let mut</code> লিখুন। এতে কোড পড়েই বোঝা যায় কোন মান বদলাবে আর কোনটা বদলাবে না।</p><details class="quiz"><summary>❓ <code>let x = 1;</code> লিখে পরে <code>x += 1;</code> করলে কী হবে?</summary><p>Compile হবে না (E0384)। <code>let mut x = 1;</code> লিখতে হবে।</p></details></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;শুরুতে: {balance} টাকা&quot;</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">200</span><span class="p">;</span><span class="w">   </span><span class="c1">// bKash থেকে এলো</span>
+<span class="w">    </span><span class="n">balance</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mi">50</span><span class="p">;</span><span class="w">             </span><span class="c1">// রিকশা ভাড়া</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;এখন: {balance} টাকা&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>শুরুতে: 500 টাকা
+এখন: 650 টাকা</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="Shadowing: একই নামে নতুন variable"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>Shadowing: একই নামে নতুন variable</h2></div><div class="body two"><div class="txt"><p>একই নামে আবার <code>let</code> লিখলে আগের variable ঢাকা পড়ে যায় (shadow)। এতে type-ও বদলানো যায়।</p><ul><li><code>mut</code> একই variable-এর মান বদলায়, type বদলাতে পারে না</li><li>Shadowing নতুন variable বানায়, তাই type বদলানো যায়</li><li>ইনপুট পরিষ্কার করতে খুব কাজে লাগে: text → number</li></ul></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">phone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;  01711-000000  &quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">phone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">phone</span><span class="p">.</span><span class="n">trim</span><span class="p">();</span><span class="w">          </span><span class="c1">// একই নাম, নতুন মান</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;[{phone}]&quot;</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">qty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;12&quot;</span><span class="p">;</span><span class="w">                    </span><span class="c1">// এটা text (&amp;str)</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">qty</span><span class="p">:</span><span class="w"> </span><span class="kt">i32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qty</span><span class="p">.</span><span class="n">parse</span><span class="p">().</span><span class="n">unwrap</span><span class="p">();</span><span class="w"> </span><span class="c1">// এখন number</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;দ্বিগুণ: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">qty</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>[01711-000000]
+দ্বিগুণ: 24</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="const: কখনো না বদলানো মান"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>const: কখনো না বদলানো মান</h2></div><div class="body two"><div class="txt"><p><code>const</code> সব সময় immutable, type লিখতেই হবে, আর নাম সাধারণত বড় হাতের অক্ষরে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>config()</code> বা PHP-র <code>const VAT = 15;</code> এর মতো।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">const</span><span class="w"> </span><span class="n">VAT_PERCENT</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">15.0</span><span class="p">;</span>
+<span class="k">const</span><span class="w"> </span><span class="n">SHOP_NAME</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Rahim Mobile&quot;</span><span class="p">;</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1000.0</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">vat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">VAT_PERCENT</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">100.0</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{SHOP_NAME}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;দাম {price}, VAT {vat}, মোট {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">vat</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Rahim Mobile
+দাম 1000, VAT 150, মোট 1150</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="Integer: পূর্ণ সংখ্যা"><div class="inner"><div class="head"><span class="tag">পাঠ ১০</span><h2>Integer: পূর্ণ সংখ্যা</h2></div><div class="body two"><div class="txt"><p>Rust-এ number-এর আকার আপনি ঠিক করেন। <code>i</code> = চিহ্নসহ (ঋণাত্মক হতে পারে), <code>u</code> = শুধু ধনাত্মক।</p><table class="tbl"><tr><th>Type</th><th>সীমা</th><th>কখন</th></tr><tr><td><code>i32</code></td><td>প্রায় ±২১৪ কোটি</td><td>ডিফল্ট, সাধারণ কাজে</td></tr><tr><td><code>i64</code></td><td>অনেক বড়</td><td>টাকার হিসাব (পয়সায়), id</td></tr><tr><td><code>u8</code></td><td>০ – ২৫৫</td><td>বয়স, byte</td></tr><tr><td><code>usize</code></td><td>machine অনুযায়ী</td><td>index, length</td></tr></table><div class="callout">💡 টাকার হিসাব কখনো float-এ রাখবেন না। পয়সায় (<code>i64</code>) রাখুন: ১২.৫০ টাকা = ১২৫০ পয়সা।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">age</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">25</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">population</span><span class="p">:</span><span class="w"> </span><span class="kt">i64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">17_00_00_000</span><span class="p">;</span><span class="w">  </span><span class="c1">// _ শুধু পড়ার সুবিধার জন্য</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="p">;</span><span class="w">                        </span><span class="c1">// ধরে নেয় i32</span>
+
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;বয়স {age}, জনসংখ্যা {population}, তাপমাত্রা {temp}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;u8 সর্বোচ্চ: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="kt">u8</span><span class="p">::</span><span class="n">MAX</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;i32 সর্বোচ্চ: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="kt">i32</span><span class="p">::</span><span class="n">MAX</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>বয়স 25, জনসংখ্যা 170000000, তাপমাত্রা -3
+u8 সর্বোচ্চ: 255
+i32 সর্বোচ্চ: 2147483647</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="Float আর ভাগের ফাঁদ"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>Float আর ভাগের ফাঁদ</h2></div><div class="body two"><div class="txt"><p>দশমিক সংখ্যার জন্য <code>f64</code>। দুইটা integer ভাগ করলে ফলও integer হয় — দশমিক বাদ যায়।</p><ul><li><code>7 / 2</code> = <code>3</code> (integer ভাগ)</li><li><code>7.0 / 2.0</code> = <code>3.5</code></li><li>Type বদলাতে <code>as</code>: <code>7 as f64</code></li><li><code>%</code> = ভাগশেষ</li></ul></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{} / {} = {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;ভাগশেষ = {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;দশমিকসহ = {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">f64</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">f64</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;পাই ≈ {:.3}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="kt">f64</span><span class="p">::</span><span class="n">consts</span><span class="p">::</span><span class="n">PI</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>7 / 2 = 3
+ভাগশেষ = 1
+দশমিকসহ = 3.5
+পাই ≈ 3.142</pre></div><div class="code php"><div class="code-h php"><span>PHP-তে তুলনা</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="cp">&lt;?php</span>
+<span class="k">echo</span> <span class="mi">7</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>        <span class="c1">// PHP দশমিক দেয়</span>
+<span class="k">echo</span> <span class="nb">intdiv</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>  <span class="c1">// integer ভাগ আলাদা function</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">PHP আউটপুট</div><pre>3.5
+3</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="bool আর char"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>bool আর char</h2></div><div class="body two"><div class="txt"><p><code>bool</code> হয় <code>true</code> নয়তো <code>false</code>। <code>char</code> একটা অক্ষর, single quote দিয়ে — বাংলা অক্ষরও চলে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে <code>'অ'</code> একটা string। Rust-এ <code>'অ'</code> হলো <code>char</code>, আর <code>"অ"</code> হলো string।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">is_open</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">has_stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;দোকান খোলা? {is_open}, স্টক আছে? {has_stock}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;দুটোই? {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">is_open</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">has_stock</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">letter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;অ&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">emoji</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;📱&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{letter} {emoji}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;&#39;অ&#39; এর memory: {} byte&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">mem</span><span class="p">::</span><span class="n">size_of</span><span class="p">::</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>দোকান খোলা? true, স্টক আছে? false
+দুটোই? false
+অ 📱
+&#x27;অ&#x27; এর memory: 4 byte</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="String: দুই ধরনের লেখা"><div class="inner"><div class="head"><span class="tag">পাঠ ১৩</span><h2>String: দুই ধরনের লেখা</h2></div><div class="body two"><div class="txt"><p>আপাতত মনে রাখুন: <code>"Dhaka"</code> লিখলে পাই <code>&str</code> (স্থির লেখা)। বদলানো বা বাড়ানো যায় এমন লেখার জন্য <code>String</code>।</p><ul><li><code>String::from("..")</code> বা <code>"..".to_string()</code> দিয়ে String</li><li><code>push_str</code> দিয়ে শেষে যোগ</li><li><code>format!</code> — println!-এর মতো, কিন্তু String ফেরত দেয়</li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে <code>$a . $b</code>। Rust-এ সবচেয়ে সহজ <code>format!("{a}{b}")</code>।</div><div class="callout warn">⚠️ <code>len()</code> অক্ষর না, <b>byte</b> গোনে। বাংলা অক্ষর ৩ byte করে, তাই বাংলায় সংখ্যা বড় দেখাবে। ১০২-এ বিস্তারিত।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">city</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Dhaka&quot;</span><span class="p">;</span><span class="w">                    </span><span class="c1">// &amp;str</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">from</span><span class="p">(</span><span class="s">&quot;Mirpur 10&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">address</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">address</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="n">city</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{address}&quot;</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">&quot;{} — {} অক্ষর&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">.</span><span class="n">len</span><span class="p">());</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{line}&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Mirpur 10, Dhaka
+Mirpur 10, Dhaka — 16 অক্ষর</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="Tuple: কয়েকটা মান একসাথে"><div class="inner"><div class="head"><span class="tag">পাঠ ১৪</span><h2>Tuple: কয়েকটা মান একসাথে</h2></div><div class="body two"><div class="txt"><p>আলাদা type-এর কয়েকটা মান একসাথে রাখতে tuple। <code>.0</code>, <code>.1</code> দিয়ে নেওয়া যায়, অথবা ভেঙে আলাদা variable-এ।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র <code>[$name, $price] = ['Redmi', 23500];</code> এর মতো।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;Redmi Note 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">23500</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;নাম: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">product</span><span class="p">.</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;দাম: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">product</span><span class="p">.</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">in_stock</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">product</span><span class="p">;</span><span class="w">   </span><span class="c1">// ভেঙে নেওয়া</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{name} — {price} টাকা — স্টকে: {in_stock}&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>নাম: Redmi Note 13
+দাম: 23500
+Redmi Note 13 — 23500 টাকা — স্টকে: true</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="Array: একই type-এর নির্দিষ্ট সংখ্যক মান"><div class="inner"><div class="head"><span class="tag">পাঠ ১৫</span><h2>Array: একই type-এর নির্দিষ্ট সংখ্যক মান</h2></div><div class="body two"><div class="txt"><p>Array-এর দৈর্ঘ্য স্থির। দৈর্ঘ্য বাড়াতে-কমাতে হলে <code>Vec</code> লাগে (১০২-এ)।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP array একসাথে list আর map। Rust-এ এগুলো আলাদা: array/<code>Vec</code> (list) আর <code>HashMap</code> (key-value)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;শনি&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;রবি&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;সোম&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;মঙ্গল&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;বুধ&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;বৃহস্পতি&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;শুক্র&quot;</span><span class="p">];</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1200</span><span class="p">,</span><span class="w"> </span><span class="mi">3400</span><span class="p">,</span><span class="w"> </span><span class="mi">2100</span><span class="p">];</span>
+
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;প্রথম দিন: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">days</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;মোট দিন: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">days</span><span class="p">.</span><span class="n">len</span><span class="p">());</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;সব বিক্রি: {:?}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">sales</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">zeros</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="mi">5</span><span class="p">];</span><span class="w">       </span><span class="c1">// ৫টা শূন্য</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{:?}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">zeros</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>প্রথম দিন: শনি
+মোট দিন: 7
+সব বিক্রি: [1200, 3400, 2100]
+[0, 0, 0, 0, 0]</pre></div></div></div></div></section>
+<section class="slide" data-part="Variables ও Types" data-title="Array-এর বাইরে গেলে কী হয়?"><div class="inner"><div class="head"><span class="tag">পাঠ ১৬</span><h2>Array-এর বাইরে গেলে কী হয়?</h2></div><div class="body two"><div class="txt"><p>PHP-তে ভুল index দিলে শুধু warning আর <code>null</code>। Rust সাথে সাথে program থামিয়ে দেয় (<b>panic</b>), ভুল মান নিয়ে চলতে দেয় না।</p><div class="callout">💡 নিরাপদে নিতে <code>sales.get(5)</code> — এটা panic না করে "নেই" (<code>None</code>) ফেরত দেয়। ১০২-এ <code>Option</code> শিখব।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1200</span><span class="p">,</span><span class="w"> </span><span class="mi">3400</span><span class="p">,</span><span class="w"> </span><span class="mi">2100</span><span class="p">];</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">   </span><span class="c1">// ইচ্ছা করে ভুল index</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;চেষ্টা করছি index {index}...&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">sales</span><span class="p">[</span><span class="n">index</span><span class="p">]);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term panic"><div class="term-h">Program থেমে গেল (panic)</div><pre>চেষ্টা করছি index 5...
+thread &#x27;main&#x27; panicked at src/main.rs:5:20:
+index out of bounds: the len is 3 but the index is 5</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="Function বানানো"><div class="inner"><div class="head"><span class="tag">পাঠ ১৭</span><h2>Function বানানো</h2></div><div class="body two"><div class="txt"><p><code>fn</code> দিয়ে function। Parameter-এর type অবশ্যই লিখতে হবে — Rust এখানে অনুমান করে না।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>function greet(string $name): void</code> — PHP-তে type ঐচ্ছিক, Rust-এ বাধ্যতামূলক।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">greet</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;স্বাগতম {name}, {district} থেকে!&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">greet</span><span class="p">(</span><span class="s">&quot;Karim&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Sylhet&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">greet</span><span class="p">(</span><span class="s">&quot;Nusrat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Rajshahi&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>স্বাগতম Karim, Sylhet থেকে!
+স্বাগতম Nusrat, Rajshahi থেকে!</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="Return: শেষ লাইনই ফলাফল"><div class="inner"><div class="head"><span class="tag">পাঠ ১৮</span><h2>Return: শেষ লাইনই ফলাফল</h2></div><div class="body two"><div class="txt"><p><code>-> i64</code> দিয়ে return type বলি। শেষ লাইনে <b>semicolon না দিলে</b> সেটাই ফেরত যায়। আগে ফেরত দিতে <code>return</code> লেখা যায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">total_price</span><span class="p">(</span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="kt">i64</span><span class="p">,</span><span class="w"> </span><span class="n">qty</span><span class="p">:</span><span class="w"> </span><span class="kt">i64</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">i64</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">qty</span><span class="w">            </span><span class="c1">// ; নেই, তাই এটাই return</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">discount</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span><span class="w"> </span><span class="kt">i64</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">i64</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">          </span><span class="c1">// আগে ফেরত দেওয়া</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_price</span><span class="p">(</span><span class="mi">450</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;মোট {t}, ছাড় {}, দেবেন {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">discount</span><span class="p">(</span><span class="n">t</span><span class="p">),</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">discount</span><span class="p">(</span><span class="n">t</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>মোট 1800, ছাড় 90, দেবেন 1710</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="একটা ; দিলেই error"><div class="inner"><div class="head"><span class="tag">পাঠ ১৯</span><h2>একটা ; দিলেই error</h2></div><div class="body two"><div class="txt"><p>শেষ লাইনে ভুল করে <code>;</code> দিলে সেটা আর মান থাকে না, হয়ে যায় statement — ফলে কিছুই ফেরত যায় না (<code>()</code>)। Compiler ধরে ফেলে।</p><div class="callout">💡 Error-এর <code>help: remove this semicolon</code> লাইনটা দেখুন — compiler ঠিক জায়গা দেখিয়ে দিচ্ছে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">i32</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">square</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Compiler বলছে (ইচ্ছাকৃত ভুল)</div><pre>error[E0308]: mismatched types
+ --&gt; src/main.rs:1:22
+  |
+1 | fn square(x: i32) -&gt; i32 {
+  |    ------            ^^^ expected `i32`, found `()`
+  |    |
+  |    implicitly returns `()` as its body has no tail or `return` expression
+2 |     x * x;
+  |          - help: remove this semicolon to return this value</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="Block-ও একটা মান"><div class="inner"><div class="head"><span class="tag">পাঠ ২০</span><h2>Block-ও একটা মান</h2></div><div class="body two"><div class="txt"><p><code>{ }</code> block-এর শেষ লাইন (semicolon ছাড়া) পুরো block-এর মান হয়। তাই block দিয়ে variable-এ মান বসানো যায়।</p><details class="quiz"><summary>❓ <code>let x = { 5; };</code> হলে <code>x</code> কী?</summary><p><code>()</code> — খালি মান, কারণ <code>5;</code> statement।</p></details></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">bill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">rice</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">75</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">     </span><span class="c1">// ১০ কেজি চাল</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">oil</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">190</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">      </span><span class="c1">// ২ লিটার তেল</span>
+<span class="w">        </span><span class="n">rice</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">oil</span><span class="w">              </span><span class="c1">// block-এর মান</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;বাজারের বিল: {bill} টাকা&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>বাজারের বিল: 1130 টাকা</pre></div></div></div></div></section>
+<section class="slide" data-part="if, loop, match" data-title="if/else: শর্ত অবশ্যই bool"><div class="inner"><div class="head"><span class="tag">পাঠ ২১</span><h2>if/else: শর্ত অবশ্যই bool</h2></div><div class="body two"><div class="txt"><p>শর্তের চারপাশে bracket লাগে না। কিন্তু শর্ত অবশ্যই <code>bool</code> হতে হবে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে <code>if ($count)</code> চলে (0 মানে false)। Rust-এ এটা error — লিখতে হবে <code>if count &gt; 0</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;স্টক আছে&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Compiler বলছে (ইচ্ছাকৃত ভুল)</div><pre>error[E0308]: mismatched types
+ --&gt; src/main.rs:3:8
+  |
+3 |     if stock {
+  |        ^^^^^ expected `bool`, found integer</pre></div><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;স্টক আছে: {stock}টা&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;স্টক শেষ&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>স্টক আছে: 3টা</pre></div></div></div></div></section>
+<section class="slide" data-part="if, loop, match" data-title="if একটা মান দেয়"><div class="inner"><div class="head"><span class="tag">পাঠ ২২</span><h2>if একটা মান দেয়</h2></div><div class="body two"><div class="txt"><p><code>if</code> নিজেই একটা expression, তাই সরাসরি variable-এ রাখা যায়। দুই দিকের type একই হতে হবে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র ternary <code>$x = $a &gt; 0 ? 'হ্যাঁ' : 'না';</code> — Rust-এ আলাদা ternary নেই, <code>if</code>-ই সেই কাজ করে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1800</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">delivery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1500</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">delivery</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;ফ্রি ডেলিভারি&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s">&quot;ডেলিভারি চার্জ&quot;</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{label}: {delivery} টাকা&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>ফ্রি ডেলিভারি: 0 টাকা</pre></div></div></div></div></section>
+<section class="slide" data-part="if, loop, match" data-title="else if: GPA বের করি"><div class="inner"><div class="head"><span class="tag">পাঠ ২৩</span><h2>else if: GPA বের করি</h2></div><div class="body two"><div class="txt"><p>প্রতিটি শাখা একটা <code>&str</code> ফেরত দিচ্ছে, তাই পুরো <code>if</code> function-এর return মান।</p><div class="callout">💡 <code>&'static str</code> মানে লেখাটা পুরো program জুড়ে থাকবে। <code>'static</code> নিয়ে ১০৩-এ বিস্তারিত।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">grade</span><span class="p">(</span><span class="n">marks</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">&#39;</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">marks</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">80</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;A+&quot;</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">marks</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">70</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;A&quot;</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">marks</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;A-&quot;</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">marks</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">50</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;B&quot;</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">marks</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">33</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;C/D&quot;</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;F&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="mi">95</span><span class="p">,</span><span class="w"> </span><span class="mi">72</span><span class="p">,</span><span class="w"> </span><span class="mi">48</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{m} নম্বর → {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">grade</span><span class="p">(</span><span class="n">m</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>95 নম্বর → A+
+72 নম্বর → A
+48 নম্বর → C/D
+20 নম্বর → F</pre></div></div></div></div></section>
+<section class="slide" data-part="if, loop, match" data-title="loop: থামতে বলা পর্যন্ত চলে"><div class="inner"><div class="head"><span class="tag">পাঠ ২৪</span><h2>loop: থামতে বলা পর্যন্ত চলে</h2></div><div class="body two"><div class="txt"><p><code>loop</code> চিরকাল চলে, <code>break</code> দিয়ে থামাতে হয়। <code>break</code>-এর সাথে একটা মানও ফেরত দেওয়া যায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">savings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">month</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">months_needed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">loop</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">month</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">        </span><span class="n">savings</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">savings</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span><span class="w">   </span><span class="c1">// মাসে ১০% বাড়ে</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">savings</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">2000</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">break</span><span class="w"> </span><span class="n">month</span><span class="p">;</span><span class="w">                 </span><span class="c1">// মান সহ বের হলাম</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{months_needed} মাসে দ্বিগুণ, এখন {savings} টাকা&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>8 মাসে দ্বিগুণ, এখন 2142 টাকা</pre></div></div></div></div></section>
+<section class="slide" data-part="if, loop, match" data-title="while: শর্ত সত্য থাকা পর্যন্ত"><div class="inner"><div class="head"><span class="tag">পাঠ ২৫</span><h2>while: শর্ত সত্য থাকা পর্যন্ত</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র <code>while ($s &gt; 0) { ... }</code> একদম একই, শুধু bracket আর <code>$</code> নেই।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">seconds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="n">seconds</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{seconds}...&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="n">seconds</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;রকেট উড়ল! 🚀&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>5...
+4...
+3...
+2...
+1...
+রকেট উড়ল! 🚀</pre></div></div></div></div></section>
+<section class="slide" data-part="if, loop, match" data-title="for আর range: নামতা"><div class="inner"><div class="head"><span class="tag">পাঠ ২৬</span><h2>for আর range: নামতা</h2></div><div class="body two"><div class="txt"><p><code>1..=10</code> মানে ১ থেকে ১০ (১০ সহ)। <code>1..10</code> মানে ১০ বাদ। উল্টো দিকে যেতে <code>.rev()</code>।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>for ($i = 1; $i &lt;= 5; $i++)</code> আর <code>foreach ($cities as $city)</code> — Rust-এ দুটোই <code>for ... in</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">..=</span><span class="mi">5</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{n} × {i} = {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="o">..=</span><span class="mi">3</span><span class="p">).</span><span class="n">rev</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">print!</span><span class="p">(</span><span class="s">&quot;{i} &quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">();</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">city</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;Dhaka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Khulna&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Barishal&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">print!</span><span class="p">(</span><span class="s">&quot;{city} | &quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>7 × 1 = 7
+7 × 2 = 14
+7 × 3 = 21
+7 × 4 = 28
+7 × 5 = 35
+3 2 1 
+Dhaka | Khulna | Barishal |</pre></div></div></div></div></section>
+<section class="slide" data-part="if, loop, match" data-title="match: PHP 8-এর match-এর বড় ভাই"><div class="inner"><div class="head"><span class="tag">পাঠ ২৭</span><h2>match: PHP 8-এর match-এর বড় ভাই</h2></div><div class="body two"><div class="txt"><p><code>match</code> একটা মানকে কয়েকটা pattern-এর সাথে মিলিয়ে দেখে। <b>সব সম্ভাবনা</b> ধরতেই হবে — বাকি সবকিছুর জন্য <code>_</code>।</p><ul><li><code>1 | 7</code> — এটা বা ওটা</li><li><code>2..=6</code> — range</li><li><code>_</code> — বাকি সব</li></ul></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">day_type</span><span class="p">(</span><span class="n">day</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">&#39;</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">day</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="mi">6</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;ছুটি (শুক্রবার)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="mi">7</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;হাফ ডে (শনিবার)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="mi">1</span><span class="o">..=</span><span class="mi">5</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;কাজের দিন&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;ভুল দিন&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">9</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;দিন {d}: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">day_type</span><span class="p">(</span><span class="n">d</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>দিন 1: কাজের দিন
+দিন 6: ছুটি (শুক্রবার)
+দিন 7: হাফ ডে (শনিবার)
+দিন 9: ভুল দিন</pre></div><div class="code php"><div class="code-h php"><span>PHP 8-এ তুলনা</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="cp">&lt;?php</span>
+<span class="nv">$day</span> <span class="o">=</span> <span class="mi">6</span><span class="p">;</span>
+<span class="k">echo</span> <span class="k">match</span> <span class="p">(</span><span class="k">true</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$day</span> <span class="o">===</span> <span class="mi">6</span> <span class="o">=&gt;</span> <span class="s2">&quot;ছুটি&quot;</span><span class="p">,</span>
+    <span class="nv">$day</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="nv">$day</span> <span class="o">&lt;=</span> <span class="mi">5</span> <span class="o">=&gt;</span> <span class="s2">&quot;কাজের দিন&quot;</span><span class="p">,</span>
+    <span class="k">default</span> <span class="o">=&gt;</span> <span class="s2">&quot;অন্য&quot;</span><span class="p">,</span>
+<span class="p">},</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">PHP আউটপুট</div><pre>ছুটি</pre></div></div></div></div></section>
+<section class="slide" data-part="if, loop, match" data-title="match ভুলে গেলে compiler মনে করিয়ে দেয়"><div class="inner"><div class="head"><span class="tag">পাঠ ২৮</span><h2>match ভুলে গেলে compiler মনে করিয়ে দেয়</h2></div><div class="body two"><div class="txt"><p><code>_</code> বাদ দিলে compiler বলবে কোন মানগুলো ধরা হয়নি। একে বলে <b>exhaustive</b> check — বড় project-এ অনেক bug আটকায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">rating</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">match</span><span class="w"> </span><span class="n">rating</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="mi">1</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;খারাপ&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="mi">2</span><span class="o">..=</span><span class="mi">3</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;মোটামুটি&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="mi">4</span><span class="o">..=</span><span class="mi">5</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;ভালো&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{text}&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Compiler বলছে (ইচ্ছাকৃত ভুল)</div><pre>error[E0004]: non-exhaustive patterns: `0_u8` and `6_u8..=u8::MAX` not covered
+ --&gt; src/main.rs:3:22
+  |
+3 |     let text = match rating {
+  |                      ^^^^^^ patterns `0_u8` and `6_u8..=u8::MAX` not covered
+  |
+  = note: the matched value is of type `u8`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern, a match arm with multiple or-patterns as shown, or multiple match arms
+  |
+6 ~         4..=5 =&gt; &quot;ভালো&quot;,
+7 ~         0_u8 | 6_u8..=u8::MAX =&gt; todo!(),
+  |</pre></div></div></div></div></section>
+<section class="slide" data-part="Input ও Project" data-title="Keyboard থেকে input"><div class="inner"><div class="head"><span class="tag">পাঠ ২৯</span><h2>Keyboard থেকে input</h2></div><div class="body two"><div class="txt"><p><code>std::io::stdin().read_line()</code> একটা লাইন পড়ে String-এ রাখে। তারপর <code>trim()</code> করে <code>parse()</code> দিয়ে number বানাই।</p><ul><li><code>use std::io;</code> — library থেকে <code>io</code> আনলাম (PHP-র <code>use</code>-এর মতো)</li><li><code>&mut input</code> — function-কে আমাদের String বদলানোর অনুমতি দিলাম</li><li><code>.expect("...")</code> — ভুল হলে এই বার্তা দিয়ে থামবে</li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP CLI-তে <code>$kg = (int) trim(fgets(STDIN));</code></div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">io</span><span class="p">;</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;কত কেজি চাল কিনবেন?&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">new</span><span class="p">();</span>
+<span class="w">    </span><span class="n">io</span><span class="p">::</span><span class="n">stdin</span><span class="p">().</span><span class="n">read_line</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">input</span><span class="p">).</span><span class="n">expect</span><span class="p">(</span><span class="s">&quot;পড়া গেল না&quot;</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">kg</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">trim</span><span class="p">().</span><span class="n">parse</span><span class="p">().</span><span class="n">expect</span><span class="p">(</span><span class="s">&quot;সংখ্যা লিখুন&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{kg} কেজি × ৭৫ টাকা = {} টাকা&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">kg</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">75</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><div class="stdin">ইনপুট: 12</div><pre>কত কেজি চাল কিনবেন?
+12 কেজি × ৭৫ টাকা = 900 টাকা</pre></div></div></div></div></section>
+<section class="slide" data-part="Input ও Project" data-title="ভুল input-এ কী হয়?"><div class="inner"><div class="head"><span class="tag">পাঠ ৩০</span><h2>ভুল input-এ কী হয়?</h2></div><div class="body two"><div class="txt"><p><code>parse()</code> ব্যর্থ হলে <code>expect</code> program থামায়। আপাতত এটাই যথেষ্ট — ১০২-এ <code>Result</code> দিয়ে সুন্দরভাবে সামলানো শিখব।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">io</span><span class="p">;</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">new</span><span class="p">();</span>
+<span class="w">    </span><span class="n">io</span><span class="p">::</span><span class="n">stdin</span><span class="p">().</span><span class="n">read_line</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">input</span><span class="p">).</span><span class="n">expect</span><span class="p">(</span><span class="s">&quot;পড়া গেল না&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">kg</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">trim</span><span class="p">().</span><span class="n">parse</span><span class="p">().</span><span class="n">expect</span><span class="p">(</span><span class="s">&quot;সংখ্যা লিখুন&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{kg}&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term panic"><div class="term-h">Program থেমে গেল (panic)</div><pre>thread &#x27;main&#x27; panicked at src/main.rs:6:40:
+সংখ্যা লিখুন: ParseIntError { kind: InvalidDigit }</pre></div></div></div></div></section>
+<section class="slide" data-part="Input ও Project" data-title="Project: টাকার নোট ভাঙানো"><div class="inner"><div class="head"><span class="tag">পাঠ ৩১</span><h2>Project: টাকার নোট ভাঙানো</h2></div><div class="body two"><div class="txt"><p>ক্যাশ কাউন্টারে ফেরত দিতে কোন নোট কয়টা লাগবে? Array, for, integer ভাগ আর ভাগশেষ — সব একসাথে।</p><div class="callout task"><b>নিজে করুন</b> শেষে মোট কয়টা নোট লাগল সেটাও প্রিন্ট করুন (একটা <code>let mut total = 0;</code> লাগবে)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">io</span><span class="p">;</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">notes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">];</span>
+
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;কত টাকা ফেরত দিতে হবে?&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">new</span><span class="p">();</span>
+<span class="w">    </span><span class="n">io</span><span class="p">::</span><span class="n">stdin</span><span class="p">().</span><span class="n">read_line</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">input</span><span class="p">).</span><span class="n">expect</span><span class="p">(</span><span class="s">&quot;পড়া গেল না&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">amount</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">trim</span><span class="p">().</span><span class="n">parse</span><span class="p">().</span><span class="n">expect</span><span class="p">(</span><span class="s">&quot;সংখ্যা লিখুন&quot;</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">note</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">notes</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">note</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{note:&gt;5} টাকার নোট × {count}&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">amount</span><span class="w"> </span><span class="o">%=</span><span class="w"> </span><span class="n">note</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><div class="stdin">ইনপুট: 2785</div><pre>কত টাকা ফেরত দিতে হবে?
+ 1000 টাকার নোট × 2
+  500 টাকার নোট × 1
+  200 টাকার নোট × 1
+   50 টাকার নোট × 1
+   20 টাকার নোট × 1
+   10 টাকার নোট × 1
+    5 টাকার নোট × 1</pre></div></div></div></div></section>
+<section class="slide" data-part="Input ও Project" data-title="Compiler-কে বন্ধু বানান"><div class="inner"><div class="head"><span class="tag">পাঠ ৩২</span><h2>Compiler-কে বন্ধু বানান</h2></div><div class="body one"><div class="txt"><p>প্রতিদিন কাজে লাগে এমন কয়েকটা command:</p><table class="tbl"><tr><th>Command</th><th>কী করে</th></tr><tr><td><code>cargo check</code></td><td>binary না বানিয়ে শুধু error খোঁজে — সবচেয়ে দ্রুত</td></tr><tr><td><code>cargo fmt</code></td><td>কোড সুন্দর করে সাজায় (PHP-র Pint-এর মতো)</td></tr><tr><td><code>cargo clippy</code></td><td>ভালো অভ্যাসের পরামর্শ দেয় (PHPStan-এর মতো)</td></tr><tr><td><code>rustc --explain E0384</code></td><td>Error code-এর পুরো ব্যাখ্যা উদাহরণসহ</td></tr></table><div class="steps"><div><i>১</i><span>Error-এর প্রথম লাইন পড়ুন: <code>error[E0384]</code> আর ছোট বর্ণনা</span></div><div><i>২</i><span><code>--&gt;</code> লাইনে file আর line নম্বর</span></div><div><i>৩</i><span><code>help:</code> লাইনে প্রায়ই সমাধান লেখা থাকে</span></div></div><div class="callout">💡 একবারে সব error ঠিক করতে যাবেন না। প্রথমটা ঠিক করুন, আবার <code>cargo check</code> চালান।</div></div></div></div></section>
+<section class="slide hero end" data-part="Input ও Project" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>Rust 101 শেষ! 🎉</h1><p class="lead">আপনি এখন ছোট Rust program লিখতে পারেন। পরের কোর্সে Rust-এর সবচেয়ে গুরুত্বপূর্ণ ধারণা: Ownership।</p><div class="steps done"><div><i>✓</i><span><code>let</code> ডিফল্টে immutable, বদলাতে <code>mut</code></span></div><div><i>✓</i><span>Integer ভাগে দশমিক বাদ যায়, টাকা রাখুন পয়সায়</span></div><div><i>✓</i><span>শেষ লাইনে <code>;</code> না দিলে সেটাই return</span></div><div><i>✓</i><span><code>if</code> শর্ত শুধু <code>bool</code>, আর <code>if</code> একটা মান দেয়</span></div><div><i>✓</i><span><code>match</code>-এ সব সম্ভাবনা ধরতে হয়</span></div><div><i>✓</i><span>Compiler error-এর <code>help:</code> লাইন পড়ুন</span></div></div><div class="btns"><a class="btn" href="../rust-102/index.html">পরের কোর্স: Rust 102 — Ownership ও Data →</a><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+</main>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>window.COURSE="rust-101";
+(function(){
+  var B=function(n){return String(n).replace(/\d/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0,root=document.documentElement;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),menu=document.getElementById('menu');
+  var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'vw)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
+    st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function buildMenu(){var h='',last=null;slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){h+='<h3>'+p+'</h3>';last=p}
+    h+='<a data-go="'+j+'" class="'+(st.seen[j]?'seen ':'')+(j===i?'cur':'')+'"><span>'+B(j+1)+'.</span><span>'+s.getAttribute('data-title')+'</span></a>'});menu.innerHTML=h}
+  function toggleMenu(){if(!menu.classList.contains('open'))buildMenu();menu.classList.toggle('open')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var dark=getComputedStyle(root).getPropertyValue('--bg').trim()==='#0B1220';var t=dark?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tut-theme',t)}catch(e){}}
+  try{var th=localStorage.getItem('tut-theme');if(th)root.setAttribute('data-theme',th)}catch(e){}
+  menu.addEventListener('click',function(e){var a=e.target.closest('a');if(a){go(+a.getAttribute('data-go'));menu.classList.remove('open')}else if(e.target===menu)menu.classList.remove('open')});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;
+    var pre=b.closest('.code').querySelector('pre');var t=pre.innerText.replace(/^\$ /gm,'');
+    var done=function(){b.textContent='কপি হয়েছে ✓';setTimeout(function(){b.textContent='কপি'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done()});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  var x0=null,y0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!e.target.closest('pre'))go(i+(dx<0?1:-1));x0=null});
+  var h=parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
+    if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';
+      r.classList.add('show');document.getElementById('resumeGo').onclick=function(){go(last);r.classList.remove('show')};
+      document.getElementById('resumeNo').onclick=function(){r.classList.remove('show')};}}
+})();
+</script>
+</body>
+</html>

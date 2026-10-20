@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rust 103 — Trait, Iterator ও Concurrency</title>
+<meta name="description" content="Trait (interface), generic, closure, Laravel Collection-এর মতো iterator, test, crate, thread আর async">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.6vh);--navy:#0C1E38;--accent:#0D8A4A;--accent2:#E8F6EE;--amber:#B7791F;--red:#C53030;--php:#4F5B93;
+  --bg:#F4F7FA;--ink:#18263A;--muted:#5B6B80;--card:#fff;--line:#DCE4EE;--codebg:#1E2430}
+:root[data-theme=dark]{--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+.deck html,.deck body{height:100%}
+body.deck{height:100vh;overflow:hidden}
+#deck{height:100%;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100vw;height:100%;overflow-y:auto;padding:60px 4vw 84px}
+.slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
+h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(15px,calc(var(--u)*1.9),28px);color:var(--muted);max-width:36em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--accent);color:#fff;font-weight:600;font-size:clamp(12px,calc(var(--u)*1.15),17px);padding:.3em 1em;border-radius:999px}
+.head{display:flex;flex-direction:column;gap:1vh}
+.body.two{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:3vw;align-items:start}
+.body.one{max-width:1100px}
+.txt{display:flex;flex-direction:column;gap:1.6vh}
+.txt p,.txt li{font-size:clamp(15px,calc(var(--u)*1.6),24px);line-height:1.7}
+.txt ul{list-style:none;padding:0;display:grid;gap:1vh}
+.txt li{padding-left:1.3em;position:relative}
+.txt li::before{content:"";position:absolute;left:0;top:.7em;width:.45em;height:.45em;border-radius:50%;background:var(--accent)}
+code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
+.callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.callout.warn{border-left-color:var(--amber)}
+.callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
+.callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
+.quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.quiz summary{cursor:pointer;font-weight:600;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--accent);font-weight:600;font-size:clamp(14px,calc(var(--u)*1.4),21px);line-height:1.6}
+.tbl{border-collapse:collapse;width:100%;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.tbl th,.tbl td{padding:.9vh .9vw;text-align:left;font-size:clamp(13px,calc(var(--u)*1.35),20px);border-bottom:1px solid var(--line);line-height:1.5}
+.tbl th{background:var(--accent2);font-weight:600}
+.steps{display:grid;gap:1vh}
+.steps div{background:var(--card);border-radius:10px;padding:1.1vh 1vw;font-size:clamp(14px,calc(var(--u)*1.5),22px);display:flex;gap:.9vw;align-items:center;box-shadow:0 3px 12px rgba(12,30,56,.07);line-height:1.5}
+.steps i{flex:0 0 auto;width:2em;height:2em;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.codecol{display:flex;flex-direction:column;gap:1.2vh;min-width:0}
+.code{background:var(--codebg);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#151A23;color:#9AA7B8;font:600 13px 'JetBrains Mono',monospace}
+.code-h.php{background:#262B47;color:#C3C9EE}
+.copy{border:0;background:#2A3242;color:#C9D4E3;font:600 12px 'Hind Siliguri',sans-serif;padding:3px 10px;border-radius:6px;cursor:pointer}
+.copy:hover{background:var(--accent);color:#fff}
+.hl pre{margin:0;padding:12px 16px;overflow-x:auto;font:clamp(12.5px,calc(var(--u)*1.08),17px)/1.55 'JetBrains Mono',monospace;color:#E3E8EF;tab-size:4}
+.hl .hll{background:rgba(255,214,102,.13);display:inline-block;width:100%}
+.term{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0F141C}
+.term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
+.term.error .term-h,.term.panic .term-h{background:#B83434}
+.term.http .term-h{background:#1F5FA8}
+.term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
+pre,code{font-variant-ligatures:none;font-feature-settings:'liga' 0,'calt' 0}  /* show <= -> => as typed */
+.term.error pre,.term.panic pre{color:#FFB4B4}
+.stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
+.hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
+.hero .inner{justify-content:center;max-width:1100px}
+.hero h1{color:#fff}.hero .lead{color:#CFDDEE}
+.hero .learn{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1vh 2vw}
+.hero .learn li{font-size:clamp(14px,calc(var(--u)*1.55),23px);padding-left:1.4em;position:relative;line-height:1.5;color:#E6EEF8}
+.hero .learn li::before{content:"✓";position:absolute;left:0;color:#4ADE80;font-weight:700}
+.hero .need,.hero .howto{color:#AFC2D8;font-size:clamp(13px,calc(var(--u)*1.35),20px)}
+.hero .need b{color:#fff}
+.hero.end .steps div{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.hero.end .steps i{background:#4ADE80;color:#0C1E38}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:#4ADE80;color:#0C1E38;font-weight:700;text-decoration:none;padding:.7em 1.4em;border-radius:999px;font-size:clamp(14px,calc(var(--u)*1.5),21px)}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+#top{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px}
+#top a{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+#top .crumb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#top .hub{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+#bar{position:fixed;left:0;top:44px;height:3px;background:var(--accent);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:600 14px 'Hind Siliguri',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.9);padding:6px 10px;border-radius:999px;white-space:nowrap}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--accent)}
+#count{min-width:64px;text-align:center}
+#menu{position:fixed;inset:0;background:rgba(8,15,28,.94);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:20px;margin:2.4vh 0 .8vh}
+#menu a{display:flex;gap:.6em;color:#dbe7f5;text-decoration:none;padding:.55vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a.seen::after{content:"✓";color:#4ADE80;margin-left:auto}
+#menu a.cur{background:rgba(74,222,128,.18)}
+#menu a:hover{background:var(--accent);color:#fff}
+#resume{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25);border-radius:14px;padding:12px 16px;z-index:8;display:none;gap:10px;align-items:center;font-size:15px;flex-wrap:wrap;justify-content:center}
+#resume.show{display:flex}
+#resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
+#resume button.alt{background:var(--line);color:var(--ink)}
+@media (max-width:900px){body.deck{overflow:hidden}.slide{padding:56px 5vw 96px}.body.two{grid-template-columns:1fr}.hero .learn{grid-template-columns:1fr}}
+@media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
+
+.hl .c,.hl .c1,.hl .cm,.hl .cs,.hl .ch,.hl .cp,.hl .cpf{color:#7F8C98;font-style:italic}
+.hl .k,.hl .kd,.hl .kn,.hl .kr,.hl .kp,.hl .ow{color:#C678DD}
+.hl .kc{color:#D19A66}
+.hl .kt,.hl .nc,.hl .nn{color:#E5C07B}
+.hl .s,.hl .s1,.hl .s2,.hl .sb,.hl .sc,.hl .sd,.hl .sh,.hl .sx,.hl .dl{color:#98C379}
+.hl .se,.hl .si,.hl .sa{color:#56B6C2}
+.hl .m,.hl .mi,.hl .mf,.hl .mh,.hl .mb,.hl .il,.hl .mo{color:#D19A66}
+.hl .nf,.hl .fm{color:#61AFEF}
+.hl .nb,.hl .bp{color:#56B6C2}
+.hl .nd,.hl .nl{color:#E06C75}
+.hl .nt{color:#E06C75}.hl .na{color:#D19A66}
+.hl .nv,.hl .vi,.hl .vc,.hl .vg{color:#E06C75}
+.hl .o{color:#ABB2BF}.hl .p{color:#ABB2BF}
+.hl .gp{color:#4ADE80;font-weight:600;user-select:none}.hl .go{color:#9AA7B8}
+.hl .err{color:#E3E8EF;background:none}
+</style>
+</head>
+<body class="deck">
+<div id="top"><a href="../index.html">← সব কোর্স</a><span class="crumb">Rust 103 · <b id="part"></b></span><a class="hub" href="../../index.html">সব টিউটোরিয়াল</a></div>
+<div id="bar"></div>
+<div id="resume"><span id="resumeText"></span><button id="resumeGo">চালিয়ে যান</button><button class="alt" id="resumeNo">শুরু থেকে</button></div>
+<main id="deck">
+<section class="slide hero" data-part="শুরু" data-title="Rust 103Trait, Iterator ও Concurrency"><div class="inner"><span class="tag">Rust 103</span><h1>Rust 103<br>Trait, Iterator ও Concurrency</h1><p class="lead">এখন আপনি Rust-এর ভাষা জানেন। এই কোর্সে শিখব কীভাবে বড়, পরিষ্কার আর দ্রুত কোড লেখা হয় — যা web development-এ সরাসরি লাগবে।</p><ul class="learn"><li>Trait — PHP interface-এর মতো</li><li>Generic আর trait bound</li><li>Closure (PHP-র fn() =>)</li><li>Iterator — Laravel Collection-এর মতো</li><li>Lifetime-এর মূল ধারণা</li><li>Box, Rc, RefCell</li><li>Test লেখা আর crate ব্যবহার (serde)</li><li>Thread, channel, Arc/Mutex আর async</li></ul><p class="need"><b>আগে জানা দরকার:</b> Rust 102 (ownership, struct, enum, Option, Result)।</p><p class="howto">→ তীর চাপুন বা swipe করুন · <b>M</b> সব পাঠের তালিকা · অগ্রগতি নিজে থেকেই সেভ হয়</p></div></section>
+<section class="slide" data-part="Trait" data-title="Trait: একটা চুক্তি"><div class="inner"><div class="head"><span class="tag">পাঠ ১</span><h2>Trait: একটা চুক্তি</h2></div><div class="body two"><div class="txt"><p>Trait বলে দেয় একটা type-এর কী কী method থাকতেই হবে। যে type trait <code>impl</code> করবে, তাকে সব method লিখতে হবে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>interface Payable { public function amount(): int; }</code> আর <code>class Invoice implements Payable</code> — Rust-এ <code>trait</code> আর <code>impl Payable for Invoice</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">trait</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">amount</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">Invoice</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">}</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">ServiceBill</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">parts</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">,</span><span class="w"> </span><span class="n">labour</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">}</span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Invoice</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">amount</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">total</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">ServiceBill</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">amount</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">parts</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">labour</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Invoice</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="mi">23500</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ServiceBill</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">parts</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span><span class="p">,</span><span class="w"> </span><span class="n">labour</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Invoice: {}, Service: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">amount</span><span class="p">(),</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">amount</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Invoice: 23500, Service: 2300</pre></div></div></div></div></section>
+<section class="slide" data-part="Trait" data-title="Default method"><div class="inner"><div class="head"><span class="tag">পাঠ ২</span><h2>Default method</h2></div><div class="body two"><div class="txt"><p>Trait-এর ভিতরে method-এর ডিফল্ট কোড লেখা যায়। যে type চায়, সে নিজের মতো বদলাতে (override) পারে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে interface-এ কোড থাকে না, তাই <code>trait</code> বা abstract class লাগে। Rust trait দুটো কাজই করে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">trait</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">amount</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">with_vat</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span><span class="w">          </span><span class="c1">// ডিফল্ট কোড</span>
+<span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">amount</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">115</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">Invoice</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">}</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">Donation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">}</span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Invoice</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">amount</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">total</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Donation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">amount</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">total</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">with_vat</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">total</span><span class="w"> </span><span class="p">}</span><span class="w">   </span><span class="c1">// দানে VAT নেই</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Invoice</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">}.</span><span class="n">with_vat</span><span class="p">());</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Donation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">}.</span><span class="n">with_vat</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>1150
+1000</pre></div></div></div></div></section>
+<section class="slide" data-part="Trait" data-title="Trait দিয়ে যেকোনো type নেওয়া"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>Trait দিয়ে যেকোনো type নেওয়া</h2></div><div class="body two"><div class="txt"><p><code>impl Payable</code> parameter মানে "Payable হলেই চলবে"। আলাদা type একই list-এ রাখতে <code>Box&lt;dyn Payable&gt;</code>।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">trait</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">amount</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="p">;</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">label</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">String</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">Invoice</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">no</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">}</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">Expense</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">}</span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Invoice</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">amount</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">total</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">label</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">String</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">&quot;Invoice #{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">no</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+<span class="k">impl</span><span class="w"> </span><span class="n">Payable</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Expense</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">amount</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">cost</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">label</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">String</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">&quot;খরচ: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">show</span><span class="p">(</span><span class="n">item</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">impl</span><span class="w"> </span><span class="n">Payable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{:&lt;14} {:&gt;6}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="n">label</span><span class="p">(),</span><span class="w"> </span><span class="n">item</span><span class="p">.</span><span class="n">amount</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">items</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">Box</span><span class="o">&lt;</span><span class="k">dyn</span><span class="w"> </span><span class="n">Payable</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span>
+<span class="w">        </span><span class="nb">Box</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">Invoice</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">no</span><span class="p">:</span><span class="w"> </span><span class="mi">101</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="mi">23500</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">        </span><span class="nb">Box</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">Expense</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ভাড়া&quot;</span><span class="p">.</span><span class="n">into</span><span class="p">(),</span><span class="w"> </span><span class="n">cost</span><span class="p">:</span><span class="w"> </span><span class="mi">15000</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">    </span><span class="p">];</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">&amp;</span><span class="n">items</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{:&lt;14} {:&gt;6}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">it</span><span class="p">.</span><span class="n">label</span><span class="p">(),</span><span class="w"> </span><span class="n">it</span><span class="p">.</span><span class="n">amount</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">show</span><span class="p">(</span><span class="o">&amp;</span><span class="n">Invoice</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">no</span><span class="p">:</span><span class="w"> </span><span class="mi">102</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="mi">900</span><span class="w"> </span><span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Invoice #101    23500
+খরচ: ভাড়া      15000
+Invoice #102      900</pre></div></div></div></div></section>
+<section class="slide" data-part="Trait" data-title="derive: কাজের trait বিনা খরচে"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>derive: কাজের trait বিনা খরচে</h2></div><div class="body two"><div class="txt"><p>অনেক সাধারণ trait compiler নিজেই লিখে দেয়। <code>#[derive(...)]</code> লিখলেই হলো।</p><table class="tbl"><tr><th>Trait</th><th>কী পাবেন</th></tr><tr><td><code>Debug</code></td><td><code>{:?}</code> দিয়ে প্রিন্ট</td></tr><tr><td><code>Clone</code></td><td><code>.clone()</code></td></tr><tr><td><code>PartialEq</code></td><td><code>==</code> দিয়ে তুলনা</td></tr><tr><td><code>Default</code></td><td><code>Type::default()</code> — সব field ডিফল্ট মানে</td></tr></table></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="cp">#[derive(Debug, Clone, PartialEq, Default)]</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">Customer</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">,</span>
+<span class="w">    </span><span class="n">due</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Customer</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Karim&quot;</span><span class="p">.</span><span class="n">into</span><span class="p">(),</span><span class="w"> </span><span class="n">due</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">clone</span><span class="p">();</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;সমান? {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{:?}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Customer</span><span class="p">::</span><span class="n">default</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>সমান? true
+Customer { name: &quot;&quot;, due: 0 }</pre></div></div></div></div></section>
+<section class="slide" data-part="Trait" data-title="Display: নিজের মতো করে {} দিয়ে প্রিন্ট"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>Display: নিজের মতো করে {} দিয়ে প্রিন্ট</h2></div><div class="body two"><div class="txt"><p><code>{}</code> দিয়ে প্রিন্ট করতে <code>std::fmt::Display</code> trait নিজে লিখতে হয়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র <code>__toString()</code> magic method-এর মতো।</div><div class="callout">💡 <code>struct Taka(i64)</code> হলো tuple struct — একটা মানকে নতুন নাম দেওয়া, যাতে ভুল করে পয়সা আর টাকা মিশে না যায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">fmt</span><span class="p">;</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">Taka</span><span class="p">(</span><span class="kt">i64</span><span class="p">);</span><span class="w">   </span><span class="c1">// পয়সায় রাখা টাকা</span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">fmt</span><span class="p">::</span><span class="n">Display</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Taka</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">fmt</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">fmt</span><span class="p">::</span><span class="n">Formatter</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">fmt</span><span class="p">::</span><span class="nb">Result</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">write!</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;৳{}.{:02}&quot;</span><span class="p">,</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Taka</span><span class="p">(</span><span class="mi">2350050</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;দাম: {price}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;ছাড়: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Taka</span><span class="p">(</span><span class="mi">1999</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>দাম: ৳23500.50
+ছাড়: ৳19.99</pre></div></div></div></div></section>
+<section class="slide" data-part="Generic" data-title="Generic function"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>Generic function</h2></div><div class="body two"><div class="txt"><p><code>&lt;T&gt;</code> মানে "যেকোনো type"। কিন্তু T নিয়ে কী করা যাবে, সেটা trait bound দিয়ে বলতে হয়: <code>T: PartialOrd</code> মানে তুলনা করা যায়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে type না দিলেই যেকোনো type চলে, কিন্তু ভুল type চলার সময় ধরা পড়ে। Rust generic compile-এর সময়েই নিশ্চিত করে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">largest</span><span class="o">&lt;</span><span class="n">T</span><span class="p">:</span><span class="w"> </span><span class="nb">PartialOrd</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">Copy</span><span class="o">&gt;</span><span class="p">(</span><span class="n">list</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="n">T</span><span class="p">])</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">T</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">big</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">list</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="o">&amp;</span><span class="n">item</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">big</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">big</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">item</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">big</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">largest</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">1200</span><span class="p">,</span><span class="w"> </span><span class="mi">3400</span><span class="p">,</span><span class="w"> </span><span class="mi">2100</span><span class="p">]));</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">largest</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mf">4.5</span><span class="p">,</span><span class="w"> </span><span class="mf">3.9</span><span class="p">,</span><span class="w"> </span><span class="mf">4.8</span><span class="p">]));</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">largest</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="sc">&#39;ক&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;খ&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;গ&#39;</span><span class="p">]));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>3400
+4.8
+গ</pre></div></div></div></div></section>
+<section class="slide" data-part="Generic" data-title="Generic struct"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>Generic struct</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>paginate()</code> যেকোনো model-এর জন্য একই — এখানে <code>Paginated&lt;T&gt;</code> যেকোনো type-এর জন্য।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="cp">#[derive(Debug)]</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">Paginated</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">items</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">page</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">,</span>
+<span class="w">    </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Paginated</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">has_next</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">per_page</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">page</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">per_page</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">total</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">phones</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Paginated</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">items</span><span class="p">:</span><span class="w"> </span><span class="nc">vec</span><span class="o">!</span><span class="p">[</span><span class="s">&quot;Redmi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Vivo&quot;</span><span class="p">],</span><span class="w"> </span><span class="n">page</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">prices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Paginated</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">items</span><span class="p">:</span><span class="w"> </span><span class="nc">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="mi">21000</span><span class="p">],</span><span class="w"> </span><span class="n">page</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{:?} → পরের পাতা? {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">phones</span><span class="p">.</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">phones</span><span class="p">.</span><span class="n">has_next</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{:?} → পরের পাতা? {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">prices</span><span class="p">.</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">prices</span><span class="p">.</span><span class="n">has_next</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>[&quot;Redmi&quot;, &quot;Vivo&quot;] → পরের পাতা? true
+[17500, 21000] → পরের পাতা? false</pre></div></div></div></div></section>
+<section class="slide" data-part="Generic" data-title="where: লম্বা bound পরিষ্কার করে লেখা"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>where: লম্বা bound পরিষ্কার করে লেখা</h2></div><div class="body two"><div class="txt"><p>Bound অনেক হলে <code>where</code> ব্লকে লিখলে function-এর প্রথম লাইন পরিষ্কার থাকে।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">fmt</span><span class="p">::</span><span class="n">Display</span><span class="p">;</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">receipt</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">U</span><span class="o">&gt;</span><span class="p">(</span><span class="n">item</span><span class="p">:</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="nc">U</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">String</span>
+<span class="nc">where</span>
+<span class="w">    </span><span class="n">T</span><span class="p">:</span><span class="w"> </span><span class="nc">Display</span><span class="p">,</span>
+<span class="w">    </span><span class="n">U</span><span class="p">:</span><span class="w"> </span><span class="nc">Display</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">Copy</span><span class="p">,</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="fm">format!</span><span class="p">(</span><span class="s">&quot;{item} ........ {price} টাকা&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">receipt</span><span class="p">(</span><span class="s">&quot;Charger&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">));</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">receipt</span><span class="p">(</span><span class="nb">String</span><span class="p">::</span><span class="n">from</span><span class="p">(</span><span class="s">&quot;Cover&quot;</span><span class="p">),</span><span class="w"> </span><span class="mf">250.5</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Charger ........ 650 টাকা
+Cover ........ 250.5 টাকা</pre></div></div></div></div></section>
+<section class="slide" data-part="Closure ও Iterator" data-title="Closure: ছোট নামহীন function"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>Closure: ছোট নামহীন function</h2></div><div class="body two"><div class="txt"><p><code>|x| x * 2</code> হলো closure। এটা চারপাশের variable ব্যবহার (capture) করতে পারে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP 7.4-এর arrow function <code>fn($x) =&gt; $x * $rate</code> একদম একই ধারণা — PHP-তেও বাইরের <code>$rate</code> নিজে থেকেই পায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">vat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">15</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">with_vat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">|</span><span class="n">amount</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="o">|</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">vat</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span><span class="w">   </span><span class="c1">// vat capture করল</span>
+
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">with_vat</span><span class="p">(</span><span class="mi">1000</span><span class="p">));</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">with_vat</span><span class="p">(</span><span class="mi">2400</span><span class="p">));</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">tick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">   </span><span class="c1">// বদলালে closure-ও mut</span>
+<span class="w">    </span><span class="n">tick</span><span class="p">();</span>
+<span class="w">    </span><span class="n">tick</span><span class="p">();</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;ডাকা হলো {count} বার&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>1150
+2760
+ডাকা হলো 2 বার</pre></div></div></div></div></section>
+<section class="slide" data-part="Closure ও Iterator" data-title="Iterator: Laravel Collection-এর মতো"><div class="inner"><div class="head"><span class="tag">পাঠ ১০</span><h2>Iterator: Laravel Collection-এর মতো</h2></div><div class="body two"><div class="txt"><p><code>.iter()</code> থেকে শুরু করে <code>map</code>, <code>filter</code> জুড়ে শেষে <code>collect()</code> বা <code>sum()</code>। এটা lazy — শেষ ধাপ না ডাকা পর্যন্ত কিছুই চলে না।</p><div class="callout">💡 Laravel-এ: <code>collect($prices)-&gt;filter(...)-&gt;map(...)-&gt;values()</code>। Rust-এ একই ভাবনা, কিন্তু compile-এর পর সাধারণ loop-এর মতোই দ্রুত।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">prices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">,</span><span class="w"> </span><span class="mi">21000</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">9900</span><span class="p">];</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">expensive</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u32</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prices</span><span class="p">.</span><span class="n">iter</span><span class="p">()</span>
+<span class="w">        </span><span class="p">.</span><span class="n">filter</span><span class="p">(</span><span class="o">|&amp;&amp;</span><span class="n">p</span><span class="o">|</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">5000</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">|&amp;</span><span class="n">p</span><span class="o">|</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">95</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w">        </span><span class="c1">// ৫% ছাড়</span>
+<span class="w">        </span><span class="p">.</span><span class="n">collect</span><span class="p">();</span>
+
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;দামি ফোন (ছাড়সহ): {:?}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">expensive</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;মোট: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">prices</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">sum</span><span class="p">::</span><span class="o">&lt;</span><span class="kt">u32</span><span class="o">&gt;</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>দামি ফোন (ছাড়সহ): [16625, 19950, 9405]
+মোট: 49300</pre></div><div class="code php"><div class="code-h php"><span>PHP-তে একই কাজ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="cp">&lt;?php</span>
+<span class="nv">$prices</span> <span class="o">=</span> <span class="p">[</span><span class="mi">17500</span><span class="p">,</span> <span class="mi">650</span><span class="p">,</span> <span class="mi">21000</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">9900</span><span class="p">];</span>
+<span class="nv">$expensive</span> <span class="o">=</span> <span class="nb">array_values</span><span class="p">(</span><span class="nb">array_map</span><span class="p">(</span><span class="nx">fn</span><span class="p">(</span><span class="nv">$p</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nb">intdiv</span><span class="p">(</span><span class="nv">$p</span> <span class="o">*</span> <span class="mi">95</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+    <span class="nb">array_filter</span><span class="p">(</span><span class="nv">$prices</span><span class="p">,</span> <span class="nx">fn</span><span class="p">(</span><span class="nv">$p</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nv">$p</span> <span class="o">&gt;=</span> <span class="mi">5000</span><span class="p">)));</span>
+<span class="k">echo</span> <span class="nb">json_encode</span><span class="p">(</span><span class="nv">$expensive</span><span class="p">),</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+<span class="k">echo</span> <span class="nb">array_sum</span><span class="p">(</span><span class="nv">$prices</span><span class="p">),</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">PHP আউটপুট</div><pre>[16625,19950,9405]
+49300</pre></div></div></div></div></section>
+<section class="slide" data-part="Closure ও Iterator" data-title="struct-এর list-এ iterator"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>struct-এর list-এ iterator</h2></div><div class="body two"><div class="txt"><table class="tbl"><tr><th>Laravel Collection</th><th>Rust iterator</th></tr><tr><td><code>where()</code> / <code>filter()</code></td><td><code>filter()</code></td></tr><tr><td><code>pluck('model')</code></td><td><code>map(|s| s.model)</code></td></tr><tr><td><code>sum('price')</code></td><td><code>map(..).sum()</code></td></tr><tr><td><code>sortByDesc()->first()</code></td><td><code>max_by_key()</code></td></tr><tr><td><code>first(fn)</code></td><td><code>find()</code></td></tr></table></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">Sale</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">seller</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">&#39;</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">&#39;</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span>
+<span class="w">        </span><span class="n">Sale</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">seller</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Karim&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="mi">17500</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="n">Sale</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">seller</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Nusrat&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Galaxy A15&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="mi">21000</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="n">Sale</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">seller</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Karim&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Charger&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="mi">650</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="n">Sale</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">seller</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Rahim&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Vivo Y28&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="mi">18000</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">];</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">karim</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">filter</span><span class="p">(</span><span class="o">|</span><span class="n">s</span><span class="o">|</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">seller</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Karim&quot;</span><span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="o">|</span><span class="n">s</span><span class="o">|</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">price</span><span class="p">).</span><span class="n">sum</span><span class="p">();</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">top</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">max_by_key</span><span class="p">(</span><span class="o">|</span><span class="n">s</span><span class="o">|</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">price</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">cheap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">find</span><span class="p">(</span><span class="o">|</span><span class="n">s</span><span class="o">|</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">price</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1000</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">models</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">map</span><span class="p">(</span><span class="o">|</span><span class="n">s</span><span class="o">|</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">model</span><span class="p">).</span><span class="n">collect</span><span class="p">();</span>
+
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Karim-এর বিক্রি: {karim}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;সবচেয়ে দামি: {} ({})&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">top</span><span class="p">.</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">top</span><span class="p">.</span><span class="n">price</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;১০০০-এর কম: {:?}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cheap</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">|</span><span class="n">s</span><span class="o">|</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">model</span><span class="p">));</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;সব model: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">models</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Karim-এর বিক্রি: 18150
+সবচেয়ে দামি: Galaxy A15 (21000)
+১০০০-এর কম: Some(&quot;Charger&quot;)
+সব model: Redmi 13, Galaxy A15, Charger, Vivo Y28</pre></div></div></div></div></section>
+<section class="slide" data-part="Closure ও Iterator" data-title="enumerate, zip আর sort"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>enumerate, zip আর sort</h2></div><div class="body two"><div class="txt"><ul><li><code>zip</code> — দুই list জোড়া লাগায়</li><li><code>enumerate</code> — সাথে index দেয় (০ থেকে)</li><li><code>sort_by</code> — নিজের তুলনা; <code>b.cmp(a)</code> মানে উল্টো ক্রম</li></ul></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;Karim&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Nusrat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Rahim&quot;</span><span class="p">];</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">52000</span><span class="p">,</span><span class="w"> </span><span class="mi">87000</span><span class="p">,</span><span class="w"> </span><span class="mi">61000</span><span class="p">];</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">board</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="p">(</span><span class="o">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="kt">u32</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">names</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">copied</span><span class="p">().</span><span class="n">zip</span><span class="p">(</span><span class="n">sales</span><span class="p">).</span><span class="n">collect</span><span class="p">();</span>
+<span class="w">    </span><span class="n">board</span><span class="p">.</span><span class="n">sort_by</span><span class="p">(</span><span class="o">|</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="o">|</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="mf">1.</span><span class="n">cmp</span><span class="p">(</span><span class="o">&amp;</span><span class="n">a</span><span class="p">.</span><span class="mi">1</span><span class="p">));</span><span class="w">      </span><span class="c1">// বেশি থেকে কম</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="p">))</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">board</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">enumerate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}. {name:&lt;7} {amount:&gt;6}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>1. Nusrat   87000
+2. Rahim    61000
+3. Karim    52000</pre></div></div></div></div></section>
+<section class="slide" data-part="Lifetime" data-title="Lifetime: reference কতক্ষণ বাঁচবে"><div class="inner"><div class="head"><span class="tag">পাঠ ১৩</span><h2>Lifetime: reference কতক্ষণ বাঁচবে</h2></div><div class="body two"><div class="txt"><p>দুটো reference নিয়ে একটা ফেরত দিলে compiler জানতে চায়: ফেরত দেওয়া reference কোনটার সাথে বাঁচবে?</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">longer</span><span class="p">(</span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">longer</span><span class="p">(</span><span class="s">&quot;Dhaka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Chattogram&quot;</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Compiler বলছে (ইচ্ছাকৃত ভুল)</div><pre>error[E0106]: missing lifetime specifier
+ --&gt; src/main.rs:1:32
+  |
+1 | fn longer(a: &amp;str, b: &amp;str) -&gt; &amp;str {
+  |              ----     ----     ^ expected named lifetime parameter
+  |
+  = help: this function&#x27;s return type contains a borrowed value, but the signature does not say whether it is borrowed from `a` or `b`
+help: consider introducing a named lifetime parameter
+  |
+1 | fn longer&lt;&#x27;a&gt;(a: &amp;&#x27;a str, b: &amp;&#x27;a str) -&gt; &amp;&#x27;a str {
+  |          ++++     ++          ++          ++</pre></div></div></div></div></section>
+<section class="slide" data-part="Lifetime" data-title="&#x27;a দিয়ে সম্পর্ক বলে দেওয়া"><div class="inner"><div class="head"><span class="tag">পাঠ ১৪</span><h2>'a দিয়ে সম্পর্ক বলে দেওয়া</h2></div><div class="body two"><div class="txt"><p><code>'a</code> একটা নাম মাত্র। এর মানে: "ফেরত দেওয়া reference ততক্ষণ ঠিক থাকবে, যতক্ষণ a আর b দুটোই ঠিক থাকে"। এটা memory বদলায় না, শুধু compiler-কে সম্পর্কটা জানায়।</p><div class="callout">💡 বেশিরভাগ সময় lifetime লিখতে হয় না, compiler নিজেই বুঝে নেয়। শুধু compiler জিজ্ঞেস করলে লিখুন।</div><details class="quiz"><summary>❓ <code>&'static str</code> মানে কী?</summary><p>এমন লেখা যা পুরো program জুড়ে বেঁচে থাকে — যেমন code-এর ভিতরের <code>"literal"</code>।</p></details></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">longer</span><span class="o">&lt;&#39;</span><span class="na">a</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">&#39;</span><span class="na">a</span><span class="w"> </span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">&#39;</span><span class="na">a</span><span class="w"> </span><span class="kt">str</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">&#39;</span><span class="na">a</span><span class="w"> </span><span class="kt">str</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">city1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">from</span><span class="p">(</span><span class="s">&quot;Dhaka&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">city2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">from</span><span class="p">(</span><span class="s">&quot;Chattogram&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;লম্বা নাম: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">longer</span><span class="p">(</span><span class="o">&amp;</span><span class="n">city1</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">city2</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>লম্বা নাম: Chattogram</pre></div></div></div></div></section>
+<section class="slide" data-part="Smart pointer" data-title="Box: heap-এ রাখা"><div class="inner"><div class="head"><span class="tag">পাঠ ১৫</span><h2>Box: heap-এ রাখা</h2></div><div class="body two"><div class="txt"><p><code>Box&lt;T&gt;</code> মানটা heap-এ রাখে। দরকার হয় যখন আকার compile-এর সময় জানা নেই — যেমন নিজের ভিতরে নিজেকে রাখা (tree)।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">enum</span><span class="w"> </span><span class="nc">Category</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">Leaf</span><span class="p">(</span><span class="o">&amp;&#39;</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="p">),</span>
+<span class="w">    </span><span class="n">Group</span><span class="p">(</span><span class="o">&amp;&#39;</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">Box</span><span class="o">&lt;</span><span class="n">Category</span><span class="o">&gt;&gt;</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="n">c</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Category</span><span class="p">,</span><span class="w"> </span><span class="n">depth</span><span class="p">:</span><span class="w"> </span><span class="kt">usize</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">usize</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Category</span><span class="p">::</span><span class="n">Leaf</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}- {name}&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;  &quot;</span><span class="p">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">depth</span><span class="p">));</span>
+<span class="w">            </span><span class="mi">1</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">Category</span><span class="p">::</span><span class="n">Group</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">kids</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}+ {name}&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;  &quot;</span><span class="p">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">depth</span><span class="p">));</span>
+<span class="w">            </span><span class="n">kids</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">map</span><span class="p">(</span><span class="o">|</span><span class="n">k</span><span class="o">|</span><span class="w"> </span><span class="n">count</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">depth</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)).</span><span class="n">sum</span><span class="p">()</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">tree</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Category</span><span class="p">::</span><span class="n">Group</span><span class="p">(</span><span class="s">&quot;Mobile&quot;</span><span class="p">,</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span>
+<span class="w">        </span><span class="nb">Box</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">Category</span><span class="p">::</span><span class="n">Leaf</span><span class="p">(</span><span class="s">&quot;Smartphone&quot;</span><span class="p">)),</span>
+<span class="w">        </span><span class="nb">Box</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">Category</span><span class="p">::</span><span class="n">Group</span><span class="p">(</span><span class="s">&quot;Accessories&quot;</span><span class="p">,</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span>
+<span class="w">            </span><span class="nb">Box</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">Category</span><span class="p">::</span><span class="n">Leaf</span><span class="p">(</span><span class="s">&quot;Charger&quot;</span><span class="p">)),</span>
+<span class="w">            </span><span class="nb">Box</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">Category</span><span class="p">::</span><span class="n">Leaf</span><span class="p">(</span><span class="s">&quot;Cover&quot;</span><span class="p">)),</span>
+<span class="w">        </span><span class="p">])),</span>
+<span class="w">    </span><span class="p">]);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;মোট পাতা-category: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tree</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>+ Mobile
+  - Smartphone
+  + Accessories
+    - Charger
+    - Cover
+মোট পাতা-category: 3</pre></div></div></div></div></section>
+<section class="slide" data-part="Smart pointer" data-title="Rc: একাধিক মালিক"><div class="inner"><div class="head"><span class="tag">পাঠ ১৬</span><h2>Rc: একাধিক মালিক</h2></div><div class="body two"><div class="txt"><p>Ownership-এ মালিক একজন। কিন্তু কখনো কয়েকজনকে একই data-র মালিক হতে হয় — তখন <code>Rc</code> (reference counted)। শেষ মালিক চলে গেলে data drop হয়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে সব object এভাবেই চলে (refcount)। Rust-এ এটা আপনি নিজে বেছে নেন, তাই খরচটা চোখে পড়ে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">rc</span><span class="p">::</span><span class="n">Rc</span><span class="p">;</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">Shop</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="w"> </span><span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">shop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Rc</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">Shop</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Rahim Mobile&quot;</span><span class="p">.</span><span class="n">into</span><span class="p">()</span><span class="w"> </span><span class="p">});</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">for_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Rc</span><span class="p">::</span><span class="n">clone</span><span class="p">(</span><span class="o">&amp;</span><span class="n">shop</span><span class="p">);</span><span class="w">      </span><span class="c1">// কপি না, শুধু গণনা বাড়ল</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">for_report</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Rc</span><span class="p">::</span><span class="n">clone</span><span class="p">(</span><span class="o">&amp;</span><span class="n">shop</span><span class="p">);</span>
+
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{} — মালিক {} জন&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">for_pos</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">Rc</span><span class="p">::</span><span class="n">strong_count</span><span class="p">(</span><span class="o">&amp;</span><span class="n">shop</span><span class="p">));</span>
+<span class="w">    </span><span class="nb">drop</span><span class="p">(</span><span class="n">for_report</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;একজন গেল — মালিক {} জন&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Rc</span><span class="p">::</span><span class="n">strong_count</span><span class="p">(</span><span class="o">&amp;</span><span class="n">shop</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Rahim Mobile — মালিক 3 জন
+একজন গেল — মালিক 2 জন</pre></div></div></div></div></section>
+<section class="slide" data-part="Smart pointer" data-title="RefCell: ধার নিয়মের হিসাব চলার সময়"><div class="inner"><div class="head"><span class="tag">পাঠ ১৭</span><h2>RefCell: ধার নিয়মের হিসাব চলার সময়</h2></div><div class="body two"><div class="txt"><p><code>Rc</code>-এর ভিতরের মান বদলানো যায় না। বদলাতে <code>Rc&lt;RefCell&lt;T&gt;&gt;</code>। নিয়ম ভাঙলে compile error না, চলার সময় panic।</p><div class="callout warn">⚠️ RefCell সহজ মনে হলেও আগে সাধারণ <code>&mut</code> দিয়ে চেষ্টা করুন। Web server-এ thread-এর মধ্যে ভাগ করতে <code>Arc&lt;Mutex&gt;</code> লাগবে (এই কোর্সেই সামনে)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">cell</span><span class="p">::</span><span class="n">RefCell</span><span class="p">;</span>
+<span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">rc</span><span class="p">::</span><span class="n">Rc</span><span class="p">;</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">cart</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Rc</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">RefCell</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="nb">Vec</span><span class="p">::</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="o">&gt;</span><span class="p">::</span><span class="n">new</span><span class="p">()));</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Rc</span><span class="p">::</span><span class="n">clone</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cart</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Rc</span><span class="p">::</span><span class="n">clone</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cart</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">pos</span><span class="p">.</span><span class="n">borrow_mut</span><span class="p">().</span><span class="n">push</span><span class="p">(</span><span class="s">&quot;Charger&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">borrow_mut</span><span class="p">().</span><span class="n">push</span><span class="p">(</span><span class="s">&quot;Cover&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;Cart: {:?}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cart</span><span class="p">.</span><span class="n">borrow</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Cart: [&quot;Charger&quot;, &quot;Cover&quot;]</pre></div></div></div></div></section>
+<section class="slide" data-part="Test ও Crate" data-title="Test লেখা"><div class="inner"><div class="head"><span class="tag">পাঠ ১৮</span><h2>Test লেখা</h2></div><div class="body two"><div class="txt"><p>Function-এর উপরে <code>#[test]</code>, ভিতরে <code>assert_eq!</code>। <code>cargo test</code> সব test চালায় — আলাদা package লাগে না।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHPUnit/Pest-এর <code>expect($x)-&gt;toBe(5)</code> এর মতো। Rust-এ test সাধারণত একই file-এর নিচে <code>mod tests</code>-এ থাকে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">vat</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">15</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">discount</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">10_000</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cp">#[cfg(test)]</span>
+<span class="k">mod</span><span class="w"> </span><span class="nn">tests</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">use</span><span class="w"> </span><span class="k">super</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">vat_is_15_percent</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">vat</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span><span class="w"> </span><span class="mi">150</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">no_discount_below_10k</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">discount</span><span class="p">(</span><span class="mi">9_999</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">ten_percent_from_10k</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">discount</span><span class="p">(</span><span class="mi">20_000</span><span class="p">),</span><span class="w"> </span><span class="mi">2_000</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">cargo test</div><pre>
+running 3 tests
+test tests::no_discount_below_10k ... ok
+test tests::ten_percent_from_10k ... ok
+test tests::vat_is_15_percent ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s</pre></div><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>cargo<span class="w"> </span><span class="nb">test</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Test ও Crate" data-title="Test ব্যর্থ হলে"><div class="inner"><div class="head"><span class="tag">পাঠ ১৯</span><h2>Test ব্যর্থ হলে</h2></div><div class="body two"><div class="txt"><p>কোডে bug থাকলে test ঠিক কোন মান আশা করেছিল আর কী পেয়েছে, দুটোই দেখায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">fn</span><span class="w"> </span><span class="nf">delivery_charge</span><span class="p">(</span><span class="n">district</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Dhaka&quot;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">120</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cp">#[cfg(test)]</span>
+<span class="k">mod</span><span class="w"> </span><span class="nn">tests</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">use</span><span class="w"> </span><span class="k">super</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">dhaka_is_60</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">delivery_charge</span><span class="p">(</span><span class="s">&quot;Dhaka&quot;</span><span class="p">),</span><span class="w"> </span><span class="mi">60</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">gazipur_is_also_inside_dhaka_rate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">delivery_charge</span><span class="p">(</span><span class="s">&quot;Gazipur&quot;</span><span class="p">),</span><span class="w"> </span><span class="mi">60</span><span class="p">);</span><span class="w">   </span><span class="c1">// নতুন নিয়ম, কোড এখনো পুরনো</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term panic"><div class="term-h">cargo test — একটা test ব্যর্থ (ইচ্ছাকৃত)</div><pre>
+running 2 tests
+test tests::dhaka_is_60 ... ok
+test tests::gazipur_is_also_inside_dhaka_rate ... FAILED
+
+failures:
+
+---- tests::gazipur_is_also_inside_dhaka_rate stdout ----
+
+thread &#x27;tests::gazipur_is_also_inside_dhaka_rate&#x27; (35486462) panicked at src/main.rs:16:9:
+assertion `left == right` failed
+  left: 120
+ right: 60
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::gazipur_is_also_inside_dhaka_rate
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s</pre></div></div></div></div></section>
+<section class="slide" data-part="Test ও Crate" data-title="Crate ব্যবহার: serde দিয়ে JSON"><div class="inner"><div class="head"><span class="tag">পাঠ ২০</span><h2>Crate ব্যবহার: serde দিয়ে JSON</h2></div><div class="body two"><div class="txt"><p><code>cargo add</code> দিয়ে crate যোগ করি। JSON-এর জন্য সবাই <code>serde</code> + <code>serde_json</code> ব্যবহার করে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>json_encode($product)</code> বা Laravel-এর <code>return $product;</code> — Rust-এ <code>#[derive(Serialize)]</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>cargo<span class="w"> </span>add<span class="w"> </span>serde<span class="w"> </span>--features<span class="w"> </span>derive
+<span class="gp">$ </span>cargo<span class="w"> </span>add<span class="w"> </span>serde_json
+</pre></div>
+</div><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">serde</span><span class="p">::</span><span class="n">Serialize</span><span class="p">;</span>
+
+<span class="cp">#[derive(Serialize)]</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">Product</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">,</span>
+<span class="w">    </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="p">,</span>
+<span class="w">    </span><span class="n">in_stock</span><span class="p">:</span><span class="w"> </span><span class="kt">bool</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Product</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Redmi 13&quot;</span><span class="p">.</span><span class="n">into</span><span class="p">(),</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="n">in_stock</span><span class="p">:</span><span class="w"> </span><span class="nc">true</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">serde_json</span><span class="p">::</span><span class="n">to_string</span><span class="p">(</span><span class="o">&amp;</span><span class="n">p</span><span class="p">).</span><span class="n">unwrap</span><span class="p">());</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">serde_json</span><span class="p">::</span><span class="n">to_string_pretty</span><span class="p">(</span><span class="o">&amp;</span><span class="n">p</span><span class="p">).</span><span class="n">unwrap</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>{&quot;id&quot;:7,&quot;name&quot;:&quot;Redmi 13&quot;,&quot;price&quot;:17500,&quot;in_stock&quot;:true}
+{
+  &quot;id&quot;: 7,
+  &quot;name&quot;: &quot;Redmi 13&quot;,
+  &quot;price&quot;: 17500,
+  &quot;in_stock&quot;: true
+}</pre></div></div></div></div></section>
+<section class="slide" data-part="Test ও Crate" data-title="JSON থেকে struct"><div class="inner"><div class="head"><span class="tag">পাঠ ২১</span><h2>JSON থেকে struct</h2></div><div class="body two"><div class="txt"><p><code>Deserialize</code> করলে JSON পড়ে struct বানায়। কোনো field না মিললে বা type ভুল হলে <code>Err</code> দেয় — ভুল data ভিতরে ঢোকে না।</p><div class="callout">💡 Laravel-এ <code>$request-&gt;validate()</code> যে কাজ করে, Rust web-এ অনেকটা সেটাই হয় শুধু type দিয়ে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">serde</span><span class="p">::</span><span class="n">Deserialize</span><span class="p">;</span>
+
+<span class="cp">#[derive(Deserialize)]</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">Order</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">customer</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">,</span>
+<span class="w">    </span><span class="n">items</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">paid</span><span class="p">:</span><span class="w"> </span><span class="kt">bool</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">good</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">r#&quot;{&quot;customer&quot;:&quot;Nusrat&quot;,&quot;items&quot;:[&quot;Charger&quot;,&quot;Cover&quot;],&quot;paid&quot;:true}&quot;#</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">bad</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">r#&quot;{&quot;customer&quot;:&quot;Karim&quot;,&quot;items&quot;:&quot;Charger&quot;,&quot;paid&quot;:true}&quot;#</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">order</span><span class="p">:</span><span class="w"> </span><span class="nc">Order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">serde_json</span><span class="p">::</span><span class="n">from_str</span><span class="p">(</span><span class="n">good</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{} — {} আইটেম — paid: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">order</span><span class="p">.</span><span class="n">customer</span><span class="p">,</span><span class="w"> </span><span class="n">order</span><span class="p">.</span><span class="n">items</span><span class="p">.</span><span class="n">len</span><span class="p">(),</span><span class="w"> </span><span class="n">order</span><span class="p">.</span><span class="n">paid</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">serde_json</span><span class="p">::</span><span class="n">from_str</span><span class="p">::</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nb">Ok</span><span class="p">(</span><span class="n">o</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">customer</span><span class="p">),</span>
+<span class="w">        </span><span class="nb">Err</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;ভুল JSON: {e}&quot;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Nusrat — 2 আইটেম — paid: true
+ভুল JSON: invalid type: string &quot;Charger&quot;, expected a sequence at line 1 column 37</pre></div></div></div></div></section>
+<section class="slide" data-part="Concurrency" data-title="Thread: একসাথে কয়েকটা কাজ"><div class="inner"><div class="head"><span class="tag">পাঠ ২২</span><h2>Thread: একসাথে কয়েকটা কাজ</h2></div><div class="body two"><div class="txt"><p><code>thread::spawn</code> নতুন thread চালায়। <code>join()</code> দিয়ে শেষ হওয়া পর্যন্ত অপেক্ষা করি। <code>move</code> দিয়ে data thread-এ পাঠাই।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> সাধারণ PHP একটা request-এ একটা কাজ করে। একসাথে কাজ চালাতে Laravel queue বা আলাদা process লাগে। Rust এক program-এর ভিতরেই নিরাপদে পারে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">thread</span><span class="p">;</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">branches</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="s">&quot;Mirpur&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Uttara&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Gulshan&quot;</span><span class="p">];</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">handles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Vec</span><span class="p">::</span><span class="n">new</span><span class="p">();</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">branch</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">branches</span><span class="p">.</span><span class="n">into_iter</span><span class="p">().</span><span class="n">enumerate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">handles</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">thread</span><span class="p">::</span><span class="n">spawn</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">10_000</span><span class="p">;</span><span class="w">   </span><span class="c1">// ধরি হিসাব করতে সময় লাগে</span>
+<span class="w">            </span><span class="p">(</span><span class="n">branch</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">)</span>
+<span class="w">        </span><span class="p">}));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">handles</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">branch</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">.</span><span class="n">join</span><span class="p">().</span><span class="n">unwrap</span><span class="p">();</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{branch}: {total}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Mirpur: 10000
+Uttara: 20000
+Gulshan: 30000</pre></div></div></div></div></section>
+<section class="slide" data-part="Concurrency" data-title="Channel: thread থেকে বার্তা পাঠানো"><div class="inner"><div class="head"><span class="tag">পাঠ ২৩</span><h2>Channel: thread থেকে বার্তা পাঠানো</h2></div><div class="body two"><div class="txt"><p><code>mpsc::channel()</code> একটা পাইপ: অনেকে পাঠাতে (<code>tx</code>) পারে, একজন নেয় (<code>rx</code>)।</p><div class="callout warn">⚠️ Thread কোনটা আগে শেষ করবে তার ঠিক নেই — "পেলাম" লাইনের ক্রম প্রতিবার বদলাতে পারে, কিন্তু মোট সবসময় একই।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">sync</span><span class="p">::</span><span class="n">mpsc</span><span class="p">;</span>
+<span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">thread</span><span class="p">;</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">tx</span><span class="p">,</span><span class="w"> </span><span class="n">rx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mpsc</span><span class="p">::</span><span class="n">channel</span><span class="p">();</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">branch</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;Mirpur&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Uttara&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Gulshan&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">tx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tx</span><span class="p">.</span><span class="n">clone</span><span class="p">();</span>
+<span class="w">        </span><span class="n">thread</span><span class="p">::</span><span class="n">spawn</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">sale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">branch</span><span class="p">.</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="p">;</span>
+<span class="w">            </span><span class="n">tx</span><span class="p">.</span><span class="n">send</span><span class="p">((</span><span class="n">branch</span><span class="p">,</span><span class="w"> </span><span class="n">sale</span><span class="p">)).</span><span class="n">unwrap</span><span class="p">();</span>
+<span class="w">        </span><span class="p">});</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="nb">drop</span><span class="p">(</span><span class="n">tx</span><span class="p">);</span><span class="w">   </span><span class="c1">// মূল tx বন্ধ, নইলে rx চিরকাল অপেক্ষা করবে</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">branch</span><span class="p">,</span><span class="w"> </span><span class="n">sale</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">rx</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">sale</span><span class="p">;</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;পেলাম {branch}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;সব শাখা মিলে: {total}&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>পেলাম Mirpur
+পেলাম Uttara
+পেলাম Gulshan
+সব শাখা মিলে: 19000</pre></div></div></div></div></section>
+<section class="slide" data-part="Concurrency" data-title="Arc + Mutex: ভাগ করা data নিরাপদে বদলানো"><div class="inner"><div class="head"><span class="tag">পাঠ ২৪</span><h2>Arc + Mutex: ভাগ করা data নিরাপদে বদলানো</h2></div><div class="body two"><div class="txt"><p>অনেক thread একটা মান বদলাতে চাইলে: <code>Arc</code> (thread-safe Rc) দিয়ে ভাগ, <code>Mutex</code> দিয়ে একবারে একজন। Web server-এর shared state ঠিক এভাবেই।</p><details class="quiz"><summary>❓ Mutex ছাড়া শুধু <code>Arc&lt;i32&gt;</code> দিয়ে বদলাতে চাইলে কী হবে?</summary><p>Compile হবে না। Rust data race-কে compile error বানায় — এটাই "fearless concurrency"।</p></details></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">sync</span><span class="p">::{</span><span class="n">Arc</span><span class="p">,</span><span class="w"> </span><span class="n">Mutex</span><span class="p">};</span>
+<span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">thread</span><span class="p">;</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Arc</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">Mutex</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="mi">100</span><span class="p">));</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">handles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[];</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">0</span><span class="o">..</span><span class="mi">10</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Arc</span><span class="p">::</span><span class="n">clone</span><span class="p">(</span><span class="o">&amp;</span><span class="n">stock</span><span class="p">);</span>
+<span class="w">        </span><span class="n">handles</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">thread</span><span class="p">::</span><span class="n">spawn</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stock</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">unwrap</span><span class="p">();</span><span class="w">   </span><span class="c1">// তালা দিলাম</span>
+<span class="w">            </span><span class="o">*</span><span class="n">s</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">                              </span><span class="c1">// ৩টা বিক্রি</span>
+<span class="w">        </span><span class="p">}));</span><span class="w">                                      </span><span class="c1">// scope শেষে তালা খুলল</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">handles</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">h</span><span class="p">.</span><span class="n">join</span><span class="p">().</span><span class="n">unwrap</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;বাকি স্টক: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">unwrap</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>বাকি স্টক: 70</pre></div></div></div></div></section>
+<section class="slide" data-part="Concurrency" data-title="async/await: অপেক্ষার সময় অন্য কাজ"><div class="inner"><div class="head"><span class="tag">পাঠ ২৫</span><h2>async/await: অপেক্ষার সময় অন্য কাজ</h2></div><div class="body two"><div class="txt"><p>Network বা database-এর জন্য অপেক্ষায় thread বসিয়ে রাখা অপচয়। <code>async</code> function অপেক্ষার সময় অন্য কাজ চালাতে দেয়। চালাতে runtime লাগে — সবচেয়ে জনপ্রিয় <b>tokio</b>।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP request সাধারণত একটার পর একটা অপেক্ষা করে। Rust web framework (axum) পুরোটাই async — হাজার request একসাথে অল্প thread-এ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">time</span><span class="p">::</span><span class="n">Duration</span><span class="p">;</span>
+<span class="k">use</span><span class="w"> </span><span class="n">tokio</span><span class="p">::</span><span class="n">time</span><span class="p">::</span><span class="n">sleep</span><span class="p">;</span>
+
+<span class="k">async</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">fetch_price</span><span class="p">(</span><span class="n">model</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="n">ms</span><span class="p">:</span><span class="w"> </span><span class="kt">u64</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="nb">String</span><span class="p">,</span><span class="w"> </span><span class="kt">u32</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">sleep</span><span class="p">(</span><span class="n">Duration</span><span class="p">::</span><span class="n">from_millis</span><span class="p">(</span><span class="n">ms</span><span class="p">)).</span><span class="k">await</span><span class="p">;</span><span class="w">   </span><span class="c1">// ধরি API call</span>
+<span class="w">    </span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="cp">#[tokio::main]</span>
+<span class="k">async</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">time</span><span class="p">::</span><span class="n">Instant</span><span class="p">::</span><span class="n">now</span><span class="p">();</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tokio</span><span class="p">::</span><span class="n">join</span><span class="o">!</span><span class="p">(</span><span class="n">fetch_price</span><span class="p">(</span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">),</span><span class="w"> </span><span class="n">fetch_price</span><span class="p">(</span><span class="s">&quot;Galaxy A15&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">));</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{a:?}</span><span class="se">\n</span><span class="s">{b:?}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;সময় লাগল ~{} ms (২০০ + ৩০০ না!)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">.</span><span class="n">elapsed</span><span class="p">().</span><span class="n">as_millis</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>(&quot;Redmi 13&quot;, 20000)
+(&quot;Galaxy A15&quot;, 30000)
+সময় লাগল ~300 ms (২০০ + ৩০০ না!)</pre></div></div></div></div></section>
+<section class="slide" data-part="Project" data-title="Project: বিক্রির CSV থেকে রিপোর্ট"><div class="inner"><div class="head"><span class="tag">পাঠ ২৬</span><h2>Project: বিক্রির CSV থেকে রিপোর্ট</h2></div><div class="body two"><div class="txt"><p>CSV লাইন পড়া, ভুল লাইন বাদ দেওয়া, শাখা ধরে যোগফল আর সেরা model — struct, Result, iterator আর BTreeMap একসাথে।</p><div class="callout task"><b>নিজে করুন</b> রিপোর্টের জন্য একটা <code>#[test]</code> লিখুন: ভুল দামের লাইন <code>Err</code> দেয় কিনা।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">std</span><span class="p">::</span><span class="n">collections</span><span class="p">::</span><span class="n">BTreeMap</span><span class="p">;</span>
+
+<span class="cp">#[derive(Debug)]</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">Sale</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">branch</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="kt">u32</span><span class="w"> </span><span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="n">line</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">Sale</span><span class="p">,</span><span class="w"> </span><span class="nb">String</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">line</span><span class="p">.</span><span class="n">split</span><span class="p">(</span><span class="sc">&#39;,&#39;</span><span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="o">|</span><span class="n">x</span><span class="o">|</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">trim</span><span class="p">()).</span><span class="n">collect</span><span class="p">();</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">[</span><span class="n">branch</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">as_slice</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">Err</span><span class="p">(</span><span class="fm">format!</span><span class="p">(</span><span class="s">&quot;৩টা ঘর নেই: {line}&quot;</span><span class="p">));</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">price</span><span class="p">.</span><span class="n">parse</span><span class="p">().</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">_</span><span class="o">|</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">&quot;দাম ভুল: {line}&quot;</span><span class="p">))</span><span class="o">?</span><span class="p">;</span>
+<span class="w">    </span><span class="nb">Ok</span><span class="p">(</span><span class="n">Sale</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">branch</span><span class="p">:</span><span class="w"> </span><span class="nc">branch</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="n">model</span><span class="p">:</span><span class="w"> </span><span class="nc">model</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="p">})</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">csv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Mirpur, Redmi 13, 17500</span>
+<span class="s">Uttara, Galaxy A15, 21000</span>
+<span class="s">Mirpur, Charger, 650</span>
+<span class="s">Uttara, Vivo Y28, 18OOO</span>
+<span class="s">Gulshan, iPhone 15</span>
+<span class="s">Gulshan, Galaxy A15, 21000&quot;</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">bad</span><span class="p">):</span><span class="w"> </span><span class="p">(</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">_</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">_</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">csv</span><span class="p">.</span><span class="n">lines</span><span class="p">().</span><span class="n">map</span><span class="p">(</span><span class="n">parse</span><span class="p">).</span><span class="n">partition</span><span class="p">(</span><span class="o">|</span><span class="n">r</span><span class="o">|</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">is_ok</span><span class="p">());</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">sales</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">Sale</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ok</span><span class="p">.</span><span class="n">into_iter</span><span class="p">().</span><span class="n">map</span><span class="p">(</span><span class="nb">Result</span><span class="p">::</span><span class="n">unwrap</span><span class="p">).</span><span class="n">collect</span><span class="p">();</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">by_branch</span><span class="p">:</span><span class="w"> </span><span class="nc">BTreeMap</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="kt">u32</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BTreeMap</span><span class="p">::</span><span class="n">new</span><span class="p">();</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">&amp;</span><span class="n">sales</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="o">*</span><span class="n">by_branch</span><span class="p">.</span><span class="n">entry</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">.</span><span class="n">branch</span><span class="p">).</span><span class="n">or_insert</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">price</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">&amp;</span><span class="n">by_branch</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;{b:&lt;8} {total:&gt;6}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">best</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">max_by_key</span><span class="p">(</span><span class="o">|</span><span class="n">s</span><span class="o">|</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">price</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;সবচেয়ে দামি বিক্রি: {} ({})&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">best</span><span class="p">.</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">best</span><span class="p">.</span><span class="n">branch</span><span class="p">);</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">bad</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&quot;বাদ: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">unwrap_err</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Gulshan   21000
+Mirpur    18150
+Uttara    21000
+সবচেয়ে দামি বিক্রি: Galaxy A15 (Gulshan)
+বাদ: দাম ভুল: Uttara, Vivo Y28, 18OOO
+বাদ: ৩টা ঘর নেই: Gulshan, iPhone 15</pre></div></div></div></div></section>
+<section class="slide hero end" data-part="Project" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>Rust 103 শেষ! 🎉</h1><p class="lead">Trait, iterator, test, crate আর concurrency — web server বানানোর সব উপকরণ এখন হাতে। চলুন Laravel-এর মতো একটা API বানাই।</p><div class="steps done"><div><i>✓</i><span>Trait = interface; <code>derive</code> দিয়ে সাধারণ trait বিনা খরচে</span></div><div><i>✓</i><span>Generic + trait bound = নিরাপদ, পুনঃব্যবহারযোগ্য কোড</span></div><div><i>✓</i><span>Iterator chain = Laravel Collection, কিন্তু loop-এর মতো দ্রুত</span></div><div><i>✓</i><span><code>#[test]</code> আর <code>cargo test</code> সাথেই আসে</span></div><div><i>✓</i><span>serde = JSON; tokio = async runtime</span></div><div><i>✓</i><span>Thread-এ ভাগ করা data: <code>Arc&lt;Mutex&lt;T&gt;&gt;</code></span></div></div><div class="btns"><a class="btn" href="../rust-web-development/index.html">পরের কোর্স: Rust Web Development →</a><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+</main>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>window.COURSE="rust-103";
+(function(){
+  var B=function(n){return String(n).replace(/\d/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0,root=document.documentElement;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),menu=document.getElementById('menu');
+  var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'vw)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
+    st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function buildMenu(){var h='',last=null;slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){h+='<h3>'+p+'</h3>';last=p}
+    h+='<a data-go="'+j+'" class="'+(st.seen[j]?'seen ':'')+(j===i?'cur':'')+'"><span>'+B(j+1)+'.</span><span>'+s.getAttribute('data-title')+'</span></a>'});menu.innerHTML=h}
+  function toggleMenu(){if(!menu.classList.contains('open'))buildMenu();menu.classList.toggle('open')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var dark=getComputedStyle(root).getPropertyValue('--bg').trim()==='#0B1220';var t=dark?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tut-theme',t)}catch(e){}}
+  try{var th=localStorage.getItem('tut-theme');if(th)root.setAttribute('data-theme',th)}catch(e){}
+  menu.addEventListener('click',function(e){var a=e.target.closest('a');if(a){go(+a.getAttribute('data-go'));menu.classList.remove('open')}else if(e.target===menu)menu.classList.remove('open')});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;
+    var pre=b.closest('.code').querySelector('pre');var t=pre.innerText.replace(/^\$ /gm,'');
+    var done=function(){b.textContent='কপি হয়েছে ✓';setTimeout(function(){b.textContent='কপি'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done()});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  var x0=null,y0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!e.target.closest('pre'))go(i+(dx<0?1:-1));x0=null});
+  var h=parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
+    if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';
+      r.classList.add('show');document.getElementById('resumeGo').onclick=function(){go(last);r.classList.remove('show')};
+      document.getElementById('resumeNo').onclick=function(){r.classList.remove('show')};}}
+})();
+</script>
+</body>
+</html>

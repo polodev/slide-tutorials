@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accounts 101 — Dokani</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Bengali:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.55vh);--navy:#0C1E38;--green:#0D8A4A;--amber:#B7791F;--red:#C53030;--blue:#1F4E8C;--bg:#F3F7F5;--ink:#1B2A41;--muted:#5B6B80;--card:#fff;--line:#d9e3de}
+:root[data-theme=dark]{--bg:#0A1424;--ink:#E8EEF6;--muted:#9BAABD;--card:#111f36;--line:#233450;--navy:#fff;--blue:#4C84D6;--green:#2FBF71;--amber:#E0A93B;--red:#F0716F;color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Noto Sans Bengali','Inter',system-ui,sans-serif}
+#deck{height:100%;display:flex;transition:transform .45s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100vw;height:100%;overflow-y:auto;padding:5vh 5vw 10vh;display:flex;flex-direction:column;justify-content:safe center;gap:2vh}
+h1{font-size:clamp(26px,calc(var(--u)*5.6),88px);font-weight:800;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(20px,calc(var(--u)*3.4),54px);font-weight:800;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(13px,calc(var(--u)*1.9),30px);color:var(--muted);max-width:34em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--green);color:#fff;font-weight:600;font-size:clamp(11px,calc(var(--u)*1.2),19px);padding:.35em 1em;border-radius:999px}
+.tag.warn,.tag.soon{background:var(--amber)}
+ul{list-style:none;padding:0;display:grid;gap:1.2vh}
+li{font-size:clamp(13px,calc(var(--u)*1.7),27px);line-height:1.55;padding-left:1.3em;position:relative}
+li::before{content:"";position:absolute;left:0;top:.65em;width:.5em;height:.5em;border-radius:50%;background:var(--green)}
+.hero{align-items:center;text-align:center;background:radial-gradient(ellipse at 50% 40%,#12335c 0%,#0C1E38 72%);color:#fff}
+.hero h1{color:#fff}.hero .lead{color:#cfe0f2;margin-inline:auto}.hero .tag{align-self:center}
+.tiles{display:grid;gap:1.4vw;grid-template-columns:repeat(3,1fr)}.tiles.c2{grid-template-columns:repeat(2,1fr)}.tiles.c4{grid-template-columns:repeat(4,1fr)}
+.tile{background:var(--card);border-radius:16px;padding:2.2vh 1.3vw;box-shadow:0 8px 26px rgba(12,30,56,.1);border-top:4px solid var(--green);display:grid;gap:.8vh;align-content:start}
+.tile.warn{border-top-color:var(--amber)}.tile.bad{border-top-color:var(--red)}
+.tile b{font-size:clamp(13px,calc(var(--u)*1.7),27px);color:var(--navy)}
+.tile span{font-size:clamp(11px,calc(var(--u)*1.3),21px);color:var(--muted);line-height:1.55}
+.tile em{font-style:normal;font-weight:800;color:var(--green);font-size:clamp(14px,calc(var(--u)*2),32px)}
+.flow{display:flex;align-items:stretch;gap:.8vw;flex-wrap:wrap}
+.flow .step{flex:1 1 12vw;background:var(--card);border-radius:14px;padding:2vh 1vw;text-align:center;box-shadow:0 6px 20px rgba(12,30,56,.1);display:grid;gap:.6vh;align-content:center}
+.flow .step b{font-size:clamp(13px,calc(var(--u)*1.6),26px);color:var(--navy)}.flow .step span{font-size:clamp(11px,calc(var(--u)*1.25),20px);color:var(--muted)}
+.flow .arrow{align-self:center;color:var(--green);font-size:clamp(18px,calc(var(--u)*3),44px);font-weight:800}
+table{border-collapse:collapse;width:100%;background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 8px 26px rgba(12,30,56,.1)}
+th,td{padding:1.05vh 1vw;text-align:left;font-size:clamp(11px,calc(var(--u)*1.4),23px);border-bottom:1px solid var(--line);line-height:1.45}
+th{background:rgba(13,138,74,.12);color:var(--navy);font-weight:700}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.total td{font-weight:800;border-top:2px solid var(--green)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:3vw;align-items:center}
+.pill{display:inline-block;border-radius:999px;padding:.12em .75em;font-weight:700;font-size:.85em}
+.pill.paid{background:rgba(13,138,74,.16);color:var(--green)}.pill.unpaid{background:rgba(183,121,31,.2);color:var(--amber)}.pill.lock{background:rgba(91,107,128,.2);color:var(--muted)}
+.callout{background:var(--card);border-left:6px solid var(--green);border-radius:10px;padding:1.5vh 1.3vw;font-size:clamp(12px,calc(var(--u)*1.55),25px);line-height:1.6;box-shadow:0 6px 20px rgba(12,30,56,.08)}
+.callout.warn{border-left-color:var(--amber)}.callout.bad{border-left-color:var(--red)}
+.check{display:grid;gap:1.1vh}
+.check div{background:var(--card);border-radius:12px;padding:1.3vh 1.1vw;font-size:clamp(12px,calc(var(--u)*1.6),26px);display:flex;gap:1vw;align-items:center;box-shadow:0 5px 16px rgba(12,30,56,.08);line-height:1.5}
+.check i{flex:0 0 auto;width:2.1em;height:2.1em;border-radius:50%;background:var(--green);color:#fff;font-style:normal;font-weight:800;display:grid;place-items:center}
+.quiz{display:grid;gap:1vh}
+.quiz details{background:var(--card);border-radius:12px;padding:1.3vh 1.2vw;box-shadow:0 5px 16px rgba(12,30,56,.08)}
+.quiz summary{cursor:pointer;font-weight:700;font-size:clamp(12px,calc(var(--u)*1.55),25px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--green);font-weight:600;font-size:clamp(12px,calc(var(--u)*1.5),24px)}
+.fig{width:100%;height:auto;max-height:52vh}
+.fig .t{fill:var(--ink)}.fig .m{fill:var(--muted)}.fig .wt{fill:#fff}.fig .g{fill:var(--green)}.fig .r{fill:var(--red)}.fig .arrowt{fill:var(--green)}
+.fig .axis{stroke:var(--muted);stroke-width:2}.fig .dash{stroke:var(--muted);stroke-width:2;stroke-dasharray:6 6}
+.fig .bar-total{fill:var(--blue)}.fig .bar-up{fill:var(--green)}.fig .bar-down{fill:var(--red)}.fig .bar-warn{fill:var(--amber)}
+.fig .ghost{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:6 5}
+.fig .card-s{fill:var(--card);stroke:var(--line);stroke-width:2}.fig .card-s2{fill:var(--card);stroke:var(--muted);stroke-width:2;stroke-dasharray:6 5}
+.fig .dot-a{fill:var(--green)}.fig .dot-b{fill:var(--amber)}.fig .line-g{stroke:var(--green)}.fig .line-r{stroke:var(--red)}
+.fig .shade-loss{fill:rgba(197,48,48,.12)}.fig .shade-gain{fill:rgba(13,138,74,.14)}
+.notes{display:none}
+body.showNotes .notes{display:block;position:fixed;left:2vw;right:2vw;bottom:70px;max-height:34vh;overflow:auto;background:rgba(12,30,56,.96);color:#fff;padding:14px 18px;border-radius:12px;font-size:15px;line-height:1.55;z-index:6}
+#hub{position:fixed;top:8px;right:16px;z-index:5;font:600 13px 'Noto Sans Bengali','Inter',sans-serif;color:var(--green);text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
+#part{position:fixed;top:12px;left:16px;font:600 12px 'Inter',sans-serif;color:var(--muted);z-index:4;letter-spacing:.04em}
+#bar{position:fixed;left:0;bottom:0;height:5px;background:var(--green);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;font:600 14px 'Inter',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.88);padding:6px 10px;border-radius:999px}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--green)}
+#menu{position:fixed;inset:0;background:rgba(10,20,36,.92);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:22px;margin:2vh 0 1vh}
+#menu a{display:block;color:#dbe7f5;text-decoration:none;padding:.7vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a:hover{background:var(--green);color:#fff}
+@media (max-width:820px){html,body{overflow:auto}.slide{padding:6vh 6vw 12vh}.tiles,.tiles.c4,.tiles.c2,.cols{grid-template-columns:1fr}.flow .arrow{display:none}}
+@media print{#nav,#bar,#part,#menu,.notes{display:none!important}html,body{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:100vh;page-break-after:always}}
+</style>
+</head>
+<body>
+<div id="part"></div>
+<a id="hub" href="../index.html">← সব টিউটোরিয়াল</a>
+<main id="deck">
+<section class="slide hero" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Accounts 101">
+<span class="tag">Accounts 101</span>
+<h1>হিসাব শেখা, Dokani-র সাথে</h1>
+<p class="lead">প্রথমে হিসাবের মূল ধারণা, একটা ছোট দোকানের উদাহরণ দিয়ে। তারপর দেখব Dokani-তে সেগুলো কোথায় আছে।</p>
+<aside class="notes">Two parts. Part 1 teaches accounting from zero with one running example. Part 2 shows exactly what Dokani does today and where it differs from textbook accounting.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="এই ডেক কীভাবে পড়বেন">
+<span class="tag">শুরুর আগে</span>
+<h2>এই ডেক কীভাবে পড়বেন</h2>
+<div class="cols"><div><ul><li><b>Part 1</b> (স্লাইড ১–৩৪): হিসাবের মূল ধারণা, কোনো আগের জ্ঞান ছাড়া</li><li><b>Part 2</b>: Dokani-তে এগুলো কোথায় আছে, কী আছে, কী নেই</li><li>পুরো সময় একটাই উদাহরণ: <b>Rahim Mobile</b>, এক মাসের হিসাব</li><li>সংখ্যাগুলো সব মিলে যায়: বিক্রি, লাভ, ক্যাশ, দেনা, সব</li></ul></div><div><div class="check"><div><i>১</i><span>ডান বা বাম তীর: স্লাইড বদলান</span></div><div><i>২</i><span><b>M</b>: সব স্লাইডের তালিকা, <b>N</b>: ব্যাখ্যার নোট</span></div><div><i>৩</i><span><b>D</b>: dark mode, <b>F</b>: fullscreen</span></div></div></div></div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Rahim Mobile">
+<span class="tag">উদাহরণ</span>
+<h2>পরিচয়: Rahim Mobile</h2>
+<div class="cols"><div><ul><li>রহিম ভাইয়ের একটা মোবাইল শপ। এক মাসের হিসাব দেখব</li><li>মাসের শুরুতে হাতে ক্যাশ <b>৳৫০,০০০</b> আর দোকানে ফোনের স্টক <b>৳১,৫০,০০০</b> (কেনা দামে)</li><li>মোট <b>৳২,০০,০০০</b> ব্যবসায় লাগানো, কারও কাছে ধার নেই</li><li>এই মাসে তিনি স্টক কিনবেন, বিক্রি করবেন, খরচ করবেন, আর নিজের জন্য কিছু টাকা তুলবেন</li></ul></div><div><svg viewBox="0 0 900 330" role="img" aria-label="Shop" class="fig">
+<rect x="60" y="150" width="780" height="150" rx="14" class="card-s"/>
+<polygon points="40,150 450,60 860,150" class="bar-total"/>
+<text x="450" y="125" class="wt" font-size="26" text-anchor="middle" font-weight="800">Rahim Mobile</text>
+<rect x="100" y="190" width="200" height="90" rx="10" class="bar-up"/>
+<text x="200" y="225" class="wt" font-size="18" text-anchor="middle" font-weight="600">ক্যাশ</text><text x="200" y="258" class="wt" font-size="24" text-anchor="middle" font-weight="800">৳৫০,০০০</text>
+<rect x="350" y="190" width="200" height="90" rx="10" class="bar-total"/>
+<text x="450" y="225" class="wt" font-size="18" text-anchor="middle" font-weight="600">ফোনের স্টক</text><text x="450" y="258" class="wt" font-size="24" text-anchor="middle" font-weight="800">৳১,৫০,০০০</text>
+<rect x="600" y="190" width="200" height="90" rx="10" class="card-s2"/>
+<text x="700" y="225" class="t" font-size="18" text-anchor="middle" font-weight="600">ধার</text><text x="700" y="258" class="t" font-size="24" text-anchor="middle" font-weight="800">৳০</text>
+</svg></div></div>
+<aside class="notes">Opening position: cash 50,000, stock 150,000, owner capital 200,000, no loans or payables. This same shop is used in every Part 1 slide.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="হিসাব কী">
+<span class="tag">মূল ধারণা</span>
+<h2>হিসাব রাখা মানে কী</h2>
+<svg viewBox="0 0 900 260" role="img" aria-label="Accounting steps" class="fig">
+<rect x="30" y="70" width="190" height="130" rx="16" class="card-s"/><rect x="245" y="70" width="190" height="130" rx="16" class="card-s"/><rect x="460" y="70" width="190" height="130" rx="16" class="card-s"/><rect x="675" y="70" width="190" height="130" rx="16" class="card-s"/>
+<text x="125" y="115" class="t" font-size="22" text-anchor="middle" font-weight="800">১. লেখা</text><text x="340" y="115" class="t" font-size="22" text-anchor="middle" font-weight="800">২. ভাগ করা</text><text x="555" y="115" class="t" font-size="22" text-anchor="middle" font-weight="800">৩. সারাংশ</text><text x="770" y="115" class="t" font-size="22" text-anchor="middle" font-weight="800">৪. সিদ্ধান্ত</text>
+<text x="125" y="152" class="m" font-size="16" text-anchor="middle" font-weight="600">প্রতিটি লেনদেন</text><text x="340" y="152" class="m" font-size="16" text-anchor="middle" font-weight="600">বিক্রি, খরচ, কেনা</text><text x="555" y="152" class="m" font-size="16" text-anchor="middle" font-weight="600">মাসের তিনটি রিপোর্ট</text><text x="770" y="152" class="m" font-size="16" text-anchor="middle" font-weight="600">দাম, স্টক, খরচ</text>
+<text x="222" y="142" class="arrowt" font-size="34" text-anchor="middle">→</text><text x="437" y="142" class="arrowt" font-size="34" text-anchor="middle">→</text><text x="652" y="142" class="arrowt" font-size="34" text-anchor="middle">→</text>
+</svg>
+<div class="callout ">হিসাব মানে শুধু খাতা ভরা নয়। উদ্দেশ্য একটাই: <b>ভালো সিদ্ধান্ত নেওয়া।</b> কত দামে বেচব, কত স্টক রাখব, ধার দেব কিনা, কাকে বেতন বাড়াব।</div>
+<aside class="notes">Record, classify, summarize, decide. Dokani automates the first two for sales and expenses.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="তিনটি প্রশ্ন, তিনটি রিপোর্ট">
+<span class="tag">মূল ধারণা</span>
+<h2>তিনটি প্রশ্ন, তিনটি রিপোর্ট</h2>
+<svg viewBox="0 0 900 290" role="img" aria-label="Three statements" class="fig">
+<rect x="25" y="30" width="270" height="230" rx="18" class="card-s"/><rect x="325" y="30" width="270" height="230" rx="18" class="card-s"/><rect x="625" y="30" width="270" height="230" rx="18" class="card-s"/>
+<rect x="25" y="30" width="270" height="48" rx="18" class="bar-up"/><rect x="325" y="30" width="270" height="48" rx="18" class="bar-total"/><rect x="625" y="30" width="270" height="48" rx="18" class="bar-down"/>
+<text x="160" y="62" class="wt" font-size="19" text-anchor="middle" font-weight="800">Income statement</text><text x="460" y="62" class="wt" font-size="19" text-anchor="middle" font-weight="800">Balance sheet</text><text x="760" y="62" class="wt" font-size="19" text-anchor="middle" font-weight="800">Cash flow</text>
+<text x="160" y="125" class="t" font-size="21" text-anchor="middle" font-weight="800">এই মাসে লাভ হলো?</text><text x="460" y="125" class="t" font-size="21" text-anchor="middle" font-weight="800">আজ আমার কী আছে,</text><text x="760" y="125" class="t" font-size="21" text-anchor="middle" font-weight="800">টাকা কোথা থেকে এলো,</text>
+<text x="160" y="155" class="t" font-size="21" text-anchor="middle" font-weight="800"></text><text x="460" y="155" class="t" font-size="21" text-anchor="middle" font-weight="800">কী দেনা আছে?</text><text x="760" y="155" class="t" font-size="21" text-anchor="middle" font-weight="800">কোথায় গেল?</text>
+<text x="160" y="205" class="m" font-size="16" text-anchor="middle" font-weight="600">একটা সময়ের হিসাব</text><text x="460" y="205" class="m" font-size="16" text-anchor="middle" font-weight="600">একটা দিনের ছবি</text><text x="760" y="205" class="m" font-size="16" text-anchor="middle" font-weight="600">একটা সময়ের নড়াচড়া</text>
+</svg>
+<div class="callout ">এই তিনটি রিপোর্টে হিসাবের প্রায় সবকিছু ধরা পড়ে। এরপরের স্লাইডগুলোতে একটা একটা করে শিখব।</div>
+<aside class="notes">Income statement covers a period. Balance sheet is a snapshot on a date. Cash flow explains movement of cash over a period.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Cash বনাম Accrual">
+<span class="tag">মূল ধারণা</span>
+<h2>কখন ধরব: টাকা হাতে এলে, নাকি কাজ হলে?</h2>
+<svg viewBox="0 0 900 250" role="img" aria-label="Timeline" class="fig">
+<line x1="60" x2="840" y1="150" y2="150" class="axis" stroke-width="4"/>
+<line x1="450" x2="450" y1="90" y2="210" class="dash"/>
+<text x="250" y="80" class="t" font-size="22" text-anchor="middle" font-weight="800">অক্টোবর</text><text x="650" y="80" class="t" font-size="22" text-anchor="middle" font-weight="800">নভেম্বর</text>
+<circle cx="300" cy="150" r="13" class="dot-a"/><text x="300" y="192" class="m" font-size="16" text-anchor="middle" font-weight="600">২৮ অক্টোবর</text><text x="300" y="214" class="m" font-size="16" text-anchor="middle" font-weight="600">৳১২,০০০-এর ফোন বেচা</text>
+<circle cx="600" cy="150" r="13" class="dot-b"/><text x="600" y="192" class="m" font-size="16" text-anchor="middle" font-weight="600">৫ নভেম্বর</text><text x="600" y="214" class="m" font-size="16" text-anchor="middle" font-weight="600">গ্রাহক টাকা দিলেন</text>
+<text x="300" y="118" class="t" font-size="17" text-anchor="middle" font-weight="800">Accrual: আয় এখানে</text>
+<text x="600" y="118" class="t" font-size="17" text-anchor="middle" font-weight="800">Cash basis: আয় এখানে</text>
+</svg>
+<div class="cols"><div><ul><li><b>Cash basis:</b> টাকা হাতে এলে বা বেরোলে তখন ধরা</li><li><b>Accrual basis:</b> কাজ বা বিক্রি যে মাসে হলো, সেই মাসে ধরা</li></ul></div><div><ul><li>Accrual-এ মাসের লাভ বেশি সঠিক, কারণ আয় ও খরচ একই মাসে মিলে যায়</li><li>Cash-এ জানা যায় হাতে আসলে কত টাকা আছে। দুটোই দরকার</li></ul></div></div>
+<div class="callout warn">মনে রাখুন: <b>লাভ</b> accrual-এ মাপা হয়, <b>cash flow</b> cash basis-এ। তাই লাভ ১২,০০০ হলেও ক্যাশ ১২,০০০ বাড়তে হবে না। এটা পরে বিস্তারিত দেখব।</div>
+<aside class="notes">Dokani's profit side follows the sale/expense date (accrual-like). Its cash flow follows payment dates. Paid/unpaid on expenses exists precisely to separate these two.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Revenue">
+<span class="tag">Income statement</span>
+<h2>Revenue: যা বিক্রি করে আয় হলো</h2>
+<div class="cols"><div><ul><li>ব্যবসার মূল কাজ থেকে আসা মোট বিক্রি</li><li>Rahim Mobile: এই মাসে মোট বিক্রি <b>৳১,০০,০০০</b></li><li>এর মধ্যে ক্যাশে পেয়েছেন ৳৮৫,০০০, বাকিতে দিয়েছেন ৳১৫,০০০</li><li>বাকিতে বেচলেও বিক্রি হয়ে গেছে, তাই Revenue-তে ধরা হয়</li></ul></div><div><div class="check"><div><i>১</i><span><b>Revenue নয়:</b> ব্যাংক থেকে ঋণ নেওয়া টাকা</span></div><div><i>২</i><span><b>Revenue নয়:</b> মালিক নিজের পকেট থেকে ব্যবসায় দেওয়া টাকা</span></div><div><i>৩</i><span><b>Revenue নয়:</b> মেরামতের জন্য নেওয়া Advance, ডেলিভারির আগে</span></div></div></div></div>
+<div class="callout ">প্রশ্ন করুন: এই টাকা কি গ্রাহকের কাছে পণ্য বা সেবা দিয়ে আয় হয়েছে? উত্তর না হলে এটা Revenue নয়।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="COGS">
+<span class="tag">Income statement</span>
+<h2>COGS: যা বিক্রি হয়েছে, শুধু তার কেনা দাম</h2>
+<svg viewBox="0 0 900 260" role="img" aria-label="COGS" class="fig">
+<rect x="40" y="40" width="64" height="100" rx="8" class="bar-down"/><rect x="122" y="40" width="64" height="100" rx="8" class="bar-down"/><rect x="204" y="40" width="64" height="100" rx="8" class="bar-down"/><rect x="286" y="40" width="64" height="100" rx="8" class="bar-down"/><rect x="368" y="40" width="64" height="100" rx="8" class="bar-down"/><rect x="450" y="40" width="64" height="100" rx="8" class="bar-down"/><rect x="532" y="40" width="64" height="100" rx="8" class="bar-down"/><rect x="614" y="40" width="64" height="100" rx="8" class="bar-down"/><rect x="696" y="40" width="64" height="100" rx="8" class="ghost"/><rect x="778" y="40" width="64" height="100" rx="8" class="ghost"/>
+<text x="72" y="98" class="wt" font-size="16" text-anchor="middle" font-weight="600">ফোন</text><text x="154" y="98" class="wt" font-size="16" text-anchor="middle" font-weight="600">ফোন</text><text x="236" y="98" class="wt" font-size="16" text-anchor="middle" font-weight="600">ফোন</text><text x="318" y="98" class="wt" font-size="16" text-anchor="middle" font-weight="600">ফোন</text><text x="400" y="98" class="wt" font-size="16" text-anchor="middle" font-weight="600">ফোন</text><text x="482" y="98" class="wt" font-size="16" text-anchor="middle" font-weight="600">ফোন</text><text x="564" y="98" class="wt" font-size="16" text-anchor="middle" font-weight="600">ফোন</text><text x="646" y="98" class="wt" font-size="16" text-anchor="middle" font-weight="600">ফোন</text><text x="728" y="98" class="t" font-size="16" text-anchor="middle" font-weight="600">ফোন</text><text x="810" y="98" class="t" font-size="16" text-anchor="middle" font-weight="600">ফোন</text>
+<line x1="40" x2="678" y1="160" y2="160" class="line-r" stroke-width="5"/>
+<text x="359" y="192" class="t" font-size="20" text-anchor="middle" font-weight="800">বিক্রি হলো ৮টি = COGS ৳৮০,০০০</text>
+<line x1="696" x2="842" y1="160" y2="160" class="line-g" stroke-width="5"/>
+<text x="769" y="192" class="t" font-size="20" text-anchor="middle" font-weight="800">স্টকে ৳২০,০০০</text>
+<text x="450" y="240" class="m" font-size="16" text-anchor="middle" font-weight="600">প্রতিটি ফোনের কেনা দাম ৳১০,০০০, মোট ১০টি কেনা</text>
+</svg>
+<div class="callout ">১০টি কিনলে ১০টির দাম খরচ হয় না। যেটা বিক্রি হলো শুধু সেটার কেনা দাম <b>COGS</b>। বাকিটা <b>স্টক</b>, যা একটা Asset (পরে দেখব)।</div>
+<aside class="notes">COGS = cost of goods sold. Unsold stock stays on the balance sheet as inventory. In Dokani the cost per sold line is the purchase price snapshot at sale time.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Gross profit">
+<span class="tag">Income statement</span>
+<h2>Gross profit: বিক্রি থেকে কেনা দাম বাদ</h2>
+<svg viewBox="0 0 900 290" role="img" aria-label="Gross profit" class="fig">
+<rect x="60" y="40" width="500" height="60" rx="8" class="bar-total"/>
+<text x="310.0" y="78" class="wt" font-size="20" text-anchor="middle" font-weight="800">Revenue ৳১,০০,০০০</text>
+<rect x="60" y="120" width="400" height="60" rx="8" class="bar-down"/>
+<text x="260.0" y="158" class="wt" font-size="20" text-anchor="middle" font-weight="800">COGS ৳৮০,০০০</text>
+<rect x="460" y="120" width="100" height="60" rx="8" class="bar-up"/>
+<text x="510.0" y="158" class="wt" font-size="20" text-anchor="middle" font-weight="800">৳২০,০০০</text>
+<text x="450" y="230" class="t" font-size="22" text-anchor="middle" font-weight="800">Gross profit = ৳১,০০,০০০ − ৳৮০,০০০ = ৳২০,০০০</text>
+<text x="450" y="265" class="t" font-size="22" text-anchor="middle" font-weight="800">Gross margin = ৳২০,০০০ ÷ ৳১,০০,০০০ = ২০%</text>
+</svg>
+<div class="callout ">প্রতি ১০০ টাকা বিক্রিতে কেনা দাম বাদ দিয়ে থাকে ২০ টাকা। এই ২০ টাকা থেকেই দোকানের সব খরচ মেটাতে হবে।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Operating expenses">
+<span class="tag">Income statement</span>
+<h2>Operating expenses: দোকান চালানোর খরচ</h2>
+<div class="cols"><div><table><tr><th class="">খরচ</th><th class="n">এই মাসে</th></tr><tr class=""><td class="">দোকান ভাড়া</td><td class="n">৳৩,০০০</td></tr><tr class=""><td class="">বেতন</td><td class="n">৳৪,০০০</td></tr><tr class=""><td class="">ইন্টারনেট</td><td class="n">৳১,০০০</td></tr><tr class="total"><td class="">মোট</td><td class="n">৳৮,০০০</td></tr></table></div><div><table><tr><th class="">ধরন</th><th class="">মানে</th><th class="">উদাহরণ</th></tr><tr class=""><td class="">Fixed</td><td class="">বিক্রি যাই হোক, প্রতি মাসে প্রায় একই</td><td class="">ভাড়া, বেতন, ইন্টারনেট</td></tr><tr class=""><td class="">Variable</td><td class="">বিক্রি বাড়লে বাড়ে</td><td class="">কমিশন, প্যাকেজিং, ডেলিভারি</td></tr></table></div></div>
+<div class="callout warn">এখানে <b>পণ্য কেনার দাম নেই</b>। ওটা COGS। আর <b>নিজের জন্য তোলা টাকা</b>ও নেই, ওটা Drawings (পরে দেখব)।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Net profit">
+<span class="tag">Income statement</span>
+<h2>Net profit: সব খরচের পর যা থাকল</h2>
+<svg viewBox="0 0 900 360" role="img" aria-label="Waterfall chart" class="fig"><line x1="30" x2="870" y1="290.0" y2="290.0" class="axis"/><rect x="61.9" y="50.0" width="104.2" height="240.0" rx="5" class="bar-total"/><text x="114.0" y="42.0" class="t" font-size="17" text-anchor="middle" font-weight="800">১,০০,০০০</text><text x="114.0" y="316" class="m" font-size="15" text-anchor="middle" font-weight="600">Revenue</text><rect x="229.9" y="50.0" width="104.2" height="192.0" rx="5" class="bar-down"/><text x="282.0" y="42.0" class="t" font-size="17" text-anchor="middle" font-weight="800">−৮০,০০০</text><text x="282.0" y="316" class="m" font-size="15" text-anchor="middle" font-weight="600">COGS</text><rect x="397.9" y="242.0" width="104.2" height="48.0" rx="5" class="bar-total"/><text x="450.0" y="234.0" class="t" font-size="17" text-anchor="middle" font-weight="800">২০,০০০</text><text x="450.0" y="316" class="m" font-size="15" text-anchor="middle" font-weight="600">Gross profit</text><rect x="565.9" y="242.0" width="104.2" height="19.2" rx="5" class="bar-down"/><text x="618.0" y="234.0" class="t" font-size="17" text-anchor="middle" font-weight="800">−৮,০০০</text><text x="618.0" y="316" class="m" font-size="15" text-anchor="middle" font-weight="600">খরচ</text><rect x="733.9" y="261.2" width="104.2" height="28.8" rx="5" class="bar-total"/><text x="786.0" y="253.2" class="t" font-size="17" text-anchor="middle" font-weight="800">১২,০০০</text><text x="786.0" y="316" class="m" font-size="15" text-anchor="middle" font-weight="600">Net profit</text></svg>
+<div class="callout ">Net profit <b>৳১২,০০০</b>, অর্থাৎ প্রতি ১০০ টাকা বিক্রিতে ১২ টাকা নিট লাভ। একে বলে <b>net margin</b>।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Income statement">
+<span class="tag">Income statement</span>
+<h2>প্রথম রিপোর্ট: Income statement</h2>
+<table><tr><th class="">Rahim Mobile · এক মাস</th><th class="n">টাকা</th></tr><tr class=""><td class="">Revenue (মোট বিক্রি)</td><td class="n">৳১,০০,০০০</td></tr><tr class=""><td class="">− COGS (বিক্রীত পণ্যের কেনা দাম)</td><td class="n">৳−৮০,০০০</td></tr><tr class="total"><td class=""><b>Gross profit</b></td><td class="n">৳২০,০০০</td></tr><tr class=""><td class="">− ভাড়া</td><td class="n">৳−৩,০০০</td></tr><tr class=""><td class="">− বেতন</td><td class="n">৳−৪,০০০</td></tr><tr class=""><td class="">− ইন্টারনেট</td><td class="n">৳−১,০০০</td></tr><tr class="total"><td class=""><b>Net profit</b></td><td class="n">৳১২,০০০</td></tr></table>
+<div class="callout warn">এটা পড়ে বলা যায়: মাসে কত বিক্রি, কেনা দাম কত, দোকান চালাতে কত গেল, শেষে কত থাকল। <b>কত টাকা হাতে আছে</b> সেটা কিন্তু এখানে নেই। সেজন্য আরও দুটো রিপোর্ট লাগে।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Assets">
+<span class="tag">Balance sheet</span>
+<h2>Assets: ব্যবসার যা আছে</h2>
+<div class="cols"><div><ul><li><b>Asset</b> মানে যা ব্যবসার মালিকানায় আছে এবং ভবিষ্যতে কাজে লাগবে বা টাকা আনবে</li><li><b>Current asset:</b> দ্রুত ক্যাশে বদলায়: ক্যাশ, ব্যাংক, bKash, স্টক, গ্রাহকের কাছে পাওনা</li><li><b>Fixed asset:</b> দীর্ঘদিন ব্যবহার হয়: কাউন্টার, কম্পিউটার, দোকানের ফার্নিচার</li></ul></div><div><svg viewBox="0 0 900 260" role="img" aria-label="Bar chart" class="fig"><text x="218" y="54.0" class="t" font-size="17" text-anchor="end" font-weight="600">স্টক</text><rect x="230" y="14.0" width="540.0" height="68.0" rx="6" class="bar-total"/><text x="780.0" y="54.0" class="t" font-size="17" text-anchor="start" font-weight="800">১,৭০,০০০</text><text x="218" y="136.0" class="t" font-size="17" text-anchor="end" font-weight="600">ক্যাশ</text><rect x="230" y="96.0" width="174.7" height="68.0" rx="6" class="bar-up"/><text x="414.7058823529412" y="136.0" class="t" font-size="17" text-anchor="start" font-weight="800">৫৫,০০০</text><text x="218" y="218.0" class="t" font-size="17" text-anchor="end" font-weight="600">গ্রাহকের পাওনা</text><rect x="230" y="178.0" width="47.6" height="68.0" rx="6" class="bar-warn"/><text x="287.6470588235294" y="218.0" class="t" font-size="17" text-anchor="start" font-weight="800">১৫,০০০</text></svg></div></div>
+<div class="callout ">মোট Assets <b>৳২,৪০,০০০</b></div>
+<aside class="notes">Closing assets: cash 55,000 + stock 170,000 + receivable 15,000 = 240,000.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Liabilities">
+<span class="tag">Balance sheet</span>
+<h2>Liabilities: ব্যবসার যা দেনা আছে</h2>
+<div class="cols"><div><ul><li><b>Liability</b> মানে অন্যকে যা দিতে হবে</li><li><b>Supplier payable:</b> বাকিতে কেনা মালের দাম</li><li><b>Unpaid খরচ:</b> ভাড়া, বেতন যা এখনো দেওয়া হয়নি</li><li><b>ঋণ</b> বা কিস্তি, <b>গ্রাহকের Advance</b> (মেরামত শেষ হয়নি, পণ্য দেওয়া হয়নি)</li></ul></div><div><svg viewBox="0 0 900 200" role="img" aria-label="Bar chart" class="fig"><text x="218" y="59.5" class="t" font-size="17" text-anchor="end" font-weight="600">Supplier বাকি</text><rect x="230" y="14.0" width="540.0" height="79.0" rx="6" class="bar-down"/><text x="780.0" y="59.5" class="t" font-size="17" text-anchor="start" font-weight="800">৩০,০০০</text><text x="218" y="152.5" class="t" font-size="17" text-anchor="end" font-weight="600">ভাড়া বাকি</text><rect x="230" y="107.0" width="54.0" height="79.0" rx="6" class="bar-down"/><text x="294.0" y="152.5" class="t" font-size="17" text-anchor="start" font-weight="800">৩,০০০</text></svg></div></div>
+<div class="callout warn">মোট Liabilities <b>৳৩৩,০০০</b></div>
+<div class="callout ">দেনা মানেই খারাপ নয়। কিন্তু <b>ক্যাশের চেয়ে দেনা বেশি হলে</b> সময়মতো দিতে পারবেন না। তাই দুটো পাশাপাশি দেখুন।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Equity ও সমীকরণ">
+<span class="tag">Balance sheet</span>
+<h2>Equity ও হিসাবের মূল সমীকরণ</h2>
+<svg viewBox="0 0 900 330" role="img" aria-label="Accounting equation" class="fig"><rect x="90" y="50.0" width="250" height="220.0" rx="8" class="bar-total"/><text x="215.0" y="166.0" class="wt" font-size="20" text-anchor="middle" font-weight="800">Assets ৳২,০০,০০০</text><text x="410" y="170.0" class="t" font-size="44" text-anchor="middle" font-weight="800">=</text><rect x="520" y="50.0" width="250" height="220.0" rx="8" class="bar-up"/><text x="645.0" y="166.0" class="wt" font-size="20" text-anchor="middle" font-weight="800">Equity ৳২,০০,০০০</text><line x1="40" x2="860" y1="270" y2="270" class="axis"/><text x="450.0" y="30" class="m" font-size="17" text-anchor="middle" font-weight="600">মাসের শুরুতে</text></svg>
+<div class="cols"><div><ul><li><b>Equity</b> = মালিকের অংশ = Assets − Liabilities</li><li>Equity বাড়ে: মালিক টাকা দিলে, লাভ হলে</li><li>Equity কমে: মালিক টাকা তুললে, লোকসান হলে</li></ul></div><div><div class="callout "><b>Assets = Liabilities + Equity</b><br>এই সমীকরণ সবসময় মিলতে হবে। এটাই হিসাবের ভিত্তি।</div></div></div>
+<aside class="notes">Opening: assets 200,000 = liabilities 0 + equity 200,000.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="লেনদেন সমীকরণে কী করে">
+<span class="tag">Balance sheet</span>
+<h2>প্রতিটি লেনদেন সমীকরণ মিলিয়ে রাখে</h2>
+<table><tr><th class="">লেনদেন</th><th class="">Assets</th><th class="">Liabilities</th><th class="">Equity</th></tr><tr class=""><td class="">নগদে ৳৭০,০০০-এর স্টক কেনা</td><td class="">স্টক +, ক্যাশ −</td><td class="">—</td><td class="">—</td></tr><tr class=""><td class="">বাকিতে ৳৩০,০০০-এর স্টক কেনা</td><td class="">স্টক +</td><td class="">Supplier +</td><td class="">—</td></tr><tr class=""><td class="">ফোন বিক্রি, ক্যাশে</td><td class="">ক্যাশ +, স্টক −</td><td class="">—</td><td class="">+ লাভ</td></tr><tr class=""><td class="">ফোন বিক্রি, বাকিতে</td><td class="">পাওনা +, স্টক −</td><td class="">—</td><td class="">+ লাভ</td></tr><tr class=""><td class="">ভাড়া দিইনি, মাস শেষ</td><td class="">—</td><td class="">ভাড়া বাকি +</td><td class="">− খরচ</td></tr><tr class=""><td class="">মালিক ৳৫,০০০ তুললেন</td><td class="">ক্যাশ −</td><td class="">—</td><td class="">− Drawings</td></tr></table>
+<div class="callout ">প্রতিটি লেনদেন সমীকরণের দুই দিকেই প্রভাব ফেলে এবং দুই দিক সমান থাকে। নগদে স্টক কিনলে শুধু এক Asset অন্য Asset-এ বদলায়: লাভ-লোকসান কিছু হয় না।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Double-entry">
+<span class="tag">পেশাদার হিসাব</span>
+<h2>Double-entry: প্রতিটি লেনদেনের দুই পিঠ</h2>
+<svg viewBox="0 0 900 250" role="img" aria-label="T-accounts" class="fig">
+<text x="450" y="30" class="m" font-size="17" text-anchor="middle" font-weight="600">ফোন বিক্রি ৳১২,০০০, কেনা দাম ৳৯,৫০০, ক্যাশে</text>
+<rect x="30" y="50" width="200" height="170" rx="10" class="card-s"/><line x1="130" x2="130" y1="85" y2="220" class="axis"/><line x1="30" x2="230" y1="85" y2="85" class="axis"/><rect x="250" y="50" width="200" height="170" rx="10" class="card-s"/><line x1="350" x2="350" y1="85" y2="220" class="axis"/><line x1="250" x2="450" y1="85" y2="85" class="axis"/><rect x="470" y="50" width="200" height="170" rx="10" class="card-s"/><line x1="570" x2="570" y1="85" y2="220" class="axis"/><line x1="470" x2="670" y1="85" y2="85" class="axis"/><rect x="690" y="50" width="200" height="170" rx="10" class="card-s"/><line x1="790" x2="790" y1="85" y2="220" class="axis"/><line x1="690" x2="890" y1="85" y2="85" class="axis"/>
+<text x="130" y="76" class="t" font-size="19" text-anchor="middle" font-weight="800">Cash</text><text x="350" y="76" class="t" font-size="19" text-anchor="middle" font-weight="800">Sales</text><text x="570" y="76" class="t" font-size="19" text-anchor="middle" font-weight="800">COGS</text><text x="790" y="76" class="t" font-size="19" text-anchor="middle" font-weight="800">Inventory</text>
+<text x="80" y="112" class="m" font-size="14" text-anchor="middle" font-weight="600">Debit</text><text x="180" y="112" class="m" font-size="14" text-anchor="middle" font-weight="600">Credit</text><text x="300" y="112" class="m" font-size="14" text-anchor="middle" font-weight="600">Debit</text><text x="400" y="112" class="m" font-size="14" text-anchor="middle" font-weight="600">Credit</text><text x="520" y="112" class="m" font-size="14" text-anchor="middle" font-weight="600">Debit</text><text x="620" y="112" class="m" font-size="14" text-anchor="middle" font-weight="600">Credit</text><text x="740" y="112" class="m" font-size="14" text-anchor="middle" font-weight="600">Debit</text><text x="840" y="112" class="m" font-size="14" text-anchor="middle" font-weight="600">Credit</text>
+<text x="80" y="150" class="t" font-size="19" text-anchor="middle" font-weight="800">১২,০০০</text><text x="400" y="150" class="t" font-size="19" text-anchor="middle" font-weight="800">১২,০০০</text><text x="520" y="150" class="t" font-size="19" text-anchor="middle" font-weight="800">৯,৫০০</text><text x="840" y="150" class="t" font-size="19" text-anchor="middle" font-weight="800">৯,৫০০</text>
+</svg>
+<div class="cols"><div><ul><li>প্রতিটি লেনদেনে <b>Debit মোট = Credit মোট</b></li><li>ক্যাশ বাড়ল (Debit), Sales বাড়ল (Credit)</li><li>COGS খরচ বাড়ল (Debit), Inventory কমল (Credit)</li></ul></div><div><div class="callout "><b>Dokani আপনাকে Debit-Credit লিখতে বলে না।</b> Dokani বিক্রি ও খরচ থেকে সরাসরি রিপোর্ট বানায়। এই স্লাইড শুধু বোঝার জন্য, যাতে হিসাবদাতার কথা বুঝতে পারেন।</div></div></div>
+<aside class="notes">Dokani is not a double-entry ledger. It is an operational reporting module. Say this clearly.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="স্টক ও কেনা দামের হিসাব">
+<span class="tag">Inventory</span>
+<h2>স্টক: কোন দামে ধরব?</h2>
+<p class="lead">একই চার্জার দুই দামে কেনা: প্রথমটা ৳১০০, পরেরটা ৳১২০। একটা ৳২০০-তে বিক্রি হলো।</p>
+<table><tr><th class="">পদ্ধতি</th><th class="">কোন দাম ধরা হয়</th><th class="n">COGS</th><th class="n">লাভ</th></tr><tr class=""><td class="">FIFO</td><td class="">যেটা আগে কিনেছি সেটা আগে বিক্রি</td><td class="n">৳১০০</td><td class="n">৳১০০</td></tr><tr class=""><td class="">Weighted average</td><td class="">গড় দাম (১০০ + ১২০) ÷ ২</td><td class="n">৳১১০</td><td class="n">৳৯০</td></tr><tr class=""><td class="">Specific (নির্দিষ্ট)</td><td class="">ঠিক যে ইউনিটটা বিক্রি হলো, তার দাম</td><td class="n">সেই ইউনিটের দাম</td><td class="n">সঠিক</td></tr></table>
+<div class="callout "><b>ফোনের ক্ষেত্রে সহজ:</b> প্রতিটি ফোনের IMEI আছে, তাই প্রতিটির কেনা দাম আলাদা জানা যায়। এটাই সবচেয়ে সঠিক পদ্ধতি (specific identification)। চার্জার, কভারের মতো একই ধরনের পণ্যে দাম গড় বা পরিবর্তিত হতে পারে।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="পাওনা">
+<span class="tag">Receivables</span>
+<h2>বাকিতে বিক্রি: পাওনা (Receivables)</h2>
+<div class="cols"><div><svg viewBox="0 0 560 285" role="img" aria-label="Ageing" class="fig">
+<text x="300" y="28" class="m" font-size="16" text-anchor="middle" font-weight="600">কত দিনের পুরনো বাকি</text>
+<rect x="170" y="50" width="320" height="50" rx="6" class="bar-up"/><text x="160" y="83" class="t" font-size="17" text-anchor="end" font-weight="600">০–৩০ দিন</text><text x="498.0" y="83" class="t" font-size="17" text-anchor="start" font-weight="800">৳৮,০০০</text>
+<rect x="170" y="115" width="200" height="50" rx="6" class="bar-warn"/><text x="160" y="148" class="t" font-size="17" text-anchor="end" font-weight="600">৩১–৬০ দিন</text><text x="378.0" y="148" class="t" font-size="17" text-anchor="start" font-weight="800">৳৫,০০০</text>
+<rect x="170" y="180" width="80" height="50" rx="6" class="bar-down"/><text x="160" y="213" class="t" font-size="17" text-anchor="end" font-weight="600">৬০+ দিন</text><text x="258.0" y="213" class="t" font-size="17" text-anchor="start" font-weight="800">৳২,০০০</text>
+<text x="300" y="265" class="t" font-size="19" text-anchor="middle" font-weight="800">মোট পাওনা ৳১৫,০০০</text>
+</svg></div><div><ul><li>বিক্রি হয়ে গেছে, তাই লাভে ধরা হয়েছে</li><li>কিন্তু টাকা আসেনি, তাই ক্যাশ বাড়েনি</li><li>যত পুরনো, তত আদায়ের সম্ভাবনা কম</li><li>৬০ দিনের বেশি পুরনো বাকির দিকে নজর দিন</li></ul></div></div>
+<div class="callout warn">ভালো লাভ দেখিয়েও ব্যবসা ক্যাশের অভাবে আটকে যেতে পারে, যদি বেশিরভাগ বিক্রি বাকিতে হয়।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="দেনা ও খরচের বাকি">
+<span class="tag">Payables</span>
+<h2>দেনা: ক্যাশ যায়নি, কিন্তু দায় হয়েছে</h2>
+<div class="cols"><div><ul><li>বাকিতে স্টক কিনলে ৳৩০,০০০ Supplier-কে দিতে হবে। এটা এখনো খরচ নয়, কারণ স্টক Asset</li><li>কিন্তু যে ফোন বিক্রি হবে, তার কেনা দাম তখন COGS হবে</li><li>ভাড়া মাসের মধ্যে ব্যবহার হয়েছে, কিন্তু পরের মাসে দেবেন: এটা এই মাসের খরচ এবং দেনা</li></ul></div><div><table><tr><th class=""></th><th class="">লাভে</th><th class="">ক্যাশে</th><th class="">দেনায়</th></tr><tr class=""><td class="">বাকিতে স্টক কেনা</td><td class="">এখনো না</td><td class="">না</td><td class="">হ্যাঁ</td></tr><tr class=""><td class="">বাকি ভাড়া</td><td class="">হ্যাঁ, এই মাসে</td><td class="">না</td><td class="">হ্যাঁ</td></tr><tr class=""><td class="">পরের মাসে ভাড়া দিলে</td><td class="">না</td><td class="">হ্যাঁ, তখন</td><td class="">কমে</td></tr></table></div></div>
+<div class="callout ">দেনা সময়মতো না দিলে সম্পর্ক ও ক্রেডিট নষ্ট হয়। তাই কার কত দেনা, কবে দিতে হবে, তা সবসময় সামনে রাখুন।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Drawings">
+<span class="tag">মালিক ও ব্যবসা</span>
+<h2>মালিকের তোলা টাকা: খরচ নয়, Drawings</h2>
+<div class="cols"><div><div class="check"><div><i>১</i><span>ব্যবসার লাভ-লোকসান ও মালিকের ব্যক্তিগত টাকা আলাদা</span></div><div><i>২</i><span>মালিক ব্যবসা থেকে টাকা তুললে সেটা <b>Drawings</b></span></div><div><i>৩</i><span>Drawings খরচ নয়, তাই Net profit কমায় না</span></div><div><i>৪</i><span>কিন্তু Equity ও ক্যাশ কমায়</span></div></div></div><div><svg viewBox="0 0 900 250" role="img" aria-label="Bar chart" class="fig"><text x="218" y="52.333333333333336" class="t" font-size="17" text-anchor="end" font-weight="600">মাসের লাভ</text><rect x="230" y="14.0" width="540.0" height="64.7" rx="6" class="bar-up"/><text x="780.0" y="52.333333333333336" class="t" font-size="17" text-anchor="start" font-weight="800">১২,০০০</text><text x="218" y="131.0" class="t" font-size="17" text-anchor="end" font-weight="600">মালিক তুলেছেন</text><rect x="230" y="92.7" width="225.0" height="64.7" rx="6" class="bar-down"/><text x="465.0" y="131.0" class="t" font-size="17" text-anchor="start" font-weight="800">৫,০০০</text><text x="218" y="209.66666666666669" class="t" font-size="17" text-anchor="end" font-weight="600">ব্যবসায় রইল</text><rect x="230" y="171.3" width="315.0" height="64.7" rx="6" class="bar-total"/><text x="555.0" y="209.66666666666669" class="t" font-size="17" text-anchor="start" font-weight="800">৭,০০০</text></svg></div></div>
+<div class="callout warn"><b>টিপ:</b> নিজের জন্য একটা নির্দিষ্ট মাসিক বেতন ঠিক করুন এবং সেটা খরচ হিসেবে লিখুন। তাহলে দোকানের আসল লাভ বোঝা যায়। নাহলে মালিক আসলে কত শ্রম দিয়ে কত পাচ্ছেন, সেটা হিসাবে আসে না।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Capital বনাম Revenue খরচ">
+<span class="tag">খরচের ধরন</span>
+<h2>কিছু খরচ এক মাসে শেষ হয় না</h2>
+<div class="cols"><div><table><tr><th class=""></th><th class="">ধরন</th><th class="">কীভাবে ধরব</th></tr><tr class=""><td class="">দোকান ভাড়া ৳৩,০০০</td><td class="">Revenue expense</td><td class="">এই মাসের খরচ</td></tr><tr class=""><td class="">ডিসপ্লে কাউন্টার ৳১২,০০০</td><td class="">Capital (Fixed asset)</td><td class="">Asset, কয়েক বছরে ভাগ করে খরচ</td></tr></table></div><div><svg viewBox="0 0 560 240" role="img" aria-label="Depreciation" class="fig">
+<text x="280" y="28" class="m" font-size="16" text-anchor="middle" font-weight="600">কাউন্টার ৳১২,০০০, ৪ বছর চলবে</text>
+<rect x="20" y="50" width="125" height="90" rx="8" class="bar-total"/><text x="82" y="88" class="wt" font-size="17" text-anchor="middle" font-weight="600">বছর ১</text><text x="82" y="118" class="wt" font-size="19" text-anchor="middle" font-weight="800">৳৩,০০০</text><rect x="155" y="50" width="125" height="90" rx="8" class="bar-total"/><text x="217" y="88" class="wt" font-size="17" text-anchor="middle" font-weight="600">বছর ২</text><text x="217" y="118" class="wt" font-size="19" text-anchor="middle" font-weight="800">৳৩,০০০</text><rect x="290" y="50" width="125" height="90" rx="8" class="bar-total"/><text x="352" y="88" class="wt" font-size="17" text-anchor="middle" font-weight="600">বছর ৩</text><text x="352" y="118" class="wt" font-size="19" text-anchor="middle" font-weight="800">৳৩,০০০</text><rect x="425" y="50" width="125" height="90" rx="8" class="bar-total"/><text x="487" y="88" class="wt" font-size="17" text-anchor="middle" font-weight="600">বছর ৪</text><text x="487" y="118" class="wt" font-size="19" text-anchor="middle" font-weight="800">৳৩,০০০</text>
+<text x="280" y="185" class="t" font-size="19" text-anchor="middle" font-weight="800">প্রতি মাসে খরচ = ১২,০০০ ÷ ৪৮ = ৳২৫০</text>
+<text x="280" y="215" class="m" font-size="16" text-anchor="middle" font-weight="600">একে বলে Depreciation</text>
+</svg></div></div>
+<div class="callout ">কাউন্টারের পুরো ১২,০০০ এক মাসের খরচে ধরলে সেই মাসের লাভ ভুলভাবে কমে যায়, পরের মাসগুলোর লাভ ভুলভাবে বেশি দেখায়। এই ভাগ করাকে <b>depreciation</b> বলে।</div>
+<div class="callout warn"><b>Dokani-তে আজ:</b> Fixed asset ও depreciation আলাদা করে ট্র্যাক হয় না। এই ধরনের বড় কেনা আলাদাভাবে মনে রাখুন বা হিসাবদাতার সাথে ঠিক করুন।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Cash flow statement">
+<span class="tag">Cash flow</span>
+<h2>তৃতীয় রিপোর্ট: Cash flow</h2>
+<div class="cols"><div><table><tr><th class="">Rahim Mobile · এক মাস</th><th class="n">টাকা</th></tr><tr class=""><td class="">মাসের শুরুর ক্যাশ</td><td class="n">৳৫০,০০০</td></tr><tr class=""><td class="">+ বিক্রি থেকে ক্যাশ পেয়েছেন</td><td class="n">৳৮৫,০০০</td></tr><tr class=""><td class="">− স্টকের জন্য দিয়েছেন</td><td class="n">৳−৭০,০০০</td></tr><tr class=""><td class="">− খরচ দিয়েছেন (ভাড়া বাদে)</td><td class="n">৳−৫,০০০</td></tr><tr class="total"><td class=""><b>ব্যবসা চালিয়ে ক্যাশ</b></td><td class="n">৳১০,০০০</td></tr><tr class=""><td class="">− মালিক তুলেছেন</td><td class="n">৳−৫,০০০</td></tr><tr class="total"><td class=""><b>মাস শেষে ক্যাশ</b></td><td class="n">৳৫৫,০০০</td></tr></table></div><div><ul><li>Cash flow শুধু <b>টাকা সত্যি এলো-গেল</b> তা দেখে</li><li>তিন ভাগে ভাবা যায়: ব্যবসা চালানো (operating), বড় কেনা (investing), ঋণ বা মালিকের টাকা (financing)</li><li>এখানে ব্যবসা চালিয়ে ক্যাশ বেড়েছে ৳১০,০০০, মালিক তুলেছেন ৳৫,০০০, তাই মোট বেড়েছে ৳৫,০০০</li></ul></div></div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="লাভ ≠ ক্যাশ">
+<span class="tag">সবচেয়ে গুরুত্বপূর্ণ পাঠ</span>
+<h2>লাভ ৳১২,০০০, কিন্তু ক্যাশ বাড়ল মাত্র ৳৫,০০০</h2>
+<svg viewBox="0 0 900 380" role="img" aria-label="Waterfall chart" class="fig"><line x1="30" x2="870" y1="139.14285714285714" y2="139.14285714285714" class="axis"/><rect x="52.8" y="50.0" width="74.4" height="89.1" rx="5" class="bar-total"/><text x="90.0" y="42.0" class="t" font-size="17" text-anchor="middle" font-weight="800">১২,০০০</text><text x="90.0" y="336" class="m" font-size="15" text-anchor="middle" font-weight="600">Net profit</text><rect x="172.8" y="50.0" width="74.4" height="148.6" rx="5" class="bar-down"/><text x="210.0" y="42.0" class="t" font-size="17" text-anchor="middle" font-weight="800">−২০,০০০</text><text x="210.0" y="336" class="m" font-size="15" text-anchor="middle" font-weight="600">স্টক বেড়েছে</text><rect x="292.8" y="198.6" width="74.4" height="111.4" rx="5" class="bar-down"/><text x="330.0" y="190.6" class="t" font-size="17" text-anchor="middle" font-weight="800">−১৫,০০০</text><text x="330.0" y="336" class="m" font-size="15" text-anchor="middle" font-weight="600">বাকিতে বিক্রি</text><rect x="412.8" y="87.1" width="74.4" height="222.9" rx="5" class="bar-up"/><text x="450.0" y="79.1" class="t" font-size="17" text-anchor="middle" font-weight="800">+৩০,০০০</text><text x="450.0" y="336" class="m" font-size="15" text-anchor="middle" font-weight="600">Supplier বাকি</text><rect x="532.8" y="64.9" width="74.4" height="22.3" rx="5" class="bar-up"/><text x="570.0" y="56.9" class="t" font-size="17" text-anchor="middle" font-weight="800">+৩,০০০</text><text x="570.0" y="336" class="m" font-size="15" text-anchor="middle" font-weight="600">ভাড়া বাকি</text><rect x="652.8" y="64.9" width="74.4" height="37.1" rx="5" class="bar-down"/><text x="690.0" y="56.9" class="t" font-size="17" text-anchor="middle" font-weight="800">−৫,০০০</text><text x="690.0" y="336" class="m" font-size="15" text-anchor="middle" font-weight="600">মালিক তুলেছেন</text><rect x="772.8" y="102.0" width="74.4" height="37.1" rx="5" class="bar-total"/><text x="810.0" y="94.0" class="t" font-size="17" text-anchor="middle" font-weight="800">৫,০০০</text><text x="810.0" y="336" class="m" font-size="15" text-anchor="middle" font-weight="600">ক্যাশ বাড়ল</text></svg>
+<div class="callout warn">লাভের টাকা ক্যাশে নেই। ৳২০,০০০ গেছে বেশি স্টকে, ৳১৫,০০০ গ্রাহকের কাছে আটকে, আর ৳৩৩,০০০ এখনো দেওয়া হয়নি বলে ক্যাশ ঠিক আছে।</div>
+<aside class="notes">Bridge: 12,000 profit - 20,000 stock increase - 15,000 receivable + 30,000 supplier credit + 3,000 unpaid rent - 5,000 drawings = +5,000 cash.</aside></section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Balance sheet">
+<span class="tag">Balance sheet</span>
+<h2>দ্বিতীয় রিপোর্ট: Balance sheet</h2>
+<div class="cols"><div><table><tr><th class="">Assets</th><th class="n">টাকা</th></tr><tr class=""><td class="">ক্যাশ</td><td class="n">৳৫৫,০০০</td></tr><tr class=""><td class="">ফোনের স্টক</td><td class="n">৳১,৭০,০০০</td></tr><tr class=""><td class="">গ্রাহকের কাছে পাওনা</td><td class="n">৳১৫,০০০</td></tr><tr class="total"><td class=""><b>মোট Assets</b></td><td class="n">৳২,৪০,০০০</td></tr></table></div><div><table><tr><th class="">Liabilities ও Equity</th><th class="n">টাকা</th></tr><tr class=""><td class="">Supplier বাকি</td><td class="n">৳৩০,০০০</td></tr><tr class=""><td class="">ভাড়া বাকি</td><td class="n">৳৩,০০০</td></tr><tr class=""><td class="">Equity (শুরু ৳২,০০,০০০ + লাভ ৳১২,০০০ − Drawings ৳৫,০০০)</td><td class="n">৳২,০৭,০০০</td></tr><tr class="total"><td class=""><b>মোট</b></td><td class="n">৳২,৪০,০০০</td></tr></table></div></div>
+<svg viewBox="0 0 900 300" role="img" aria-label="Accounting equation" class="fig"><rect x="90" y="50.0" width="250" height="190.0" rx="8" class="bar-total"/><text x="215.0" y="151.0" class="wt" font-size="20" text-anchor="middle" font-weight="800">Assets ৳২,৪০,০০০</text><text x="410" y="155.0" class="t" font-size="44" text-anchor="middle" font-weight="800">=</text><rect x="520" y="213.9" width="250" height="26.1" rx="8" class="bar-down"/><text x="645.0" y="232.9375" class="wt" font-size="18" text-anchor="middle" font-weight="800">Liabilities ৳৩৩,০০০</text><rect x="520" y="50.0" width="250" height="163.9" rx="8" class="bar-up"/><text x="645.0" y="137.9375" class="wt" font-size="20" text-anchor="middle" font-weight="800">Equity ৳২,০৭,০০০</text><line x1="40" x2="860" y1="240" y2="240" class="axis"/><text x="450.0" y="30" class="m" font-size="17" text-anchor="middle" font-weight="600">মাস শেষে: Assets = Liabilities + Equity</text></svg>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="তিন রিপোর্ট কীভাবে জোড়া">
+<span class="tag">সব মিলিয়ে</span>
+<h2>তিনটি রিপোর্ট আসলে একই গল্প</h2>
+<svg viewBox="0 0 900 330" role="img" aria-label="Connections" class="fig">
+<rect x="30" y="30" width="250" height="110" rx="14" class="card-s"/><text x="155" y="68" class="t" font-size="20" text-anchor="middle" font-weight="800">Income statement</text><text x="155" y="100" class="m" font-size="17" text-anchor="middle" font-weight="600">Net profit ৳১২,০০০</text>
+<rect x="620" y="30" width="250" height="110" rx="14" class="card-s"/><text x="745" y="68" class="t" font-size="20" text-anchor="middle" font-weight="800">Balance sheet</text><text x="745" y="100" class="m" font-size="17" text-anchor="middle" font-weight="600">Equity ৳২,০৭,০০০</text>
+<rect x="325" y="190" width="250" height="110" rx="14" class="card-s"/><text x="450" y="228" class="t" font-size="20" text-anchor="middle" font-weight="800">Cash flow</text><text x="450" y="260" class="m" font-size="17" text-anchor="middle" font-weight="600">শেষ ক্যাশ ৳৫৫,০০০</text>
+<line x1="280" x2="620" y1="85" y2="85" class="line-g" stroke-width="4"/><text x="450" y="75" class="t" font-size="15" text-anchor="middle" font-weight="600">লাভ Equity-তে যোগ হয়</text>
+<line x1="450" x2="450" y1="190" y2="150" class="line-g" stroke-width="3"/>
+<line x1="450" x2="745" y1="170" y2="170" class="line-g" stroke-width="3"/><line x1="745" x2="745" y1="170" y2="140" class="line-g" stroke-width="3"/>
+<text x="600" y="165" class="t" font-size="15" text-anchor="middle" font-weight="600">শেষ ক্যাশ Balance sheet-এর ক্যাশ</text>
+</svg>
+<div class="callout ">একটা মিললে বাকি দুটোও মেলে। কোনো একটা না মিললে কোথাও লেনদেন বাদ গেছে বা ভুল জায়গায় লেখা হয়েছে।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Margin বনাম Markup">
+<span class="tag">দাম ঠিক করা</span>
+<h2>Margin আর Markup এক জিনিস নয়</h2>
+<svg viewBox="0 0 900 300" role="img" aria-label="Margin markup" class="fig">
+<rect x="80" y="74" width="200" height="176" rx="8" class="bar-down"/><text x="180" y="170" class="wt" font-size="20" text-anchor="middle" font-weight="800">কেনা দাম ৮০</text>
+<rect x="80" y="30" width="200" height="44" rx="8" class="bar-up"/><text x="180" y="60" class="wt" font-size="18" text-anchor="middle" font-weight="800">লাভ ২০</text>
+<text x="180" y="282" class="t" font-size="19" text-anchor="middle" font-weight="800">বিক্রয় মূল্য ১০০</text>
+<text x="600" y="100" class="t" font-size="21" text-anchor="middle" font-weight="800">Markup = লাভ ÷ কেনা দাম</text><text x="600" y="138" class="g" font-size="26" text-anchor="middle" font-weight="800">২০ ÷ ৮০ = ২৫%</text>
+<text x="600" y="200" class="t" font-size="21" text-anchor="middle" font-weight="800">Margin = লাভ ÷ বিক্রয় মূল্য</text><text x="600" y="238" class="g" font-size="26" text-anchor="middle" font-weight="800">২০ ÷ ১০০ = ২০%</text>
+</svg>
+<div class="callout warn">ধরুন ২০% margin চান, কিন্তু কেনা দামের ওপর ২০% যোগ করলেন। আসলে margin হবে মাত্র ১৬.৭%। <b>২০% margin চাইলে</b> কেনা দামকে ০.৮ দিয়ে ভাগ করুন: ৮০ ÷ ০.৮ = ১০০।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="Break-even">
+<span class="tag">দাম ও খরচ</span>
+<h2>মাসে কত বিক্রি করলে ক্ষতি থামে?</h2>
+<svg viewBox="0 0 900 330" role="img" aria-label="Break-even" class="fig">
+<polygon points="80,160 470,160 80,290" class="shade-loss"/>
+<polygon points="470,160 860,160 860,30" class="shade-gain"/>
+<line x1="80" x2="860" y1="290" y2="290" class="axis"/><line x1="80" x2="80" y1="30" y2="290" class="axis"/>
+<line x1="80" y1="290" x2="860" y2="30" class="line-g" stroke-width="5"/>
+<line x1="80" x2="860" y1="160" y2="160" class="line-r" stroke-width="5"/>
+<circle cx="470" cy="160" r="10" class="dot-a"/>
+<text x="470" y="132" class="t" font-size="19" text-anchor="middle" font-weight="800">Break-even ৳৪০,০০০</text>
+<text x="700" y="95" class="g" font-size="17" text-anchor="middle" font-weight="600">Gross profit (২০%)</text>
+<text x="700" y="190" class="r" font-size="17" text-anchor="middle" font-weight="600">মাসিক খরচ ৳৮,০০০</text>
+<text x="80" y="316" class="m" font-size="14" text-anchor="middle" font-weight="600">০</text><text x="470" y="316" class="m" font-size="14" text-anchor="middle" font-weight="600">বিক্রি ৳৪০,০০০</text><text x="860" y="316" class="m" font-size="14" text-anchor="end" font-weight="600">৳৮০,০০০</text>
+<text x="250" y="235" class="r" font-size="17" text-anchor="middle" font-weight="600">ক্ষতি</text><text x="720" y="60" class="g" font-size="17" text-anchor="middle" font-weight="600">লাভ</text>
+</svg>
+<div class="callout ">মাসিক খরচ ৳৮,০০০ ÷ gross margin ২০% = <b>৳৪০,০০০ বিক্রি</b>। এর নিচে বিক্রি হলে ক্ষতি, ওপরে হলে লাভ। Margin বাড়ালে বা খরচ কমালে এই সংখ্যা নেমে আসে।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="স্টকে কত টাকা আটকে">
+<span class="tag">দক্ষতা</span>
+<h2>স্টকে টাকা আটকে আছে কতদিন?</h2>
+<div class="cols"><div><ul><li>গড় স্টক = (৳১,৫০,০০০ + ৳১,৭০,০০০) ÷ ২ = <b>৳১,৬০,০০০</b></li><li>মাসে COGS = <b>৳৮০,০০০</b></li><li>Stock turnover = ৮০,০০০ ÷ ১,৬০,০০০ ≈ <b>০.৫ গুণ</b>/মাস</li><li>মানে <b>গড়ে ৬০ দিনের মাল</b> দোকানে পড়ে থাকে</li></ul></div><div><svg viewBox="0 0 600 200" role="img" aria-label="Days" class="fig">
+<text x="300" y="30" class="m" font-size="16" text-anchor="middle" font-weight="600">স্টক পুরোপুরি বিক্রি হতে সময়</text>
+<rect x="40" y="60" width="520" height="50" rx="8" class="ghost"/><rect x="40" y="60" width="260" height="50" rx="8" class="bar-total"/>
+<text x="170" y="92" class="wt" font-size="17" text-anchor="middle" font-weight="600">প্রথম ৩০ দিন</text><text x="430" y="92" class="t" font-size="17" text-anchor="middle" font-weight="600">পরের ৩০ দিন</text>
+<text x="300" y="160" class="t" font-size="26" text-anchor="middle" font-weight="800">≈ ৬০ দিন</text>
+</svg></div></div>
+<div class="callout warn">পুরনো স্টক মানে আটকে থাকা টাকা। ফোনের দাম সময়ের সাথে কমে। তাই যে মাল দ্রুত বিক্রি হয় সেটা বেশি রাখুন, ধীর মাল কম।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="পাঁচটি সংখ্যা">
+<span class="tag">নজরে রাখুন</span>
+<h2>প্রতি মাসে পাঁচটি সংখ্যা দেখুন</h2>
+<table><tr><th class="">সংখ্যা</th><th class="">সূত্র</th><th class="">Rahim Mobile</th><th class="">কী বলে</th></tr><tr class=""><td class="">Gross margin</td><td class="">Gross profit ÷ Revenue</td><td class="">২০%</td><td class="">দাম আর কেনা দামের ফারাক ঠিক আছে কিনা</td></tr><tr class=""><td class="">Net margin</td><td class="">Net profit ÷ Revenue</td><td class="">১২%</td><td class="">শেষে কত থাকে</td></tr><tr class=""><td class="">Break-even</td><td class="">মাসিক খরচ ÷ Gross margin</td><td class="">৳৪০,০০০</td><td class="">ন্যূনতম বিক্রি কত লাগবে</td></tr><tr class=""><td class="">স্টক দিন</td><td class="">গড় স্টক ÷ (COGS ÷ ৩০)</td><td class="">≈ ৬০ দিন</td><td class="">টাকা কতদিন আটকে</td></tr><tr class=""><td class="">ক্যাশ বনাম দেনা</td><td class="">ক্যাশ ÷ মোট দেনা</td><td class="">৳৫৫,০০০ বনাম ৳৩৩,০০০</td><td class="">সময়মতো দেনা মেটানো যাবে কিনা</td></tr></table>
+<div class="callout ">কোনো একটা সংখ্যা একা দেখলে ভুল ধারণা হয়। পাঁচটা একসাথে এক পাতায় দেখলে ব্যবসার স্বাস্থ্য বোঝা যায়।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="ক্যাশ মেলানো">
+<span class="tag">যাচাই</span>
+<h2>খাতার হিসাব আর হাতের টাকা মেলানো</h2>
+<div class="cols"><div><div class="check"><div><i>১</i><span>দিন শেষে ক্যাশ ড্রয়ারের টাকা গুনুন</span></div><div><i>২</i><span>খাতার (সিস্টেমের) <b>Expected cash</b> বের করুন</span></div><div><i>৩</i><span>পার্থক্য লিখে রাখুন</span></div><div><i>৪</i><span>কারণ খুঁজুন: ভুল রেট, ভুলে লেখা খরচ, খুচরা ফেরত, চুরি</span></div></div></div><div><table><tr><th class=""></th><th class="n">টাকা</th></tr><tr class=""><td class="">Expected cash</td><td class="n">৳৫৫,০০০</td></tr><tr class=""><td class="">গুনে পাওয়া</td><td class="n">৳৫৪,৮০০</td></tr><tr class="total"><td class="">পার্থক্য</td><td class="n">৳−২০০</td></tr></table></div></div>
+<div class="callout ">ছোট পার্থক্য সবার হয়। কিন্তু প্রতিদিন একই দিকে পার্থক্য হলে সেটা সংকেত: কোথাও লেনদেন বাদ যাচ্ছে বা কেউ ভুল করছে। bKash, Nagad ও ব্যাংকের ক্ষেত্রেও মাঝেমধ্যে app-এর ব্যালেন্সের সাথে মেলান।</div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="মাস শেষের নিয়ম">
+<span class="tag">অভ্যাস</span>
+<h2>মাস শেষে ছয় ধাপ</h2>
+<div class="check"><div><i>১</i><span>সব বিক্রি ও কেনা লেখা হয়েছে কিনা দেখুন</span></div><div><i>২</i><span>সব খরচ লিখুন, বাকি খরচ বাকি হিসেবে চিহ্নিত করুন</span></div><div><i>৩</i><span>ক্যাশ, bKash, ব্যাংকের টাকা গুনে বা app দেখে মেলান</span></div><div><i>৪</i><span>স্টক গুনে সিস্টেমের সাথে মেলান</span></div><div><i>৫</i><span>তিনটি রিপোর্ট দেখুন: লাভ, Balance, Cash flow</span></div><div><i>৬</i><span>পাঁচটি সংখ্যা দেখে পরের মাসের সিদ্ধান্ত নিন</span></div></div>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="শব্দ তালিকা">
+<span class="tag">দ্রুত রেফারেন্স</span>
+<h2>শব্দ তালিকা</h2>
+<table><tr><th class="">শব্দ</th><th class="">মানে</th></tr><tr class=""><td class="">Revenue</td><td class="">মোট বিক্রি</td></tr><tr class=""><td class="">COGS</td><td class="">বিক্রি হওয়া পণ্যের কেনা দাম</td></tr><tr class=""><td class="">Gross profit</td><td class="">Revenue − COGS</td></tr><tr class=""><td class="">Expenses</td><td class="">দোকান চালানোর খরচ</td></tr><tr class=""><td class="">Net profit</td><td class="">Gross profit − Expenses</td></tr><tr class=""><td class="">Asset</td><td class="">ব্যবসার যা আছে</td></tr><tr class=""><td class="">Liability</td><td class="">ব্যবসার যা দেনা</td></tr><tr class=""><td class="">Equity</td><td class="">Asset − Liability, মালিকের অংশ</td></tr><tr class=""><td class="">Drawings</td><td class="">মালিকের তোলা টাকা, খরচ নয়</td></tr><tr class=""><td class="">Receivable / Payable</td><td class="">পাওনা / দেনা</td></tr><tr class=""><td class="">Accrual / Cash basis</td><td class="">কাজ হলে ধরা / টাকা এলে ধরা</td></tr></table>
+</section>
+<section class="slide" data-part="Part 1 · হিসাবের মূল ধারণা" data-title="নিজেকে যাচাই করুন">
+<span class="tag">কুইজ</span>
+<h2>নিজেকে যাচাই করুন</h2>
+<div class="quiz">
+<details><summary>১. ১০টি ফোন কিনলেন, ৭টি বিক্রি হলো। COGS কতটা ফোনের দাম?</summary><p>৭টির। বাকি ৩টি স্টক, একটা Asset।</p></details>
+<details><summary>২. লাভ ১০,০০০ কিন্তু ক্যাশ কমেছে। কেন হতে পারে?</summary><p>স্টক বেশি কেনা, বাকিতে বিক্রি, দেনা মেটানো, বা মালিকের তোলা টাকা।</p></details>
+<details><summary>৩. মালিক ৫,০০০ তুললেন। কী প্রভাব?</summary><p>ক্যাশ ও Equity কমে। Net profit কমে না, কারণ এটা খরচ নয়।</p></details>
+<details><summary>৪. ৩,০০০ ভাড়া এই মাসের, কিন্তু দেবেন পরের মাসে। এই মাসে লাভ, ক্যাশ ও দেনায় কী হয়?</summary><p>লাভ কমে ৩,০০০, ক্যাশ কমে না, দেনা ৩,০০০ বাড়ে।</p></details>
+<details><summary>৫. ২৫% markup-এ কেনা দাম ৮০ হলে বিক্রয় মূল্য কত? Margin কত?</summary><p>১০০। Margin ২০%।</p></details>
+<details><summary>৬. মাসিক খরচ ১০,০০০, gross margin ২৫%। Break-even বিক্রি কত?</summary><p>১০,০০০ ÷ ০.২৫ = ৪০,০০০।</p></details>
+</div>
+</section>
+<section class="slide hero" data-part="Part 2 · Dokani-তে হিসাব" data-title="Part 2: Dokani-তে হিসাব">
+<span class="tag">Part 2</span>
+<h1>এবার Dokani-তে দেখি</h1>
+<p class="lead">আগের ধারণাগুলো Dokani-তে কোথায় আছে, কী আজই কাজ করে, আর কী এখনো নেই। সৎভাবে।</p>
+<aside class="notes">Part 2 describes only what works today, then a clearly labelled roadmap.</aside></section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="ধারণা → Dokani">
+<span class="tag">মানচিত্র</span>
+<h2>কোন ধারণা Dokani-র কোথায়</h2>
+<table><tr><th class="">হিসাবের ধারণা</th><th class="">Dokani-তে কোথায়</th></tr><tr class=""><td class="">Revenue</td><td class="">Accounts → Income: শুধু Completed বিক্রি</td></tr><tr class=""><td class="">COGS</td><td class="">প্রতিটি বিক্রিত পণ্যে সংরক্ষিত Purchase price</td></tr><tr class=""><td class="">Operating expenses</td><td class="">Expenses পেজ: Category ও Ledger সহ</td></tr><tr class=""><td class="">Net profit</td><td class="">Accounts → Overview ও Income</td></tr><tr class=""><td class="">Assets, Liabilities</td><td class="">Accounts → Balance: ক্যাশ, স্টক, পাওনা, দেনা (recorded position)</td></tr><tr class=""><td class="">Cash flow</td><td class="">Accounts → Cash flow</td></tr><tr class=""><td class="">Payment method</td><td class="">Settings → Payment methods</td></tr></table>
+<div class="callout warn">Dokani একটা <b>ব্যবসার হিসাব বোঝার রিপোর্ট</b>। এটা পূর্ণ double-entry accounting software বা ট্যাক্স রিপোর্ট নয়।</div>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="বিক্রি কীভাবে হিসাবে আসে">
+<span class="tag">Income</span>
+<h2>একটা বিক্রি কীভাবে হিসাবে আসে</h2>
+<div class="flow"><div class="step"><b>POS-এ বিক্রি</b><span>ফোন ১২,০০০ টাকা</span></div><div class="arrow">→</div><div class="step"><b>কেনা দাম সংরক্ষিত</b><span>৯,৫০০ টাকা, বিক্রির সময়ের দাম</span></div><div class="arrow">→</div><div class="step"><b>Gross profit</b><span>২,৫০০ টাকা</span></div><div class="arrow">→</div><div class="step"><b>Accounts রিপোর্ট</b><span>Income ট্যাবে যোগ হয়</span></div></div>
+<div class="callout ">পরে product-এর কেনা দাম বদলালেও পুরনো বিক্রির লাভ বদলায় না, কারণ কেনা দাম বিক্রির সময়েই সংরক্ষিত থাকে।</div>
+<div class="callout warn">Return, Cancel, Hold ও Bought back হওয়া বিক্রি আর্থিক রিপোর্টে ধরা হয় না। শুধু <b>Completed</b> ধরা হয়। বিক্রির ইতিহাসে সবই থাকে।</div>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="কেনা দাম">
+<span class="tag warn">সবচেয়ে গুরুত্বপূর্ণ</span>
+<h2>কেনা দাম না থাকলে লাভ বের হয় না</h2>
+<div class="cols"><div><ul><li>প্রতিটি product-এ <b>Purchase price</b> বসান</li><li>কেনা দাম না থাকলে সেই invoice-এর লাভ ধরা হয় না। শূন্য ধরে নেওয়া হয় না</li><li>রিপোর্টে হলুদ সতর্কবার্তা আসে এবং এক ক্লিকে সেই invoice-গুলো দেখা যায়</li></ul></div><div><table><tr><th class="">Invoice</th><th class="n">বিক্রি</th><th class="n">কেনা দাম</th><th class="">অবস্থা</th></tr><tr class=""><td class="">INV-101</td><td class="n">১২,০০০</td><td class="n">৯,৫০০</td><td class=""><span class="pill paid">সম্পূর্ণ</span></td></tr><tr class=""><td class="">INV-102</td><td class="n">৮,০০০</td><td class="n">—</td><td class=""><span class="pill unpaid">দাম নেই</span></td></tr><tr class=""><td class="">INV-103</td><td class="n">৫,০০০</td><td class="n">৩,৮০০</td><td class=""><span class="pill paid">সম্পূর্ণ</span></td></tr></table></div></div>
+<div class="callout ">মেরামতের Repair fee-তে কেনা দাম লাগে না। শুধু Product ও Part-এর দাম প্রয়োজন।</div>
+<aside class="notes">For the many shops that never use supplier or POP purchases, the product purchase price is the only cost record, so this is the key habit.</aside></section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="খরচ ও Ledger">
+<span class="tag">Expenses</span>
+<h2>খরচ লিখুন, Category ও Ledger বেছে নিন</h2>
+<div class="cols"><div><ul><li>Expenses পেজে একসাথে অনেক খরচ লিখুন: প্রতি লাইনে একটা</li><li>প্রতিটি খরচের একটা <b>Category</b> থাকে (Salary, Rent)</li><li>Category একটা <b>Ledger</b> গ্রুপের অধীনে যায়</li><li><b>বেতন</b> যায় <span class='pill lock'>Salaries &amp; staff costs</span> Ledger-এ</li></ul></div><div><table><tr><th class="">Ledger</th><th class="">উদাহরণ</th></tr><tr class=""><td class="">Salaries &amp; staff costs</td><td class="">বেতন, বোনাস, ওভারটাইম</td></tr><tr class=""><td class="">Rent</td><td class="">দোকান ভাড়া</td></tr><tr class=""><td class="">Utilities</td><td class="">বিদ্যুৎ, পানি</td></tr><tr class=""><td class="">Internet &amp; phone</td><td class="">ইন্টারনেট, রিচার্জ</td></tr><tr class=""><td class="">Taxes &amp; licenses</td><td class="">ট্রেড লাইসেন্স, ট্যাক্স</td></tr><tr class=""><td class="">Loan interest &amp; finance charges</td><td class="">ঋণের সুদ, ব্যাংক চার্জ</td></tr></table></div></div>
+<div class="callout warn">মোট ১৬টি Ledger। ঋণের আসল পরিশোধ ও মালিকের তোলা টাকা খরচ নয়, তাই এগুলো Expense হিসেবে লিখবেন না।</div>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="Paid ও Unpaid">
+<span class="tag">Expenses</span>
+<h2>খরচ পরিশোধ হয়েছে, নাকি বাকি?</h2>
+<div class="cols"><div><div class="check"><div><i>১</i><span>নতুন খরচ ডিফল্টভাবে <span class='pill paid'>Paid</span>, সেই দিনের তারিখে</span></div><div><i>২</i><span>খরচে ক্লিক করলে Edit মডাল খোলে</span></div><div><i>৩</i><span>সেখানে <span class='pill unpaid'>Unpaid</span> করা যায়, অথবা Paid তারিখ ও মাধ্যম বদলানো যায়</span></div><div><i>৪</i><span>Paid তারিখ ও মাধ্যম ফাঁকা রাখলেও চলে</span></div></div></div><div><table><tr><th class=""></th><th class="">লাভ-ক্ষতিতে</th><th class="">ক্যাশে</th></tr><tr class=""><td class="">Paid খরচ</td><td class="">খরচের তারিখে</td><td class="">Paid তারিখে</td></tr><tr class=""><td class="">Unpaid খরচ</td><td class="">খরচের তারিখে</td><td class="">এখনো যায়নি</td></tr><tr class=""><td class="">Balance ট্যাবে</td><td class="">Unpaid খরচ <b>Liability</b></td><td class=""></td></tr></table></div></div>
+<div class="callout ">উদাহরণ (Rahim Mobile): অক্টোবরের ভাড়া ৳৩,০০০ নভেম্বরের ১ তারিখে দেবেন। লাভ কমবে অক্টোবরে, ক্যাশ কমবে নভেম্বরে। ঠিক Part 1-এর accrual ধারণা।</div>
+<aside class="notes">Existing expenses are treated as paid on their expense date (no backfill). New ones default to paid with paid date = expense date.</aside></section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="টাকার মাধ্যম">
+<span class="tag">Payment methods</span>
+<h2>Cash, bKash, Nagad, Bank</h2>
+<div class="tiles c4"><div class="tile "><b>Cash</b><span>বন্ধ রাখা যায়, নাম বদলানো বা মোছা যায় না</span></div><div class="tile "><b>bKash</b><span>বন্ধ রাখা যায়, নাম বদলানো বা মোছা যায় না</span></div><div class="tile "><b>Nagad</b><span>বন্ধ রাখা যায়, নাম বদলানো বা মোছা যায় না</span></div><div class="tile "><b>Bank</b><span>Settings খুললে বন্ধ অবস্থায় যোগ হয়, চালু করে নিন</span></div></div>
+<ul><li>নিজের মতো মাধ্যম (Dutch-Bangla, City Bank) যোগ, সম্পাদনা ও মুছে ফেলা যায়</li><li>যেটা ব্যবহার করেন না সেটা বন্ধ (pause) রাখুন: POS-এ আর দেখাবে না</li><li>লক করা মাধ্যমের নাম ঠিক থাকে, তাই ভবিষ্যতের ক্যাশ হিসাবে ভুল হয় না</li></ul>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="মেরামত">
+<span class="tag">Device Service</span>
+<h2>মেরামতের টাকা কখন আয় হয়?</h2>
+<div class="flow"><div class="step"><b>ফোন জমা</b><span>Job তৈরি</span></div><div class="arrow">→</div><div class="step"><b>Advance নেওয়া</b><span>ক্যাশ ইন, কিন্তু এখনো আয় নয়</span></div><div class="arrow">→</div><div class="step"><b>Delivery</b><span>Invoice তৈরি</span></div><div class="arrow">→</div><div class="step"><b>আয় গণনা</b><span>একবারই, Delivery-র পর</span></div></div>
+<ul><li><b>Advance</b> আয় নয়: গ্রাহকের কাছে আপনার দায় (Part 1-এর Liability ধারণা)</li><li>Delivery-র পর পুরো Bill একবারই Revenue-তে যায়</li><li><b>Repair fee</b>-তে কেনা দাম লাগে না; <b>Part</b>-এর দাম সংরক্ষিত থাকে</li></ul>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="Accounts পেজ">
+<span class="tag">Accounts</span>
+<h2>চারটি ট্যাব, চারটি প্রশ্ন</h2>
+<div class="tiles c4"><div class="tile "><b>Overview</b><span>এই সময়ে বিক্রি, লাভ, খরচ আর ক্যাশ ফ্লো কত?</span></div><div class="tile "><b>Income</b><span>প্রতিটি বিক্রি থেকে লাভ কত? কোন invoice-এ দাম নেই?</span></div><div class="tile "><b>Balance</b><span>দোকানের হাতে আর বাকিতে কত? কত দেনা?</span></div><div class="tile "><b>Cash flow</b><span>ক্যাশে কত ঢুকল, কত বের হলো?</span></div></div>
+<ul><li>উপরে তারিখ ও শপ বেছে নিন: সব সংখ্যা সেই অনুযায়ী বদলায়</li><li>PDF ও Excel-এ একই সংখ্যা পাবেন</li><li>এটা ব্যবসার হিসাব বোঝার রিপোর্ট, ট্যাক্স রিপোর্ট নয়</li></ul>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="Balance ট্যাব: সীমা">
+<span class="tag warn">সৎ ব্যাখ্যা</span>
+<h2>Balance ট্যাব একটা “recorded position”</h2>
+<div class="cols"><div><ul><li><b>ক্যাশ</b> তৈরি হয় Dokani-তে লেখা লেনদেন থেকে। শুরুর ক্যাশ (opening balance) লেখা নেই</li><li><b>স্টক</b> ধরা হয় বর্তমান Purchase price-এ, বাছাই করা তারিখের পরিমাণ হিসাব করে</li><li><b>পাওনা, দেনা</b> শুধু যা Dokani-তে লেখা, সেটুকুই</li><li>যা লেখা নেই, তা বাদ। পেজে সেটা জানানো আছে</li></ul></div><div><div class="callout warn">তাই Part 1-এর Balance sheet-এর সাথে এটা হুবহু মিলবে না। এটা <b>দিক দেখার</b> জন্য ভালো, অডিটের জন্য নয়। এই ফারাক কমাতে ভবিষ্যতে opening balance আসছে।</div></div></div>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="Cash flow সতর্কতা">
+<span class="tag warn">সৎ ব্যাখ্যা</span>
+<h2>Cash flow কখন বিভ্রান্ত করতে পারে</h2>
+<div class="cols"><div><ul><li>অনেক দোকান Supplier বা POP purchase লেখে না। তারা শুধু প্রতিটি product-এ কেনা দাম বসায়</li><li>তখন স্টক কিনতে যাওয়া টাকা Cash flow-এ বাইরে যাওয়া হিসেবে আসে না</li><li>ফলে “Net cash flow” আসল ক্যাশের চেয়ে অনেক ভালো দেখায়</li></ul></div><div><div class="callout warn"><b>এখনকার পরামর্শ:</b> Net cash flow-কে চূড়ান্ত ক্যাশ ধরবেন না। আসল ক্যাশ ড্রয়ারে গুনে মেলান। Cash register আসছে, সেটাই এই সমস্যার সমাধান।</div></div></div>
+<aside class="notes">This is the known gap discussed earlier; the plan is to relabel it as estimated and add the cash register.</aside></section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="Shop Manager-এর অনুমতি">
+<span class="tag">অনুমতি</span>
+<h2>Shop Manager কি Accounts দেখবে?</h2>
+<div class="cols"><div><div class="check"><div><i>১</i><span>Business Settings → Employee Access খুলুন</span></div><div><i>২</i><span>“Accounts reports” লাইনে Shop Manager-এর ঘর চালু করুন</span></div><div><i>৩</i><span>সাধারণ Employee-এর জন্য এটা সবসময় বন্ধ</span></div></div></div><div><ul><li>ডিফল্টভাবে সবার জন্য বন্ধ</li><li>Manager শুধু নিজের Shop-এর হিসাব দেখে, অন্য শপ নয়</li><li>লাভ দেখায় বলে <b>Purchase price</b> দেখার অনুমতিও লাগে</li><li>Manager export করতে পারে না</li></ul></div></div>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="Dokani-তে মাস শেষ">
+<span class="tag">অভ্যাস</span>
+<h2>Dokani-তে মাস শেষের পাঁচ ধাপ</h2>
+<div class="check"><div><i>১</i><span>Accounts → Income খুলুন। হলুদ সতর্কবার্তা থাকলে দাম নেই এমন invoice ঠিক করুন</span></div><div><i>২</i><span>Expenses পেজে মাসের সব খরচ আছে কিনা দেখুন, বাকি খরচ Unpaid করুন</span></div><div><i>৩</i><span>Overview-তে Net profit দেখুন</span></div><div><i>৪</i><span>Balance ট্যাবে পাওনা ও দেনা দেখুন</span></div><div><i>৫</i><span>PDF বা Excel নামিয়ে রাখুন, এবং ক্যাশ ড্রয়ার গুনে মেলান</span></div></div>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="চার ভুল">
+<span class="tag warn">সতর্কতা</span>
+<h2>সবচেয়ে সাধারণ চার ভুল</h2>
+<div class="tiles c2"><div class="tile bad"><b>কেনা দাম না লেখা</b><span>লাভের হিসাব অসম্পূর্ণ থাকে এবং invoice বাদ পড়ে</span></div><div class="tile bad"><b>খরচ না লেখা</b><span>মাসের শেষে লাভ বেশি দেখায়, কিন্তু ক্যাশ মেলে না</span></div><div class="tile bad"><b>নিজের টাকা ও দোকানের টাকা মেশানো</b><span>মালিকের ব্যক্তিগত খরচ Expense হিসেবে লিখলে লাভ ভুল হয়</span></div><div class="tile bad"><b>বেতন ও ঋণের আসল গুলিয়ে ফেলা</b><span>বেতন খরচ। ঋণের আসল পরিশোধ খরচ নয়, শুধু সুদ খরচ</span></div></div>
+</section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="আসছে">
+<span class="tag soon">আসছে, এখনো চালু হয়নি</span>
+<h2>এরপর কী আসছে</h2>
+<div class="tiles"><div class="tile warn"><b>Refund রেকর্ড</b><span>Return বা Cancel-এর সময় ফেরত দেওয়া টাকা ও মাধ্যম লেখা যাবে (ঐচ্ছিক)</span></div><div class="tile warn"><b>Cash register</b><span>দিন শুরু ও শেষ, Expected cash বনাম গোনা cash, পার্থক্য</span></div><div class="tile warn"><b>Money accounts</b><span>প্রতিটি মাধ্যমের ব্যালেন্স এবং এক অ্যাকাউন্ট থেকে অন্যটিতে Transfer</span></div><div class="tile warn"><b>Opening balance</b><span>শুরুর ক্যাশ ও স্টক একবার লিখে রাখা</span></div><div class="tile warn"><b>Expense template</b><span>ভাড়া, ইন্টারনেট, বেতন: এক ট্যাপে যোগ (স্বয়ংক্রিয় নয়)</span></div><div class="tile warn"><b>Manager-এর Register</b><span>Accounts-এর মতোই অনুমতি দিয়ে নিজের শপের জন্য</span></div></div>
+<div class="callout warn">নীতি: নিয়মিত বিক্রি বা খরচ লেখায় কোনো নতুন ধাপ জোর করে যোগ হবে না। সবকিছু ঐচ্ছিক ও ডিফল্টসহ থাকবে।</div>
+<aside class="notes">Roadmap only. Nothing on this slide is released.</aside></section>
+<section class="slide" data-part="Part 2 · Dokani-তে হিসাব" data-title="সারকথা">
+<span class="tag">সারকথা</span>
+<h2>মনে রাখার মতো পাঁচটি কথা</h2>
+<div class="check"><div><i>১</i><span>বিক্রি মানেই লাভ নয়। কেনা দাম ও খরচ বাদ দিয়ে লাভ</span></div><div><i>২</i><span>লাভ আর ক্যাশ আলাদা। স্টক, বাকি ও দেনা এই ফারাক তৈরি করে</span></div><div><i>৩</i><span>মালিকের তোলা টাকা খরচ নয়</span></div><div><i>৪</i><span>Assets = Liabilities + Equity। সবসময় মিলতে হবে</span></div><div><i>৫</i><span>Dokani-তে কেনা দাম, খরচ ও Paid/Unpaid ঠিক রাখুন। বাকিটা রিপোর্ট করে দেবে</span></div></div>
+</section>
+</main>
+<div id="bar"></div>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="Previous">‹</button><span id="count"></span><button id="next" aria-label="Next">›</button><button id="menuBtn" title="Slides (M)" aria-label="Slide list">☰</button><button id="notesBtn" title="Notes (N)" aria-label="Notes">✎</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>
+(function(){
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),root=document.documentElement,menu=document.getElementById('menu');
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'vw)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=(i+1)+' / '+n;part.textContent=slides[i].getAttribute('data-part')||'';
+    slides.forEach(function(s,j){var a=s.querySelector('.notes');if(a)a.style.display=(j===i)?'':'none'});
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function toggleNotes(){document.body.classList.toggle('showNotes')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var t=root.getAttribute('data-theme')==='dark'?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('accounts101-theme',t)}catch(e){}}
+  function toggleMenu(){menu.classList.toggle('open')}
+  var html='',last='';
+  slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){html+='<h3>'+p+'</h3>';last=p}
+    html+='<a data-go="'+j+'">'+(j+1)+'. '+s.getAttribute('data-title')+'</a>'});
+  menu.innerHTML=html;
+  menu.addEventListener('click',function(e){var g=e.target.getAttribute('data-go');if(g!==null){go(parseInt(g,10));menu.classList.remove('open')}else if(e.target===menu){menu.classList.remove('open')}});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('notesBtn').onclick=toggleNotes;
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown',' ','Enter'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp','Backspace'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='n'||e.key==='N')toggleNotes();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  var saved=null;try{saved=localStorage.getItem('accounts101-theme')}catch(e){}
+  if(saved==='dark')root.setAttribute('data-theme','dark');
+  var x0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var d=e.changedTouches[0].clientX-x0;if(Math.abs(d)>50)go(i+(d<0?1:-1));x0=null});
+  var start=parseInt((location.hash||'').slice(1),10);go(isNaN(start)?0:start-1);
+})();
+</script>
+</body>
+</html>

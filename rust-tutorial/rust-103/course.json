@@ -1,0 +1,7 @@
+{
+ "slug": "rust-103",
+ "title": "Rust 103 — Trait, Iterator ও Concurrency",
+ "subtitle": "Trait (interface), generic, closure, Laravel Collection-এর মতো iterator, test, crate, thread আর async",
+ "lessons": 26,
+ "slides": 28
+}
