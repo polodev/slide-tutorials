@@ -96,7 +96,8 @@ class Code:
 
     def __init__(self, src, lang="rust", *, run=None, err=None, panic=False, stdin=None, file=None,
                  deps=None, requests=None, hl=(), args=None, show_output=True, label=None, test=False,
-                 server_log=False, eloquent=False, flutter=False, app=None, actions=None):
+                 server_log=False, eloquent=False, flutter=False, app=None, actions=None,
+                 save=False, validate=None, timeout=300, max_lines=40):
         self.src = src.strip("\n")
         self.lang = lang
         self.run = (lang in ("rust", "php", "mysql", "postgresql", "dart", "go")) if run is None else run
@@ -105,6 +106,7 @@ class Code:
         self.show_output, self.label, self.test, self.server_log = show_output, label, test, server_log
         self.eloquent = eloquent   # php block that runs with Eloquent booted against the course database
         self.flutter, self.app, self.actions = flutter, app, actions   # Flutter: screenshot, or test against app
+        self.save, self.validate, self.timeout, self.max_lines = save, validate, timeout, max_lines   # shell sessions
         self.result = None   # filled by the runner: dict(kind, text)
         if lang == "go" and shutil.which("gofmt"):   # show canonical Go formatting, like every Go editor does
             f = subprocess.run(["gofmt"], input=self.src + "\n", capture_output=True, text=True)
@@ -114,6 +116,11 @@ class Code:
 
 def code(src, lang="rust", **kw):
     return Code(src, lang, **kw)
+
+
+def term(src, **kw):
+    """Commands that really run in the course's shell session (needs Course(shell=True)). Lines start with `$ `."""
+    return Code(src, "console", run=True, **kw)
 
 
 def shell(src, out=None):
@@ -516,6 +523,84 @@ def run_eloquent(c: Code, sql, models):
     return dict(kind="out", text=r.stdout.rstrip())
 
 
+class ShellSession:
+    """Terminal lessons: `$ cmd` lines run in one sandbox directory per course (cd is remembered), files from
+    `save=True` blocks are written there first and validated by the matching linter. The whole session is cached
+    by the hash of every block, so an unchanged course does not rebuild containers or clusters."""
+
+    VALIDATORS = {
+        "dockerfile": ["hadolint", "--no-color", "{file}"],
+        "kube": ["kubeconform", "-strict", "-summary", "-ignore-missing-schemas", "{file}"],
+        "actions": ["actionlint", "-no-color", "{file}"],
+        "prometheus": ["promtool", "check", "config", "{file}"],
+        "promrules": ["promtool", "check", "rules", "{file}"],
+    }
+
+    def __init__(self, slug, env=None):
+        self.dir = CACHE / "shell" / slug
+        if self.dir.exists():
+            shutil.rmtree(self.dir, ignore_errors=True)
+        self.dir.mkdir(parents=True)
+        self.cwd = self.dir
+        self.env = {**os.environ, "HOME": os.environ["HOME"], "TERM": "dumb", "NO_COLOR": "1",
+                    "DOCKER_CLI_HINTS": "false", "BUILDKIT_PROGRESS": "plain", **(env or {})}
+
+    def save(self, c: Code):
+        path = self.dir / c.file
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(c.src + "\n")
+        if not c.validate:
+            return None
+        cmd = [a.format(file=str(path)) for a in self.VALIDATORS[c.validate]]
+        r = subprocess.run(cmd, cwd=self.dir, capture_output=True, text=True, timeout=120, env=self.env)
+        text = (r.stdout + r.stderr).replace(str(self.dir) + "/", "").strip()
+        if r.returncode != 0:
+            raise SystemExit(f"{cmd[0]} rejected {c.file}:\n{text}")
+        return dict(kind="valid", tool=cmd[0], text=text or "কোনো সমস্যা নেই")
+
+    @staticmethod
+    def commands(src):
+        cmds, cur = [], None
+        for line in src.splitlines():
+            if line.startswith("$ "):
+                cur = [line[2:]]
+                cmds.append(cur)
+            elif cur is not None:
+                cur.append(line)
+        return ["\n".join(x) for x in cmds]
+
+    def run(self, c: Code):
+        parts, failed = [], False
+        for cmd in self.commands(c.src):
+            marker = self.dir / ".pwd"
+            script = f"cd {json.dumps(str(self.cwd))}\n{cmd}\n__rc=$?\npwd > {json.dumps(str(marker))}\nexit $__rc\n"
+            r = subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=c.timeout, env=self.env)
+            if marker.exists():
+                self.cwd = Path(marker.read_text().strip())
+            out = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]", "", r.stdout + r.stderr).replace(str(self.dir), "~/shop")
+            out = self._trim(out.rstrip(), c.max_lines)
+            parts.append(f"$ {cmd}" + (f"\n{out}" if out else ""))
+            if r.returncode != 0:
+                failed = True
+                if not c.err:
+                    raise SystemExit(f"command failed ({r.returncode}): {cmd}\n{out}")
+                break
+        text = "\n".join(parts)
+        if c.err:
+            if not failed or c.err not in text:
+                raise SystemExit(f"expected failure containing {c.err!r}:\n{text}")
+            return dict(kind="error", text=text)
+        return dict(kind="term", text=text)
+
+    @staticmethod
+    def _trim(text, max_lines):
+        lines = text.splitlines()
+        if max_lines and len(lines) > max_lines:
+            keep = max_lines // 2
+            lines = lines[:keep] + [f"… ({len(lines) - 2 * keep} লাইন বাদ) …"] + lines[-keep:]
+        return "\n".join(lines)
+
+
 PG_PORT = 5544   # private throwaway cluster, never the user's own PostgreSQL
 
 
@@ -616,6 +701,33 @@ def hl_code(src, lang, hl_lines=()):
     return highlight(src, lexer, HtmlFormatter(hl_lines=list(hl_lines), **FORMATTER_OPTS))
 
 
+def hl_term(text):
+    """Terminal transcript: `$ command` lines highlighted, output plain."""
+    out = []
+    for line in text.split("\n"):
+        if line.startswith("$ "):
+            out.append(f'<span class="gp">$</span> <b class="cmd">{e(line[2:])}</b>')
+        else:
+            out.append(e(line))
+    return "\n".join(out)
+
+
+def render_special(c: Code, r, head, cls):
+    """Result kinds that are not a plain output box: terminal transcript, linter check, screenshot."""
+    if c.lang == "console" and r["kind"] == "error":
+        return f'<div class="term error"><div class="term-h">Terminal — ইচ্ছাকৃত ভুল</div><pre>{hl_term(r["text"])}</pre></div>'
+    if r["kind"] == "term":
+        return f'<div class="term termrun"><div class="term-h">Terminal — আসলেই চালানো</div><pre>{hl_term(r["text"])}</pre></div>'
+    if r["kind"] == "valid":
+        return (f'<div class="code{cls}">{head}{hl_code(c.src, c.lang, c.hl)}</div>'
+                f'<div class="term valid"><div class="term-h">✓ {e(r["tool"])} দিয়ে যাচাই করা</div><pre>{e(r["text"])}</pre></div>')
+    if r["kind"] == "shot":
+        return (f'<div class="code{cls}">{head}{hl_code(c.src, c.lang, c.hl)}</div>'
+                f'<figure class="phone-shot"><img src="{r["img"]}" alt="screenshot" loading="lazy">'
+                f'<figcaption>{e(r.get("caption", "আসল screenshot — flutter test দিয়ে তোলা"))}</figcaption></figure>')
+    return None
+
+
 def render_code(c: Code):
     label = c.label or c.file or LANG_LABEL.get(c.lang, c.lang)
     cls = " php" if c.lang == "php" else ""
@@ -625,8 +737,11 @@ def render_code(c: Code):
         out = f'<div class="term"><div class="term-h">উদাহরণ আউটপুট</div><pre>{e(c.sample)}</pre></div>'
     r = c.result
     if r and c.show_output:
+        special = render_special(c, r, head, cls)
+        if special is not None:
+            return special
         title = {"out": "cargo test" if c.test else "আউটপুট", "http": "Response (curl)", "error": "Compiler বলছে (ইচ্ছাকৃত ভুল)",
-                 "panic": "Program থেমে গেল (panic)", "shot": ""}[r["kind"]]
+                 "panic": "Program থেমে গেল (panic)"}.get(r["kind"], "আউটপুট")
         if c.test and r["kind"] == "panic":
             title = "cargo test — একটা test ব্যর্থ (ইচ্ছাকৃত)"
         if c.lang == "go":
@@ -641,10 +756,6 @@ def render_code(c: Code):
             title = "ফলাফল" if r["kind"] == "out" else "Database বলছে (ইচ্ছাকৃত ভুল)"
         if c.lang == "php":
             title = "Laravel চালিয়ে পাওয়া আউটপুট" if c.eloquent else "PHP আউটপুট"
-        if r["kind"] == "shot":
-            return (f'<div class="code{cls}">{head}{hl_code(c.src, c.lang, c.hl)}</div>'
-                    f'<figure class="phone-shot"><img src="{r["img"]}" alt="screenshot" loading="lazy">'
-                    f'<figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure>')
         kind = r["kind"]
         r = {**r, "text": re.sub(r"thread '(\w+)' \(\d+\)", r"thread '\1'", r["text"])}   # drop the OS thread id
         stdin = f'<div class="stdin">ইনপুট: {e(r.get("stdin").strip())}</div>' if r.get("stdin") else ""
@@ -655,12 +766,13 @@ def render_code(c: Code):
 
 class Course:
     def __init__(self, *, slug, title, subtitle, folder, home="../index.html", hub="../../index.html", series="",
-                 next_course=None, prev_course=None, sql_engine=None, models=None):
+                 next_course=None, prev_course=None, sql_engine=None, models=None, shell=False, shell_env=None):
         self.slug, self.title, self.subtitle, self.folder = slug, title, subtitle, Path(folder)
         self.hub = hub
         self.home, self.series, self.next_course, self.prev_course = home, series, next_course, prev_course
         self.sql_engine = sql_engine
         self.models = models   # PHP file with Eloquent models for eloquent=True blocks
+        self.shell, self.shell_env = shell, shell_env   # terminal lessons run in one sandbox (ShellSession)
         self.slides, self.part, self.lesson_no = [], "", 0
 
     def section(self, name):
@@ -695,10 +807,42 @@ class Course:
 
     # ---- verify every runnable block, then write index.html
     def run_all(self):
+        if self.shell:
+            return self._run_shell()
         if self.sql_engine == "postgresql":
             with PgCluster():
                 return self._run_all()
         return self._run_all()
+
+    def _run_shell(self):
+        """Run the course's terminal session once; reuse it while no block in the course changed."""
+        blocks = [c for sl in self.slides for c in sl["codes"] if c.save or (c.lang == "console" and c.run)]
+        key = _hash("shell", self.slug, [(c.src, c.file, c.validate, c.err, c.max_lines) for c in blocks])
+        cache = CACHE / f"shell-{self.slug}.json"
+        if cache.exists() and json.loads(cache.read_text()).get("key") == key:
+            results = json.loads(cache.read_text())["results"]
+        else:
+            if self.shell_setup:
+                self.shell_setup()
+            sess, results = ShellSession(self.slug, self.shell_env), []
+            try:
+                for c in blocks:
+                    print(f"  … {c.file or self.commands_preview(c)}", flush=True)
+                    results.append(sess.save(c) if c.save else sess.run(c))
+            finally:
+                if self.shell_teardown:
+                    self.shell_teardown()
+            cache.write_text(json.dumps(dict(key=key, results=results), ensure_ascii=False))
+        for c, r in zip(blocks, results):
+            c.result = r
+        return len(blocks)
+
+    @staticmethod
+    def commands_preview(c):
+        return ShellSession.commands(c.src)[0][:60] if ShellSession.commands(c.src) else c.lang
+
+    shell_setup = None      # optional callables, e.g. start/stop colima around the session
+    shell_teardown = None
 
     def _run_all(self):
         res = Results()
@@ -831,6 +975,8 @@ code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;backgrou
 .term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
 .term.error .term-h,.term.panic .term-h{background:#B83434}
 .term.http .term-h{background:#1F5FA8}
+.term.termrun .term-h{background:#334155}.term.valid .term-h{background:#0D8A4A}
+.term .gp{color:#4ADE80;font-weight:700}.term b.cmd{color:#F8FAFC;font-weight:600}
 .term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
 pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
 .term.error pre,.term.panic pre{color:#FFB4B4}

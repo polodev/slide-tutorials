@@ -59,6 +59,8 @@ code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;backgrou
 .term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
 .term.error .term-h,.term.panic .term-h{background:#B83434}
 .term.http .term-h{background:#1F5FA8}
+.term.termrun .term-h{background:#334155}.term.valid .term-h{background:#0D8A4A}
+.term .gp{color:#4ADE80;font-weight:700}.term b.cmd{color:#F8FAFC;font-weight:600}
 .term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
 pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
 .term.error pre,.term.panic pre{color:#FFB4B4}
@@ -168,7 +170,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/3de711e8190f.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/3de711e8190f.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="Layout" data-title="Column, Row আর Icon"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>Column, Row আর Icon</h2></div><div class="body two"><div class="txt"><p><code>Column</code> উপর থেকে নিচে, <code>Row</code> বাম থেকে ডানে সাজায়। <code>SizedBox</code> দিয়ে ফাঁকা জায়গা।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> CSS-এর <code>display: flex; flex-direction: column</code> = <code>Column</code>; <code>row</code> = <code>Row</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">runApp</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">App</span><span class="p">());</span>
@@ -201,7 +203,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/e2faa56251a5.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/e2faa56251a5.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="Layout" data-title="Container আর decoration"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>Container আর decoration</h2></div><div class="body two"><div class="txt"><p><code>Container</code>-এ রং, গোল কোণা, border, ছায়া — CSS box-এর মতো। <code>Expanded</code> বাকি জায়গা নিয়ে নেয়।</p><div class="callout">💡 বারবার লাগে এমন অংশ ছোট function বা নিজের widget বানিয়ে আলাদা করুন — Blade-এর component-এর মতো।</div></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">runApp</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">App</span><span class="p">());</span>
@@ -251,7 +253,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/dbfff27ade35.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/dbfff27ade35.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="Layout" data-title="Card আর ListTile"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>Card আর ListTile</h2></div><div class="body two"><div class="txt"><p><code>ListTile</code> তালিকার একটা row-এর তৈরি নকশা: বামে icon/ছবি, মাঝে লেখা, ডানে কিছু।</p></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">runApp</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">App</span><span class="p">());</span>
@@ -279,7 +281,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/f4316d04e253.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/f4316d04e253.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="Layout" data-title="ListView.builder: model থেকে তালিকা"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>ListView.builder: model থেকে তালিকা</h2></div><div class="body two"><div class="txt"><p>Data থাকে model class-এর list-এ। <code>ListView.builder</code> শুধু পর্দায় দেখা row-গুলো বানায় — হাজার product-এও দ্রুত।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Blade-এর <code>@foreach ($products as $p)</code> ≈ <code>itemBuilder</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">runApp</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">App</span><span class="p">());</span>
@@ -327,7 +329,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/f36f19898cdd.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/f36f19898cdd.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="State" data-title="StatefulWidget আর setState"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>StatefulWidget আর setState</h2></div><div class="body two"><div class="txt"><p>যে widget-এর ভিতরের মান বদলায়, সেটা <code>StatefulWidget</code>। মান বদলে <code>setState()</code> ডাকলে Flutter আবার <code>build()</code> চালায়। Screenshot নেওয়া হয়েছে + বাটন ৩ বার চাপার পর।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Livewire-এ <code>$this-&gt;qty++</code> করলে component আবার render হয় — একদম একই ভাবনা।</div><div class="callout warn">⚠️ <code>setState</code> ছাড়া শুধু <code>_qty++</code> করলে মান বদলাবে কিন্তু পর্দা বদলাবে না।</div></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">runApp</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">App</span><span class="p">());</span>
@@ -368,7 +370,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/583b17528273.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/583b17528273.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="State" data-title="Widget test"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>Widget test</h2></div><div class="body two"><div class="txt"><p>App চালু না করেই UI test করা যায়: widget বসাও, বাটন চাপো, লেখা খোঁজো। আগের পাঠের counter-এর test:</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>$this-&gt;get('/')-&gt;assertSee('...')</code> বা Livewire test-এর <code>-&gt;call('increment')-&gt;assertSee()</code>-এর মতো।</div></div><div class=codecol><div class="code"><div class="code-h"><span>test/widget_test.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 <span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter_test/flutter_test.dart&#39;</span><span class="p">;</span>
 <span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter_app/main.dart&#39;</span><span class="p">;</span>
@@ -444,7 +446,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/1f360d983bf2.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/1f360d983bf2.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="Form ও Navigation" data-title="TextField আর controller"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>TextField আর controller</h2></div><div class="body two"><div class="txt"><p><code>TextEditingController</code> দিয়ে লেখা পড়ি। Screenshot-এর আগে test নাম লিখে বাটন চেপেছে।</p><div class="callout">💡 Controller শেষে <code>dispose()</code> করুন — নইলে memory leak।</div></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">runApp</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">App</span><span class="p">());</span>
@@ -500,7 +502,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/f4aaf556acaa.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/f4aaf556acaa.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="Form ও Navigation" data-title="Form validation"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>Form validation</h2></div><div class="body two"><div class="txt"><p><code>Form</code> + <code>TextFormField</code>-এর <code>validator</code>: ভুল হলে লেখা ফেরত দিন, ঠিক হলে <code>null</code>। Screenshot: খালি form-এ Save চাপার পর।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>'name' =&gt; 'required'</code>, <code>'price' =&gt; 'integer|min:1'</code> — একই নিয়ম, শুধু app-এর ভিতরে। Server-এ Laravel validation তবুও রাখুন।</div></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">runApp</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">App</span><span class="p">());</span>
@@ -553,7 +555,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/b9bfe4e5dc6e.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/b9bfe4e5dc6e.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="Form ও Navigation" data-title="Navigator: আরেক পাতায় যাওয়া"><div class="inner"><div class="head"><span class="tag">পাঠ ১৩</span><h2>Navigator: আরেক পাতায় যাওয়া</h2></div><div class="body two"><div class="txt"><p><code>Navigator.push</code> নতুন পাতা উপরে বসায়, back চাপলে <code>pop</code>। Screenshot: তালিকা থেকে iPhone 12-এ tap করার পর।</p><div class="callout">💡 বড় app-এ URL-ভিত্তিক routing-এর জন্য <code>go_router</code> package — Laravel route-এর মতো <code>/products/:id</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">runApp</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">App</span><span class="p">());</span>
@@ -621,7 +623,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/94cbc60cc48e.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/94cbc60cc48e.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="Form ও Navigation" data-title="NavigationBar: নিচের tab"><div class="inner"><div class="head"><span class="tag">পাঠ ১৪</span><h2>NavigationBar: নিচের tab</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">runApp</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">App</span><span class="p">());</span>
@@ -666,7 +668,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/c90ea6a2a7dc.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/c90ea6a2a7dc.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="State management ও API" data-title="provider: অনেক পাতায় একই cart"><div class="inner"><div class="head"><span class="tag">পাঠ ১৫</span><h2>provider: অনেক পাতায় একই cart</h2></div><div class="body two"><div class="txt"><p>Cart যখন POS পাতা আর AppBar-এর badge দুই জায়গায় লাগে, তখন state widget থেকে বের করে <code>ChangeNotifier</code>-এ রাখি; <code>provider</code> সেটা পুরো app-এ পৌঁছে দেয়। <code>context.watch</code> বদল শোনে, <code>context.read</code> শুধু ডাকে।</p><div class="callout">💡 আরও বড় app-এ <code>riverpod</code> বা <code>bloc</code> জনপ্রিয়। শুরু করুন provider দিয়ে — ধারণা একই।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>flutter<span class="w"> </span>pub<span class="w"> </span>add<span class="w"> </span>provider
 </pre></div>
 </div><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
@@ -729,7 +731,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/db96dc15d0f7.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/db96dc15d0f7.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="State management ও API" data-title="API থেকে data: FutureBuilder"><div class="inner"><div class="head"><span class="tag">পাঠ ১৬</span><h2>API থেকে data: FutureBuilder</h2></div><div class="body two"><div class="txt"><p><code>FutureBuilder</code> একটা Future দেখে তিন অবস্থা আঁকে: লোড হচ্ছে, ভুল, data। API-টা Laravel বা এই সাইটের Rust Shop API-র মতো <code>{"data": [...]}</code> দেয়।</p><ul><li><code>late final _future = ...</code> — Future একবারই বানাই; <code>build()</code>-এর ভিতরে বানালে প্রতি redraw-এ নতুন request যেত</li><li>Screenshot-এর জন্য <code>MockClient</code> — নকল server; আসল app-এ <code>http.Client()</code></li><li>Android-এ internet permission আর emulator থেকে PC-র server-এ যেতে <code>10.0.2.2</code></li></ul><div class="callout warn">⚠️ Emulator থেকে <code>localhost</code> মানে emulator নিজেই, আপনার PC না। Laravel <code>php artisan serve --host=0.0.0.0</code> চালিয়ে <code>http://10.0.2.2:8000</code> দিন।</div></div><div class=codecol><div class="code"><div class="code-h"><span>lib/main.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;dart:convert&#39;</span><span class="p">;</span>
 <span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 <span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:http/http.dart&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">http</span><span class="p">;</span>
@@ -805,7 +807,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/54750ddaa8e6.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/54750ddaa8e6.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="State management ও API" data-title="API-র widget test"><div class="inner"><div class="head"><span class="tag">পাঠ ১৭</span><h2>API-র widget test</h2></div><div class="body two"><div class="txt"><p>নকল client দিয়ে test: server ছাড়াই নিশ্চিত হই যে JSON থেকে তালিকা ঠিক আঁকা হয়, আর error-এ বার্তা দেখায়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>test/widget_test.dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter/material.dart&#39;</span><span class="p">;</span>
 <span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:flutter_test/flutter_test.dart&#39;</span><span class="p">;</span>
 <span class="k">import</span><span class="w"> </span><span class="s1">&#39;package:http/http.dart&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">http</span><span class="p">;</span>
@@ -867,7 +869,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/0751d0f21b3e.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/0751d0f21b3e.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide" data-part="State management ও API" data-title="Release: APK, iOS আর web"><div class="inner"><div class="head"><span class="tag">পাঠ ১৯</span><h2>Release: APK, iOS আর web</h2></div><div class="body two"><div class="txt"><ul><li>App-এর নাম ও icon: <code>flutter_launcher_icons</code> package</li><li>Play Store-এ দিতে signing key (<code>keytool</code>) আর <code>android/key.properties</code></li><li>Web build GitHub Pages বা Netlify-তে দেওয়া যায় — এই tutorial site-এর মতোই static file</li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel deploy-এ server লাগে; Flutter app store-এ যায়, আর API থাকে আপনার server-এ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>flutter<span class="w"> </span>build<span class="w"> </span>apk<span class="w"> </span>--release<span class="w">        </span><span class="c1"># Android</span>
 <span class="gp">$ </span>flutter<span class="w"> </span>build<span class="w"> </span>appbundle<span class="w">            </span><span class="c1"># Play Store</span>
 <span class="gp">$ </span>flutter<span class="w"> </span>build<span class="w"> </span>ios<span class="w"> </span>--release<span class="w">        </span><span class="c1"># macOS + Xcode লাগে</span>
@@ -964,7 +966,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
-</div><figure class="phone-shot"><img src="shots/d14942ac5728.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — <code>flutter test</code> দিয়ে তোলা</figcaption></figure></div></div></div></section>
+</div><figure class="phone-shot"><img src="shots/d14942ac5728.png" alt="screenshot" loading="lazy"><figcaption>আসল screenshot — flutter test দিয়ে তোলা</figcaption></figure></div></div></div></section>
 <section class="slide hero end" data-part="State management ও API" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>Flutter শেষ! 🎉</h1><p class="lead">Widget, layout, state, form, navigation, provider আর API — একটা আসল দোকানের app বানানোর সব ধাপ এখন জানা।</p><div class="steps done"><div><i>✓</i><span>সব widget: <code>Scaffold</code>, <code>Column</code>/<code>Row</code>, <code>Container</code>, <code>ListView.builder</code></span></div><div><i>✓</i><span><code>StatefulWidget</code> + <code>setState</code></span></div><div><i>✓</i><span><code>Form</code> + <code>validator</code>, <code>TextEditingController</code></span></div><div><i>✓</i><span><code>Navigator.push</code>, <code>NavigationBar</code></span></div><div><i>✓</i><span>provider: <code>watch</code> আর <code>read</code></span></div><div><i>✓</i><span><code>FutureBuilder</code> + <code>http</code>; <code>MockClient</code> দিয়ে widget test</span></div></div><div class="btns"><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
 </main>
 <div id="menu"></div>
