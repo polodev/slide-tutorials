@@ -1,0 +1,7 @@
+{
+ "slug": "go-101",
+ "title": "Go 101 — শূন্য থেকে শুরু",
+ "subtitle": "Variable, type, string, if/for/switch, function, error, slice, map আর defer — PHP-র পাশাপাশি",
+ "lessons": 18,
+ "slides": 20
+}

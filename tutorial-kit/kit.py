@@ -99,13 +99,17 @@ class Code:
                  server_log=False, eloquent=False, flutter=False, app=None, actions=None):
         self.src = src.strip("\n")
         self.lang = lang
-        self.run = (lang in ("rust", "php", "mysql", "postgresql", "dart")) if run is None else run
+        self.run = (lang in ("rust", "php", "mysql", "postgresql", "dart", "go")) if run is None else run
         self.err, self.panic, self.stdin = err, panic, stdin
         self.file, self.deps, self.requests, self.hl, self.args = file, deps, requests, hl, args or []
         self.show_output, self.label, self.test, self.server_log = show_output, label, test, server_log
         self.eloquent = eloquent   # php block that runs with Eloquent booted against the course database
         self.flutter, self.app, self.actions = flutter, app, actions   # Flutter: screenshot, or test against app
         self.result = None   # filled by the runner: dict(kind, text)
+        if lang == "go" and shutil.which("gofmt"):   # show canonical Go formatting, like every Go editor does
+            f = subprocess.run(["gofmt"], input=self.src + "\n", capture_output=True, text=True)
+            if f.returncode == 0:
+                self.src = f.stdout.rstrip("\n")
 
 
 def code(src, lang="rust", **kw):
@@ -195,6 +199,45 @@ def _wait_port(port, timeout=60):
     return False
 
 
+def serve_and_curl(c: Code, cmd, d, env):
+    """Start a lesson server on TEST_PORT, run its curl requests, stop it; returns the http result."""
+    for f in ("shop.db", "shop.db-wal", "shop.db-shm"):
+        (d / f).unlink(missing_ok=True)
+    with socket.socket() as s:
+        if s.connect_ex(("127.0.0.1", TEST_PORT)) == 0:
+            raise SystemExit(f"port {TEST_PORT} is busy; stop that process first")
+    p = subprocess.Popen(cmd, cwd=d, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                         env={**env, "RUST_LOG": "info", "NO_COLOR": "1"}, start_new_session=True)
+    try:
+        if not _wait_port(TEST_PORT):
+            raise SystemExit(f"server did not start:\n{c.src}")
+        parts = []
+        for req in c.requests:
+            actual = req.replace(":3000", f":{TEST_PORT}")
+            status_mark = "\n@@STATUS@@"
+            if actual.startswith("curl") and " -i" not in actual:
+                actual += f" -w '{status_mark}%{{http_code}}'"
+            r = subprocess.run(actual, shell=True, capture_output=True, text=True, timeout=20)
+            body = r.stdout.replace(f":{TEST_PORT}", ":3000")
+            body = re.sub(r"(?im)^date: .*\r?\n?", "", body)   # date header changes every run
+            status = ""
+            if status_mark in body:
+                body, status = body.rsplit(status_mark, 1)
+            try:
+                body = json.dumps(json.loads(body), ensure_ascii=False, indent=2)
+            except ValueError:
+                pass
+            parts.append(f"$ {req}\n{body.rstrip()}" + (f"\n← HTTP {status}" if status else ""))
+        out = dict(kind="http", text="\n\n".join(parts))
+    finally:
+        os.killpg(p.pid, signal.SIGTERM)
+        p.wait(timeout=10)
+    if c.server_log:
+        log = re.sub(r"\x1b\[[0-9;]*m", "", p.stdout.read()).rstrip().replace(f":{TEST_PORT}", ":3000")
+        out["text"] += "\n\n── server log ──\n" + log
+    return out
+
+
 def run_cargo(c: Code, res: Results):
     key = _hash("cargo", c.src, c.deps, c.requests, c.stdin, c.err, c.server_log, 2)
     if key in res.data:
@@ -218,40 +261,7 @@ def run_cargo(c: Code, res: Results):
             print(f"  ! warning:\n{b.stderr}", file=sys.stderr)
         exe = CACHE / "target/debug/app"
         if c.requests:
-            for f in ("shop.db", "shop.db-wal", "shop.db-shm"):
-                (d / f).unlink(missing_ok=True)
-            with socket.socket() as s:
-                if s.connect_ex(("127.0.0.1", TEST_PORT)) == 0:
-                    raise SystemExit(f"port {TEST_PORT} is busy; stop that process first")
-            p = subprocess.Popen([str(exe)], cwd=d, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                 env={**env, "RUST_LOG": "info", "NO_COLOR": "1"}, start_new_session=True)
-            try:
-                if not _wait_port(TEST_PORT):
-                    raise SystemExit(f"server did not start:\n{c.src}")
-                parts = []
-                for cmd in c.requests:
-                    actual = cmd.replace(":3000", f":{TEST_PORT}")
-                    status_mark = "\n@@STATUS@@"
-                    if actual.startswith("curl") and " -i" not in actual:
-                        actual += f" -w '{status_mark}%{{http_code}}'"
-                    r = subprocess.run(actual, shell=True, capture_output=True, text=True, timeout=20)
-                    body = r.stdout.replace(f":{TEST_PORT}", ":3000")
-                    body = re.sub(r"(?im)^date: .*\r?\n?", "", body)   # date header changes every run
-                    status = ""
-                    if status_mark in body:
-                        body, status = body.rsplit(status_mark, 1)
-                    try:
-                        body = json.dumps(json.loads(body), ensure_ascii=False, indent=2)
-                    except ValueError:
-                        pass
-                    parts.append(f"$ {cmd}\n{body.rstrip()}" + (f"\n← HTTP {status}" if status else ""))
-                out = dict(kind="http", text="\n\n".join(parts))
-            finally:
-                os.killpg(p.pid, signal.SIGTERM)
-                p.wait(timeout=10)
-            if c.server_log:
-                log = re.sub(r"\x1b\[[0-9;]*m", "", p.stdout.read()).rstrip().replace(f":{TEST_PORT}", ":3000")
-                out["text"] += "\n\n── server log ──\n" + log
+            out = serve_and_curl(c, [str(exe)], d, env)
         else:
             r = subprocess.run([str(exe)], cwd=d, input=c.stdin, capture_output=True, text=True, timeout=30, env=env)
             if r.returncode != 0 and not c.panic:
@@ -410,6 +420,70 @@ def run_flutter(c: Code, res: Results, folder: Path):
     return out
 
 
+def _clean_go(text, d):
+    text = text.replace(str(d) + "/", "./")
+    text = re.sub(r"(?s)\n\ngoroutine \d+ .*", "", text)        # panic stack trace
+    text = re.sub(r"(?m)^exit status \d+\n?", "", text)
+    text = re.sub(r"(?m)^(ok|FAIL)\s+(\S+)\s+[\d.]+s$", r"\1  \2", text)   # timings
+    text = re.sub(r"\((\d+\.\d+)s\)", "", text)
+    return text.strip()
+
+
+def run_go(c: Code, res: Results):
+    """go run (or go test -v with app= as the package code); deps = list of module paths; requests = server lesson."""
+    key = _hash("go", c.src, c.app, c.deps, c.requests, c.stdin, c.err, c.panic, c.test)
+    if key in res.data:
+        return res.data[key]
+    d = CACHE / "go" / key
+    if d.exists():
+        shutil.rmtree(d)
+    d.mkdir(parents=True)
+    env = {**os.environ, "GOFLAGS": "-mod=mod", "GOTOOLCHAIN": "local"}
+    subprocess.run(["go", "mod", "init", "shop"], cwd=d, check=True, capture_output=True, env=env)
+    src = c.src.replace(":3000", f":{TEST_PORT}") if c.requests else c.src
+    if c.test:
+        (d / "main.go").write_text(c.app + "\n")
+        (d / "main_test.go").write_text(src + "\n")
+    else:
+        (d / "main.go").write_text(src + "\n")
+    for dep in c.deps or []:
+        g = subprocess.run(["go", "get", dep], cwd=d, capture_output=True, text=True, timeout=600, env=env)
+        if g.returncode != 0:
+            raise SystemExit(f"go get {dep} failed:\n{g.stderr}")
+    if c.deps:
+        subprocess.run(["go", "mod", "tidy"], cwd=d, capture_output=True, timeout=600, env=env)
+    if c.test:
+        r = subprocess.run(["go", "test", "-v", "-count=1", "."], cwd=d, capture_output=True, text=True, timeout=600, env=env)
+        text = _clean_go(r.stdout + r.stderr, d)
+        if c.panic != (r.returncode != 0):
+            raise SystemExit(f"go test result unexpected:\n{text}")
+        out = dict(kind="panic" if c.panic else "out", text=text)
+    elif c.requests or c.err:
+        b = subprocess.run(["go", "build", "-o", "app", "."], cwd=d, capture_output=True, text=True, timeout=600, env=env)
+        if c.err:
+            text = _clean_go(b.stderr, d)
+            if b.returncode == 0 or c.err not in text:
+                raise SystemExit(f"expected go error {c.err!r}:\n{text}\n{c.src}")
+            out = dict(kind="error", text=re.sub(r"(?m)^# shop\n", "", text))
+        else:
+            if b.returncode != 0:
+                raise SystemExit(f"go build failed:\n{b.stderr}\n--- source ---\n{c.src}")
+            out = serve_and_curl(c, [str(d / "app")], d, env)
+    else:
+        r = subprocess.run(["go", "run", "."], cwd=d, input=c.stdin, capture_output=True, text=True, timeout=120, env=env)
+        if c.panic:
+            if r.returncode == 0:
+                raise SystemExit(f"expected panic:\n{c.src}")
+            out = dict(kind="panic", text=_clean_go(r.stdout + r.stderr, d))
+        else:
+            if r.returncode != 0:
+                raise SystemExit(f"go run failed:\n{r.stdout}{r.stderr}\n--- source ---\n{c.src}")
+            out = dict(kind="out", text=r.stdout.rstrip(), stdin=c.stdin)
+    res.data[key] = out
+    res.save()
+    return out
+
+
 def run_php(c: Code, res: Results):
     key = _hash("php", c.src, c.stdin)
     if key in res.data:
@@ -555,7 +629,10 @@ def render_code(c: Code):
                  "panic": "Program থেমে গেল (panic)", "shot": ""}[r["kind"]]
         if c.test and r["kind"] == "panic":
             title = "cargo test — একটা test ব্যর্থ (ইচ্ছাকৃত)"
-        if c.lang == "dart" and c.flutter:
+        if c.lang == "go":
+            title = {"out": "go test -v" if c.test else "আউটপুট", "http": "Response (curl)", "error": "Go compiler বলছে (ইচ্ছাকৃত ভুল)",
+                     "panic": "go test — একটা test ব্যর্থ (ইচ্ছাকৃত)" if c.test else "panic (program থেমে গেল)"}[r["kind"]]
+        elif c.lang == "dart" and c.flutter:
             title = "flutter test" if r["kind"] == "out" else "flutter test — একটা test ব্যর্থ (ইচ্ছাকৃত)"
         elif c.lang == "dart":
             title = {"out": "dart test" if c.test else "আউটপুট", "error": "Dart compiler বলছে (ইচ্ছাকৃত ভুল)",
@@ -636,6 +713,8 @@ class Course:
                     c.result = run_cargo(c, res)
                 elif c.lang == "rust":
                     c.result = run_rust(c, res)
+                elif c.lang == "go":
+                    c.result = run_go(c, res)
                 elif c.lang == "dart" and c.flutter:
                     c.result = run_flutter(c, res, self.folder)
                 elif c.lang == "dart":

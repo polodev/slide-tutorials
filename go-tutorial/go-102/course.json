@@ -1,0 +1,7 @@
+{
+ "slug": "go-102",
+ "title": "Go 102 — Struct, Interface ও Package",
+ "subtitle": "Class ছাড়াই object-oriented: struct, method, pointer, embedding, interface, generic, error wrapping, JSON আর package",
+ "lessons": 11,
+ "slides": 13
+}

@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Go Web Development — net/http দিয়ে API</title>
+<meta name="description" content="Framework ছাড়াই: Go-র নিজের router, JSON, Laravel-এর মতো 422 validation, middleware, SQLite, test আর Docker">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.6vh);--navy:#0C1E38;--accent:#0D8A4A;--accent2:#E8F6EE;--amber:#B7791F;--red:#C53030;--php:#4F5B93;
+  --bg:#F4F7FA;--ink:#18263A;--muted:#5B6B80;--card:#fff;--line:#DCE4EE;--codebg:#1E2430}
+:root[data-theme=dark]{--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+html:has(body.deck){overflow:hidden;height:100%}
+/* the deck is pinned to the viewport: mobile browsers must not widen the layout to fit the off-screen slides */
+body.deck{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+#deck{position:absolute;inset:0;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100%;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;padding:60px 4vw 84px;
+  touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.slide .inner,.body,.txt,.codecol{min-width:0}
+.slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
+h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(15px,calc(var(--u)*1.9),28px);color:var(--muted);max-width:36em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--accent);color:#fff;font-weight:600;font-size:clamp(12px,calc(var(--u)*1.15),17px);padding:.3em 1em;border-radius:999px}
+.head{display:flex;flex-direction:column;gap:1vh}
+.body.two{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:3vw;align-items:start}
+.body.one{max-width:1100px}
+.txt{display:flex;flex-direction:column;gap:1.6vh}
+.txt p,.txt li{font-size:clamp(15px,calc(var(--u)*1.6),24px);line-height:1.7}
+.txt ul{list-style:none;padding:0;display:grid;gap:1vh}
+.txt li{padding-left:1.3em;position:relative}
+.txt li::before{content:"";position:absolute;left:0;top:.7em;width:.45em;height:.45em;border-radius:50%;background:var(--accent)}
+code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
+.callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.callout.warn{border-left-color:var(--amber)}
+.callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
+.callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
+.quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.quiz summary{cursor:pointer;font-weight:600;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--accent);font-weight:600;font-size:clamp(14px,calc(var(--u)*1.4),21px);line-height:1.6}
+.tbl{border-collapse:collapse;width:100%;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.tbl th,.tbl td{padding:.9vh .9vw;text-align:left;font-size:clamp(13px,calc(var(--u)*1.35),20px);border-bottom:1px solid var(--line);line-height:1.5}
+.tbl th{background:var(--accent2);font-weight:600}
+.steps{display:grid;gap:1vh}
+.steps div{background:var(--card);border-radius:10px;padding:1.1vh 1vw;font-size:clamp(14px,calc(var(--u)*1.5),22px);display:flex;gap:.9vw;align-items:center;box-shadow:0 3px 12px rgba(12,30,56,.07);line-height:1.5}
+.steps i{flex:0 0 auto;width:2em;height:2em;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.codecol{display:flex;flex-direction:column;gap:1.2vh;min-width:0}
+.code{background:var(--codebg);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#151A23;color:#9AA7B8;font:600 13px 'JetBrains Mono',monospace}
+.code-h.php{background:#262B47;color:#C3C9EE}
+.copy{border:0;background:#2A3242;color:#C9D4E3;font:600 12px 'Hind Siliguri',sans-serif;padding:3px 10px;border-radius:6px;cursor:pointer}
+.copy:hover{background:var(--accent);color:#fff}
+.hl pre{margin:0;padding:12px 16px;overflow-x:auto;font:clamp(12.5px,calc(var(--u)*1.08),17px)/1.55 'JetBrains Mono',monospace;color:#E3E8EF;tab-size:4}
+.hl .hll{background:rgba(255,214,102,.13);display:inline-block;width:100%}
+.term{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0F141C}
+.term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
+.term.error .term-h,.term.panic .term-h{background:#B83434}
+.term.http .term-h{background:#1F5FA8}
+.term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
+pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
+.term.error pre,.term.panic pre{color:#FFB4B4}
+.phone-shot{margin:0;align-self:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.phone-shot img{width:min(260px,60vw);border-radius:22px;border:6px solid #111827;box-shadow:0 12px 30px rgba(0,0,0,.3);background:#fff}
+.phone-shot figcaption{font-size:13px;color:var(--muted)}
+.codecol:has(.phone-shot){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:1.2vw}
+@media (max-width:900px){.codecol:has(.phone-shot){grid-template-columns:1fr}}
+.stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
+.hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
+.hero .inner{justify-content:center;max-width:1100px}
+.hero h1{color:#fff}.hero .lead{color:#CFDDEE}
+.hero .learn{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1vh 2vw}
+.hero .learn li{font-size:clamp(14px,calc(var(--u)*1.55),23px);padding-left:1.4em;position:relative;line-height:1.5;color:#E6EEF8}
+.hero .learn li::before{content:"✓";position:absolute;left:0;color:#4ADE80;font-weight:700}
+.hero .need,.hero .howto{color:#AFC2D8;font-size:clamp(13px,calc(var(--u)*1.35),20px)}
+.hero .need b{color:#fff}
+.hero.end .steps div{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.hero.end .steps i{background:#4ADE80;color:#0C1E38}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:#4ADE80;color:#0C1E38;font-weight:700;text-decoration:none;padding:.7em 1.4em;border-radius:999px;font-size:clamp(14px,calc(var(--u)*1.5),21px)}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+#top{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px}
+#top a{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+#top .crumb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#top .hub{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+#bar{position:fixed;left:0;top:44px;height:3px;background:var(--accent);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:600 14px 'Hind Siliguri',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.9);padding:6px 10px;border-radius:999px;white-space:nowrap}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--accent)}
+#count{min-width:64px;text-align:center}
+#menu{position:fixed;inset:0;background:rgba(8,15,28,.94);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:20px;margin:2.4vh 0 .8vh}
+#menu a{display:flex;gap:.6em;color:#dbe7f5;text-decoration:none;padding:.55vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a.seen::after{content:"✓";color:#4ADE80;margin-left:auto}
+#menu a.cur{background:rgba(74,222,128,.18)}
+#menu a:hover{background:var(--accent);color:#fff}
+#resume{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25);border-radius:14px;padding:12px 16px;z-index:8;display:none;gap:10px;align-items:center;font-size:15px;flex-wrap:wrap;justify-content:center}
+#resume.show{display:flex}
+#resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
+#resume button.alt{background:var(--line);color:var(--ink)}
+@media (max-width:900px){.slide{padding:54px 16px 92px}.body.two{grid-template-columns:minmax(0,1fr);gap:16px}.hero .learn{grid-template-columns:1fr}
+  .tbl{display:block;overflow-x:auto;white-space:nowrap}.tbl td,.tbl th{white-space:normal;min-width:7em}
+  .hl pre,.term pre{font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere}   /* wrap instead of side-scroll: swipes stay free */.txt p,.txt li{font-size:15.5px}h2{font-size:22px}h1{font-size:30px}
+  #top .crumb{display:none}#top{justify-content:space-between}
+  #nav{gap:4px;padding:5px 8px;bottom:10px}#nav button{width:34px;height:34px}#count{min-width:52px;font-size:13px}}
+@media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
+
+.hl .c,.hl .c1,.hl .cm,.hl .cs,.hl .ch,.hl .cp,.hl .cpf{color:#7F8C98;font-style:italic}
+.hl .k,.hl .kd,.hl .kn,.hl .kr,.hl .kp,.hl .ow{color:#C678DD}
+.hl .kc{color:#D19A66}
+.hl .kt,.hl .nc,.hl .nn{color:#E5C07B}
+.hl .s,.hl .s1,.hl .s2,.hl .sb,.hl .sc,.hl .sd,.hl .sh,.hl .sx,.hl .dl{color:#98C379}
+.hl .se,.hl .si,.hl .sa{color:#56B6C2}
+.hl .m,.hl .mi,.hl .mf,.hl .mh,.hl .mb,.hl .il,.hl .mo{color:#D19A66}
+.hl .nf,.hl .fm{color:#61AFEF}
+.hl .nb,.hl .bp{color:#56B6C2}
+.hl .nd,.hl .nl{color:#E06C75}
+.hl .nt{color:#E06C75}.hl .na{color:#D19A66}
+.hl .nv,.hl .vi,.hl .vc,.hl .vg{color:#E06C75}
+.hl .o{color:#ABB2BF}.hl .p{color:#ABB2BF}
+.hl .gp{color:#4ADE80;font-weight:600;user-select:none}.hl .go{color:#9AA7B8}
+.hl .err{color:#E3E8EF;background:none}
+</style>
+</head>
+<body class="deck">
+<div id="top"><a href="../index.html">← সব কোর্স</a><span class="crumb">Go Web Development · <b id="part"></b></span><a class="hub" href="../../index.html">সব টিউটোরিয়াল</a></div>
+<div id="bar"></div>
+<div id="resume"><span id="resumeText"></span><button id="resumeGo">চালিয়ে যান</button><button class="alt" id="resumeNo">শুরু থেকে</button></div>
+<main id="deck">
+<section class="slide hero" data-part="শুরু" data-title="Go Web Developmentnet/http দিয়ে API"><div class="inner"><span class="tag">Go Web Development</span><h1>Go Web Development<br>net/http দিয়ে API</h1><p class="lead">Go-র standard library-তেই production-মানের web server আছে — Laravel-এর মতো বড় framework লাগে না। শেষে পুরো একটা Product API, এক binary-তে।</p><ul class="learn"><li>Route: <code>GET /products/{id}</code></li><li>Query, JSON body আর status code</li><li>Laravel-এর মতো 422 validation</li><li>Middleware: log আর API key</li><li>database/sql + SQLite: CRUD</li><li>Search, pagination, SQL injection থেকে বাঁচা</li><li>httptest দিয়ে handler test</li><li>Graceful shutdown আর Docker</li></ul><p class="need"><b>আগে জানা দরকার:</b> Go 101–103 (struct, interface, error, context)।</p><p class="howto">→ তীর চাপুন বা swipe করুন · <b>M</b> সব পাঠের তালিকা · অগ্রগতি নিজে থেকেই সেভ হয়</p></div></section>
+<section class="slide" data-part="শুরু" data-title="Laravel থেকে Go: কোনটা কী"><div class="inner"><div class="head"><span class="tag">পাঠ ১</span><h2>Laravel থেকে Go: কোনটা কী</h2></div><div class="body one"><div class="txt"><table class="tbl"><tr><th>Laravel</th><th>Go (standard library)</th></tr><tr><td><code>routes/api.php</code></td><td><code>mux.HandleFunc("GET /products/{id}", h)</code></td></tr><tr><td>Controller method</td><td><code>func(w http.ResponseWriter, r *http.Request)</code></td></tr><tr><td><code>$request-&gt;route('id')</code></td><td><code>r.PathValue("id")</code></td></tr><tr><td><code>$request-&gt;query('q')</code></td><td><code>r.URL.Query().Get("q")</code></td></tr><tr><td><code>response()-&gt;json()</code></td><td><code>json.NewEncoder(w).Encode(v)</code></td></tr><tr><td>Middleware</td><td><code>func(http.Handler) http.Handler</code></td></tr><tr><td>Eloquent</td><td><code>database/sql</code> (raw SQL)</td></tr><tr><td><code>php artisan serve</code></td><td><code>go run .</code></td></tr></table><div class="callout">💡 Go 1.22 থেকে standard router নিজেই method আর <code>{id}</code> বোঝে। আগে এর জন্য chi বা gin লাগত — এখনো জনপ্রিয়, কিন্তু বাধ্যতামূলক না।</div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="প্রথম server"><div class="inner"><div class="head"><span class="tag">পাঠ ২</span><h2>প্রথম server</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;log&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">mux</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;GET /&quot;</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Fprintln</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Hello, World! Shop API চলছে।&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">})</span>
+<span class="w">	</span><span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;চলছে: http://127.0.0.1:3000&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;127.0.0.1:3000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">mux</span><span class="p">))</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term http"><div class="term-h">Response (curl)</div><pre>$ curl -s http://127.0.0.1:3000/
+Hello, World! Shop API চলছে।
+← HTTP 200</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Route</span><span class="o">::</span><span class="na">get</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="nx">fn</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s1">&#39;Hello, World! Shop API চলছে।&#39;</span><span class="p">);</span>
+</pre></div>
+</div><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>go<span class="w"> </span>run<span class="w"> </span>.
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Routing ও Request" data-title="Method, path আর {id}"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>Method, path আর {id}</h2></div><div class="body two"><div class="txt"><p>Route-এর শুরুতে method, path-এ <code>{id}</code>। ভুল method-এ Go নিজেই 405, না মেলা path-এ 404 দেয়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>whereNumber('id')</code>-এর কাজ এখানে <code>strconv.Atoi</code> দিয়ে নিজেই।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http&quot;</span>
+<span class="w">	</span><span class="s">&quot;strconv&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">mux</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;GET /products&quot;</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Fprintln</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;সব product&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">})</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;GET /products/{id}&quot;</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strconv</span><span class="p">.</span><span class="nx">Atoi</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">PathValue</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">))</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">http</span><span class="p">.</span><span class="nx">Error</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;id সংখ্যা হতে হবে&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusBadRequest</span><span class="p">)</span>
+<span class="w">			</span><span class="k">return</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Fprintf</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Product #%d\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">)</span>
+<span class="w">	</span><span class="p">})</span>
+<span class="w">	</span><span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;127.0.0.1:3000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">mux</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term http"><div class="term-h">Response (curl)</div><pre>$ curl -s http://127.0.0.1:3000/products/42
+Product #42
+← HTTP 200
+
+$ curl -s http://127.0.0.1:3000/products/abc
+id সংখ্যা হতে হবে
+← HTTP 400
+
+$ curl -s -X POST http://127.0.0.1:3000/products
+Method Not Allowed
+← HTTP 405
+
+$ curl -s http://127.0.0.1:3000/blog
+404 page not found
+← HTTP 404</pre></div></div></div></div></section>
+<section class="slide" data-part="Routing ও Request" data-title="Query string"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>Query string</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http&quot;</span>
+<span class="w">	</span><span class="s">&quot;strconv&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">mux</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;GET /products&quot;</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">q</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Query</span><span class="p">().</span><span class="nx">Get</span><span class="p">(</span><span class="s">&quot;q&quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="nx">page</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strconv</span><span class="p">.</span><span class="nx">Atoi</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Query</span><span class="p">().</span><span class="nx">Get</span><span class="p">(</span><span class="s">&quot;page&quot;</span><span class="p">))</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">page</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">page</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">q</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">q</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;সব&quot;</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Fprintf</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;খোঁজা: %s, পাতা: %d\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">q</span><span class="p">,</span><span class="w"> </span><span class="nx">page</span><span class="p">)</span>
+<span class="w">	</span><span class="p">})</span>
+<span class="w">	</span><span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;127.0.0.1:3000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">mux</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term http"><div class="term-h">Response (curl)</div><pre>$ curl -s &#x27;http://127.0.0.1:3000/products?q=redmi&amp;page=2&#x27;
+খোঁজা: redmi, পাতা: 2
+← HTTP 200
+
+$ curl -s &#x27;http://127.0.0.1:3000/products?page=two&#x27;
+খোঁজা: সব, পাতা: 1
+← HTTP 200</pre></div></div></div></div></section>
+<section class="slide" data-part="Routing ও Request" data-title="JSON response"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>JSON response</h2></div><div class="body two"><div class="txt"><p>ছোট helper <code>writeJSON</code> সব জায়গায় কাজে লাগবে: header, status, তারপর encode।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;encoding/json&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Product</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">ID</span><span class="w">      </span><span class="kt">int</span><span class="w">    </span><span class="s">`json:&quot;id&quot;`</span>
+<span class="w">	</span><span class="nx">Name</span><span class="w">    </span><span class="kt">string</span><span class="w"> </span><span class="s">`json:&quot;name&quot;`</span>
+<span class="w">	</span><span class="nx">Price</span><span class="w">   </span><span class="kt">int</span><span class="w">    </span><span class="s">`json:&quot;price&quot;`</span>
+<span class="w">	</span><span class="nx">InStock</span><span class="w"> </span><span class="kt">bool</span><span class="w">   </span><span class="s">`json:&quot;in_stock&quot;`</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">status</span><span class="w"> </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">w</span><span class="p">.</span><span class="nx">Header</span><span class="p">().</span><span class="nx">Set</span><span class="p">(</span><span class="s">&quot;Content-Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;application/json&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">w</span><span class="p">.</span><span class="nx">WriteHeader</span><span class="p">(</span><span class="nx">status</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">json</span><span class="p">.</span><span class="nx">NewEncoder</span><span class="p">(</span><span class="nx">w</span><span class="p">).</span><span class="nx">Encode</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">mux</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;GET /products&quot;</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span><span class="w"> </span><span class="p">[]</span><span class="nx">Product</span><span class="p">{</span>
+<span class="w">			</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">			</span><span class="p">{</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Galaxy A15&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">21000</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">},</span>
+<span class="w">		</span><span class="p">})</span>
+<span class="w">	</span><span class="p">})</span>
+<span class="w">	</span><span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;127.0.0.1:3000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">mux</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term http"><div class="term-h">Response (curl)</div><pre>$ curl -s http://127.0.0.1:3000/products
+[
+  {
+    &quot;id&quot;: 1,
+    &quot;name&quot;: &quot;Redmi 13&quot;,
+    &quot;price&quot;: 17500,
+    &quot;in_stock&quot;: true
+  },
+  {
+    &quot;id&quot;: 2,
+    &quot;name&quot;: &quot;Galaxy A15&quot;,
+    &quot;price&quot;: 21000,
+    &quot;in_stock&quot;: false
+  }
+]
+← HTTP 200</pre></div></div></div></div></section>
+<section class="slide" data-part="Routing ও Request" data-title="JSON body আর 422 validation"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>JSON body আর 422 validation</h2></div><div class="body two"><div class="txt"><p>Body decode করি (<code>DisallowUnknownFields</code> — অজানা field এলে ভুল), তারপর নিয়ম যাচাই করে Laravel-এর মতো <code>{message, errors}</code> সহ 422।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;encoding/json&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http&quot;</span>
+<span class="w">	</span><span class="s">&quot;strings&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">NewProduct</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">Name</span><span class="w">  </span><span class="kt">string</span><span class="w"> </span><span class="s">`json:&quot;name&quot;`</span>
+<span class="w">	</span><span class="nx">Price</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="s">`json:&quot;price&quot;`</span>
+<span class="w">	</span><span class="nx">Stock</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="s">`json:&quot;stock&quot;`</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">p</span><span class="w"> </span><span class="nx">NewProduct</span><span class="p">)</span><span class="w"> </span><span class="nx">Validate</span><span class="p">()</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">][]</span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">errs</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">][]</span><span class="kt">string</span><span class="p">{}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">TrimSpace</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;name&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;name&quot;</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;নাম দিতে হবে।&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Price</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;price&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;price&quot;</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;দাম ০-এর বেশি হতে হবে।&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;stock&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;stock&quot;</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;স্টক ঋণাত্মক হতে পারে না।&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">errs</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">status</span><span class="w"> </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">w</span><span class="p">.</span><span class="nx">Header</span><span class="p">().</span><span class="nx">Set</span><span class="p">(</span><span class="s">&quot;Content-Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;application/json&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">w</span><span class="p">.</span><span class="nx">WriteHeader</span><span class="p">(</span><span class="nx">status</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">json</span><span class="p">.</span><span class="nx">NewEncoder</span><span class="p">(</span><span class="nx">w</span><span class="p">).</span><span class="nx">Encode</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">create</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">in</span><span class="w"> </span><span class="nx">NewProduct</span>
+<span class="w">	</span><span class="nx">dec</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">json</span><span class="p">.</span><span class="nx">NewDecoder</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Body</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">dec</span><span class="p">.</span><span class="nx">DisallowUnknownFields</span><span class="p">()</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">dec</span><span class="p">.</span><span class="nx">Decode</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">in</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusBadRequest</span><span class="p">,</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;JSON ঠিক নেই: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">err</span><span class="p">.</span><span class="nx">Error</span><span class="p">()})</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">errs</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">in</span><span class="p">.</span><span class="nx">Validate</span><span class="p">();</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">errs</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusUnprocessableEntity</span><span class="p">,</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">any</span><span class="p">{</span><span class="s">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;দেওয়া তথ্য ঠিক নেই।&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">errs</span><span class="p">})</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusCreated</span><span class="p">,</span><span class="w"> </span><span class="nx">in</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">mux</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;POST /products&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">create</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;127.0.0.1:3000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">mux</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term http"><div class="term-h">Response (curl)</div><pre>$ curl -s -X POST http://127.0.0.1:3000/products -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;name&quot;:&quot; &quot;,&quot;price&quot;:0,&quot;stock&quot;:-2}&#x27;
+{
+  &quot;errors&quot;: {
+    &quot;name&quot;: [
+      &quot;নাম দিতে হবে।&quot;
+    ],
+    &quot;price&quot;: [
+      &quot;দাম ০-এর বেশি হতে হবে।&quot;
+    ],
+    &quot;stock&quot;: [
+      &quot;স্টক ঋণাত্মক হতে পারে না।&quot;
+    ]
+  },
+  &quot;message&quot;: &quot;দেওয়া তথ্য ঠিক নেই।&quot;
+}
+← HTTP 422
+
+$ curl -s -X POST http://127.0.0.1:3000/products -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;name&quot;:&quot;Vivo Y28&quot;,&quot;price&quot;:&quot;18000&quot;}&#x27;
+{
+  &quot;message&quot;: &quot;JSON ঠিক নেই: json: cannot unmarshal string into Go struct field NewProduct.price of type int&quot;
+}
+← HTTP 400
+
+$ curl -s -X POST http://127.0.0.1:3000/products -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;name&quot;:&quot;Vivo Y28&quot;,&quot;price&quot;:18000,&quot;stock&quot;:4}&#x27;
+{
+  &quot;name&quot;: &quot;Vivo Y28&quot;,
+  &quot;price&quot;: 18000,
+  &quot;stock&quot;: 4
+}
+← HTTP 201</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nv">$request</span><span class="o">-&gt;</span><span class="na">validate</span><span class="p">([</span><span class="s1">&#39;name&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;required&#39;</span><span class="p">,</span> <span class="s1">&#39;price&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;integer|min:1&#39;</span><span class="p">,</span> <span class="s1">&#39;stock&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;integer|min:0&#39;</span><span class="p">]);</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Middleware ও State" data-title="Middleware: log আর API key"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>Middleware: log আর API key</h2></div><div class="body two"><div class="txt"><p>Middleware হলো এমন function যা একটা handler নিয়ে আরেকটা handler ফেরত দেয়। আগে-পরে কাজ করে, বা আটকে দেয়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel middleware-এর <code>handle($request, $next)</code> — এখানে <code>next.ServeHTTP(w, r)</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;log&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http&quot;</span>
+<span class="w">	</span><span class="s">&quot;time&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">logging</span><span class="p">(</span><span class="nx">next</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="p">)</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">HandlerFunc</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">start</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span>
+<span class="w">		</span><span class="nx">next</span><span class="p">.</span><span class="nx">ServeHTTP</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">)</span>
+<span class="w">		</span><span class="nx">log</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;%s %s (%s)&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">Method</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span><span class="p">,</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Since</span><span class="p">(</span><span class="nx">start</span><span class="p">).</span><span class="nx">Round</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span><span class="p">))</span>
+<span class="w">	</span><span class="p">})</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">requireKey</span><span class="p">(</span><span class="nx">next</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="p">)</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">HandlerFunc</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nx">Get</span><span class="p">(</span><span class="s">&quot;X-Api-Key&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s">&quot;secret-123&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">http</span><span class="p">.</span><span class="nx">Error</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Unauthorized&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusUnauthorized</span><span class="p">)</span>
+<span class="w">			</span><span class="k">return</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">		</span><span class="nx">next</span><span class="p">.</span><span class="nx">ServeHTTP</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">)</span>
+<span class="w">	</span><span class="p">})</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">log</span><span class="p">.</span><span class="nx">SetFlags</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">mux</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;GET /&quot;</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Fprintln</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;public&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">})</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&quot;GET /reports/today&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">requireKey</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">HandlerFunc</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Fprintln</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;আজকের বিক্রি: ৳১,৭০,৪০০&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">})))</span>
+<span class="w">	</span><span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;127.0.0.1:3000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">logging</span><span class="p">(</span><span class="nx">mux</span><span class="p">))</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term http"><div class="term-h">Response (curl)</div><pre>$ curl -s http://127.0.0.1:3000/reports/today
+Unauthorized
+← HTTP 401
+
+$ curl -s -H &#x27;X-Api-Key: secret-123&#x27; http://127.0.0.1:3000/reports/today
+আজকের বিক্রি: ৳১,৭০,৪০০
+← HTTP 200
+
+$ curl -s http://127.0.0.1:3000/
+public
+← HTTP 200
+
+── server log ──
+GET /reports/today (0s)
+GET /reports/today (0s)
+GET / (0s)</pre></div></div></div></div></section>
+<section class="slide" data-part="Middleware ও State" data-title="Shared state: memory-তে store"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>Shared state: memory-তে store</h2></div><div class="body two"><div class="txt"><p>Go server একবার চালু হয়ে চলতেই থাকে, আর প্রতিটি request আলাদা goroutine-এ — তাই shared data-তে <code>sync.Mutex</code> লাগবেই।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে প্রতিটি request শেষে সব মুছে যায় (তাই Redis লাগে)। Go-তে memory-তে থাকে — কিন্তু restart দিলে হারায়, তাই আসল data database-এ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;encoding/json&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http&quot;</span>
+<span class="w">	</span><span class="s">&quot;sync&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Counter</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">mu</span><span class="w">     </span><span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+<span class="w">	</span><span class="nx">visits</span><span class="w"> </span><span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">c</span><span class="w"> </span><span class="o">*</span><span class="nx">Counter</span><span class="p">)</span><span class="w"> </span><span class="nx">ServeHTTP</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">c</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nx">Lock</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">c</span><span class="p">.</span><span class="nx">visits</span><span class="o">++</span>
+<span class="w">	</span><span class="nx">n</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nx">visits</span>
+<span class="w">	</span><span class="nx">c</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nx">Unlock</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">w</span><span class="p">.</span><span class="nx">Header</span><span class="p">().</span><span class="nx">Set</span><span class="p">(</span><span class="s">&quot;Content-Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;application/json&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">json</span><span class="p">.</span><span class="nx">NewEncoder</span><span class="p">(</span><span class="nx">w</span><span class="p">).</span><span class="nx">Encode</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">int</span><span class="p">{</span><span class="s">&quot;visits&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">n</span><span class="p">})</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">mux</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&quot;GET /visit&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">Counter</span><span class="p">{})</span>
+<span class="w">	</span><span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="s">&quot;127.0.0.1:3000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">mux</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term http"><div class="term-h">Response (curl)</div><pre>$ curl -s http://127.0.0.1:3000/visit
+{
+  &quot;visits&quot;: 1
+}
+← HTTP 200
+
+$ curl -s http://127.0.0.1:3000/visit
+{
+  &quot;visits&quot;: 2
+}
+← HTTP 200
+
+$ curl -s http://127.0.0.1:3000/visit
+{
+  &quot;visits&quot;: 3
+}
+← HTTP 200</pre></div></div></div></div></section>
+<section class="slide" data-part="Database" data-title="database/sql + SQLite"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>database/sql + SQLite</h2></div><div class="body two"><div class="txt"><p><code>database/sql</code> হলো Go-র সাধারণ database interface; driver আলাদা। <code>modernc.org/sqlite</code> pure Go — C compiler লাগে না, Docker-এ সহজ।</p><div class="callout">💡 MySQL চাইলে <code>github.com/go-sql-driver/mysql</code>, PostgreSQL-এ <code>github.com/jackc/pgx/v5</code> — বাকি কোড প্রায় একই (PostgreSQL-এ placeholder <code>$1</code>)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>go<span class="w"> </span>get<span class="w"> </span>modernc.org/sqlite
+</pre></div>
+</div><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;database/sql&quot;</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;log&quot;</span>
+
+<span class="w">	</span><span class="nx">_</span><span class="w"> </span><span class="s">&quot;modernc.org/sqlite&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sql</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;sqlite&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;:memory:&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">db</span><span class="p">.</span><span class="nx">Close</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">.</span><span class="nx">SetMaxOpenConns</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="w">	</span><span class="nx">db</span><span class="p">.</span><span class="nx">Exec</span><span class="p">(</span><span class="s">`CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price INTEGER NOT NULL)`</span><span class="p">)</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="p">[]</span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">name</span><span class="w">  </span><span class="kt">string</span>
+<span class="w">		</span><span class="nx">price</span><span class="w"> </span><span class="kt">int</span>
+<span class="w">	</span><span class="p">}{{</span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">17500</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;Galaxy A15&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">21000</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;Charger&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">}}</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">res</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">db</span><span class="p">.</span><span class="nx">Exec</span><span class="p">(</span><span class="s">`INSERT INTO products (name, price) VALUES (?, ?)`</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">price</span><span class="p">)</span>
+<span class="w">		</span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">LastInsertId</span><span class="p">()</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;যোগ হলো&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+
+<span class="w">	</span><span class="nx">rows</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">db</span><span class="p">.</span><span class="nx">Query</span><span class="p">(</span><span class="s">`SELECT id, name, price FROM products WHERE price &lt; ? ORDER BY price`</span><span class="p">,</span><span class="w"> </span><span class="mi">20000</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">rows</span><span class="p">.</span><span class="nx">Close</span><span class="p">()</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">rows</span><span class="p">.</span><span class="nx">Next</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="kd">var</span><span class="w"> </span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">price</span><span class="w"> </span><span class="kt">int</span>
+<span class="w">		</span><span class="kd">var</span><span class="w"> </span><span class="nx">name</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">		</span><span class="nx">rows</span><span class="p">.</span><span class="nx">Scan</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">price</span><span class="p">)</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;#%d %-10s %6d\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">price</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>যোগ হলো 1 Redmi 13
+যোগ হলো 2 Galaxy A15
+যোগ হলো 3 Charger
+#3 Charger       650
+#1 Redmi 13    17500</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Product</span><span class="o">::</span><span class="na">where</span><span class="p">(</span><span class="s1">&#39;price&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;&#39;</span><span class="p">,</span> <span class="mi">20000</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">orderBy</span><span class="p">(</span><span class="s1">&#39;price&#39;</span><span class="p">)</span><span class="o">-&gt;</span><span class="na">get</span><span class="p">();</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Database" data-title="SQL injection: Sprintf দিয়ে কখনো না"><div class="inner"><div class="head"><span class="tag">পাঠ ১০</span><h2>SQL injection: Sprintf দিয়ে কখনো না</h2></div><div class="body two"><div class="txt"><div class="callout warn">⚠️ নিয়ম: SQL-এ মান সবসময় <code>?</code> দিয়ে, আলাদা argument হিসেবে। Laravel-এ যেমন <code>where('name', $search)</code> নিরাপদ, <code>DB::raw("'$search'")</code> বিপজ্জনক।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;database/sql&quot;</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+
+<span class="w">	</span><span class="nx">_</span><span class="w"> </span><span class="s">&quot;modernc.org/sqlite&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sql</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;sqlite&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;:memory:&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">.</span><span class="nx">SetMaxOpenConns</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">.</span><span class="nx">Exec</span><span class="p">(</span><span class="s">`CREATE TABLE customers (name TEXT, phone TEXT);</span>
+<span class="s">		INSERT INTO customers VALUES (&#39;Karim&#39;, &#39;01711000001&#39;), (&#39;Nusrat&#39;, &#39;01811000002&#39;)`</span><span class="p">)</span>
+
+<span class="w">	</span><span class="nx">search</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s">&quot;x&#39; OR &#39;1&#39;=&#39;1&quot;</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="kt">int</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">.</span><span class="nx">QueryRow</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">`SELECT count(*) FROM customers WHERE name = &#39;%s&#39;`</span><span class="p">,</span><span class="w"> </span><span class="nx">search</span><span class="p">)).</span><span class="nx">Scan</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">n</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Sprintf দিয়ে:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;জন — সবাই বেরিয়ে গেল!&quot;</span><span class="p">)</span>
+
+<span class="w">	</span><span class="nx">db</span><span class="p">.</span><span class="nx">QueryRow</span><span class="p">(</span><span class="s">`SELECT count(*) FROM customers WHERE name = ?`</span><span class="p">,</span><span class="w"> </span><span class="nx">search</span><span class="p">).</span><span class="nx">Scan</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">n</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;? placeholder দিয়ে:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;জন&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Sprintf দিয়ে: 2 জন — সবাই বেরিয়ে গেল!
+? placeholder দিয়ে: 0 জন</pre></div></div></div></div></section>
+<section class="slide" data-part="সম্পূর্ণ API" data-title="সব একসাথে: Shop API"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>সব একসাথে: Shop API</h2></div><div class="body two"><div class="txt"><p>এই কোডটাই <code>go-shop-api/</code> folder-এ পুরো project হিসেবে আছে। নিচে server log-এ শেষ লাইন দেখুন: SIGTERM পেয়ে <b>graceful shutdown</b> — চলমান request শেষ করে তারপর বন্ধ।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> এটা Laravel-এর <code>Route::apiResource()</code> + FormRequest + <code>auth</code> middleware + exception handler — সব এক file-এ, কোনো framework ছাড়া।</div></div><div class=codecol><div class="code"><div class="code-h"><span>main.go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="c1">// Shop API — net/http + SQLite: Product CRUD, 422 validation, search + pagination,</span>
+<span class="c1">// API key for writes, request log, graceful shutdown.</span>
+<span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;context&quot;</span>
+<span class="w">	</span><span class="s">&quot;database/sql&quot;</span>
+<span class="w">	</span><span class="s">&quot;encoding/json&quot;</span>
+<span class="w">	</span><span class="s">&quot;errors&quot;</span>
+<span class="w">	</span><span class="s">&quot;log&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http&quot;</span>
+<span class="w">	</span><span class="s">&quot;os&quot;</span>
+<span class="w">	</span><span class="s">&quot;os/signal&quot;</span>
+<span class="w">	</span><span class="s">&quot;strconv&quot;</span>
+<span class="w">	</span><span class="s">&quot;strings&quot;</span>
+<span class="w">	</span><span class="s">&quot;syscall&quot;</span>
+<span class="w">	</span><span class="s">&quot;time&quot;</span>
+
+<span class="w">	</span><span class="nx">_</span><span class="w"> </span><span class="s">&quot;modernc.org/sqlite&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Product</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">ID</span><span class="w">    </span><span class="kt">int64</span><span class="w">  </span><span class="s">`json:&quot;id&quot;`</span>
+<span class="w">	</span><span class="nx">Name</span><span class="w">  </span><span class="kt">string</span><span class="w"> </span><span class="s">`json:&quot;name&quot;`</span>
+<span class="w">	</span><span class="nx">Brand</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="s">`json:&quot;brand&quot;`</span>
+<span class="w">	</span><span class="nx">Price</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="s">`json:&quot;price&quot;`</span>
+<span class="w">	</span><span class="nx">Stock</span><span class="w"> </span><span class="kt">int</span><span class="w">    </span><span class="s">`json:&quot;stock&quot;`</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">p</span><span class="w"> </span><span class="nx">Product</span><span class="p">)</span><span class="w"> </span><span class="nx">Validate</span><span class="p">()</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">][]</span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">errs</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">][]</span><span class="kt">string</span><span class="p">{}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">TrimSpace</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;name&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;নাম দিতে হবে।&quot;</span><span class="p">}</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">TrimSpace</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">Brand</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;brand&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;Brand দিতে হবে।&quot;</span><span class="p">}</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Price</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;price&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;দাম ০-এর বেশি হতে হবে।&quot;</span><span class="p">}</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">errs</span><span class="p">[</span><span class="s">&quot;stock&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;স্টক ঋণাত্মক হতে পারে না।&quot;</span><span class="p">}</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">errs</span>
+<span class="p">}</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">App</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">db</span><span class="w">     </span><span class="o">*</span><span class="nx">sql</span><span class="p">.</span><span class="nx">DB</span>
+<span class="w">	</span><span class="nx">apiKey</span><span class="w"> </span><span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">status</span><span class="w"> </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">w</span><span class="p">.</span><span class="nx">Header</span><span class="p">().</span><span class="nx">Set</span><span class="p">(</span><span class="s">&quot;Content-Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;application/json&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">w</span><span class="p">.</span><span class="nx">WriteHeader</span><span class="p">(</span><span class="nx">status</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">json</span><span class="p">.</span><span class="nx">NewEncoder</span><span class="p">(</span><span class="nx">w</span><span class="p">).</span><span class="nx">Encode</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">message</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">status</span><span class="w"> </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="nx">msg</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">status</span><span class="p">,</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">msg</span><span class="p">})</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">a</span><span class="w"> </span><span class="o">*</span><span class="nx">App</span><span class="p">)</span><span class="w"> </span><span class="nx">index</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="kd">const</span><span class="w"> </span><span class="nx">perPage</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">10</span>
+<span class="w">	</span><span class="nx">page</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strconv</span><span class="p">.</span><span class="nx">Atoi</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Query</span><span class="p">().</span><span class="nx">Get</span><span class="p">(</span><span class="s">&quot;page&quot;</span><span class="p">))</span>
+<span class="w">	</span><span class="nx">page</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="nx">page</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">like</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s">&quot;%&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Query</span><span class="p">().</span><span class="nx">Get</span><span class="p">(</span><span class="s">&quot;q&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;%&quot;</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">total</span><span class="w"> </span><span class="kt">int</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">a</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">QueryRowContext</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Context</span><span class="p">(),</span>
+<span class="w">		</span><span class="s">`SELECT count(*) FROM products WHERE name LIKE ?1 OR brand LIKE ?1`</span><span class="p">,</span><span class="w"> </span><span class="nx">like</span><span class="p">).</span><span class="nx">Scan</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">total</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">message</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Server error&quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">rows</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">a</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">QueryContext</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Context</span><span class="p">(),</span><span class="w"> </span><span class="s">`SELECT id, name, brand, price, stock FROM products</span>
+<span class="s">		WHERE name LIKE ?1 OR brand LIKE ?1 ORDER BY id DESC LIMIT ?2 OFFSET ?3`</span><span class="p">,</span><span class="w"> </span><span class="nx">like</span><span class="p">,</span><span class="w"> </span><span class="nx">perPage</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">page</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="nx">perPage</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">message</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Server error&quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">rows</span><span class="p">.</span><span class="nx">Close</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">data</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="nx">Product</span><span class="p">{}</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">rows</span><span class="p">.</span><span class="nx">Next</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="kd">var</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="nx">Product</span>
+<span class="w">		</span><span class="nx">rows</span><span class="p">.</span><span class="nx">Scan</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">Brand</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">Price</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="p">)</span>
+<span class="w">		</span><span class="nx">data</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">any</span><span class="p">{</span><span class="s">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;meta&quot;</span><span class="p">:</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">int</span><span class="p">{</span><span class="s">&quot;page&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">page</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;per_page&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">perPage</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">total</span><span class="p">}})</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">a</span><span class="w"> </span><span class="o">*</span><span class="nx">App</span><span class="p">)</span><span class="w"> </span><span class="nx">find</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nx">Product</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="nx">Product</span>
+<span class="w">	</span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">a</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">QueryRowContext</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="s">`SELECT id, name, brand, price, stock FROM products WHERE id = ?`</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">).</span>
+<span class="w">		</span><span class="nx">Scan</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">Brand</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">Price</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="p">)</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">a</span><span class="w"> </span><span class="o">*</span><span class="nx">App</span><span class="p">)</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">a</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Context</span><span class="p">(),</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">PathValue</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">))</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">Is</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">sql</span><span class="p">.</span><span class="nx">ErrNoRows</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">message</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">404</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Product পাওয়া যায়নি।&quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">decode</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nx">Product</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="nx">Product</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">json</span><span class="p">.</span><span class="nx">NewDecoder</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Body</span><span class="p">).</span><span class="nx">Decode</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">message</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">400</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;JSON ঠিক নেই।&quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">errs</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Validate</span><span class="p">();</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">errs</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">any</span><span class="p">{</span><span class="s">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;দেওয়া তথ্য ঠিক নেই।&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">errs</span><span class="p">})</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">a</span><span class="w"> </span><span class="o">*</span><span class="nx">App</span><span class="p">)</span><span class="w"> </span><span class="nx">store</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">decode</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">res</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">a</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">ExecContext</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Context</span><span class="p">(),</span><span class="w"> </span><span class="s">`INSERT INTO products (name, brand, price, stock) VALUES (?, ?, ?, ?)`</span><span class="p">,</span>
+<span class="w">		</span><span class="nx">p</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Brand</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Price</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">message</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Server error&quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">p</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">LastInsertId</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">201</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">a</span><span class="w"> </span><span class="o">*</span><span class="nx">App</span><span class="p">)</span><span class="w"> </span><span class="nx">update</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">decode</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">res</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">a</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">ExecContext</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Context</span><span class="p">(),</span><span class="w"> </span><span class="s">`UPDATE products SET name = ?, brand = ?, price = ?, stock = ? WHERE id = ?`</span><span class="p">,</span>
+<span class="w">		</span><span class="nx">p</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Brand</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Price</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">PathValue</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">))</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">RowsAffected</span><span class="p">();</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">message</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">404</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Product পাওয়া যায়নি।&quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">p</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">strconv</span><span class="p">.</span><span class="nx">ParseInt</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">PathValue</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">),</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">writeJSON</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">a</span><span class="w"> </span><span class="o">*</span><span class="nx">App</span><span class="p">)</span><span class="w"> </span><span class="nx">destroy</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">res</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">a</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">ExecContext</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Context</span><span class="p">(),</span><span class="w"> </span><span class="s">`DELETE FROM products WHERE id = ?`</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">PathValue</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">))</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">RowsAffected</span><span class="p">();</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">message</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">404</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Product পাওয়া যায়নি।&quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">w</span><span class="p">.</span><span class="nx">WriteHeader</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusNoContent</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">a</span><span class="w"> </span><span class="o">*</span><span class="nx">App</span><span class="p">)</span><span class="w"> </span><span class="nx">requireKey</span><span class="p">(</span><span class="nx">h</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">HandlerFunc</span><span class="p">)</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">HandlerFunc</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nx">Get</span><span class="p">(</span><span class="s">&quot;X-Api-Key&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">a</span><span class="p">.</span><span class="nx">apiKey</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">message</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="mi">401</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Unauthorized&quot;</span><span class="p">)</span>
+<span class="w">			</span><span class="k">return</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">		</span><span class="nx">h</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">logging</span><span class="p">(</span><span class="nx">next</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="p">)</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">HandlerFunc</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">start</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span>
+<span class="w">		</span><span class="nx">next</span><span class="p">.</span><span class="nx">ServeHTTP</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">)</span>
+<span class="w">		</span><span class="nx">log</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;%s %s %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">Method</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">RequestURI</span><span class="p">(),</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Since</span><span class="p">(</span><span class="nx">start</span><span class="p">).</span><span class="nx">Round</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span><span class="p">))</span>
+<span class="w">	</span><span class="p">})</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">env</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span><span class="w"> </span><span class="nx">fallback</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nx">Getenv</span><span class="p">(</span><span class="nx">key</span><span class="p">);</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="nx">v</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">fallback</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">log</span><span class="p">.</span><span class="nx">SetFlags</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sql</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;sqlite&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">env</span><span class="p">(</span><span class="s">&quot;DATABASE_PATH&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;shop.db&quot;</span><span class="p">))</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">db</span><span class="p">.</span><span class="nx">Close</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">.</span><span class="nx">SetMaxOpenConns</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">db</span><span class="p">.</span><span class="nx">Exec</span><span class="p">(</span><span class="s">`CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT,</span>
+<span class="s">		name TEXT NOT NULL, brand TEXT NOT NULL, price INTEGER NOT NULL, stock INTEGER NOT NULL DEFAULT 0)`</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">app</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">App</span><span class="p">{</span><span class="nx">db</span><span class="p">:</span><span class="w"> </span><span class="nx">db</span><span class="p">,</span><span class="w"> </span><span class="nx">apiKey</span><span class="p">:</span><span class="w"> </span><span class="nx">env</span><span class="p">(</span><span class="s">&quot;API_KEY&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;secret-123&quot;</span><span class="p">)}</span>
+
+<span class="w">	</span><span class="nx">mux</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">NewServeMux</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;GET /api/v1/products&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">app</span><span class="p">.</span><span class="nx">index</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;GET /api/v1/products/{id}&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">app</span><span class="p">.</span><span class="nx">show</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;POST /api/v1/products&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">app</span><span class="p">.</span><span class="nx">requireKey</span><span class="p">(</span><span class="nx">app</span><span class="p">.</span><span class="nx">store</span><span class="p">))</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;PUT /api/v1/products/{id}&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">app</span><span class="p">.</span><span class="nx">requireKey</span><span class="p">(</span><span class="nx">app</span><span class="p">.</span><span class="nx">update</span><span class="p">))</span>
+<span class="w">	</span><span class="nx">mux</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;DELETE /api/v1/products/{id}&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">app</span><span class="p">.</span><span class="nx">requireKey</span><span class="p">(</span><span class="nx">app</span><span class="p">.</span><span class="nx">destroy</span><span class="p">))</span>
+
+<span class="w">	</span><span class="nx">srv</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Server</span><span class="p">{</span><span class="nx">Addr</span><span class="p">:</span><span class="w"> </span><span class="nx">env</span><span class="p">(</span><span class="s">&quot;APP_ADDR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;127.0.0.1:3000&quot;</span><span class="p">),</span><span class="w"> </span><span class="nx">Handler</span><span class="p">:</span><span class="w"> </span><span class="nx">logging</span><span class="p">(</span><span class="nx">mux</span><span class="p">),</span>
+<span class="w">		</span><span class="nx">ReadTimeout</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">,</span><span class="w"> </span><span class="nx">WriteTimeout</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">}</span>
+
+<span class="w">	</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">stop</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">signal</span><span class="p">.</span><span class="nx">NotifyContext</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Background</span><span class="p">(),</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nx">Interrupt</span><span class="p">,</span><span class="w"> </span><span class="nx">syscall</span><span class="p">.</span><span class="nx">SIGTERM</span><span class="p">)</span>
+<span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">stop</span><span class="p">()</span>
+<span class="w">	</span><span class="k">go</span><span class="w"> </span><span class="kd">func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Shop API চলছে:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">srv</span><span class="p">.</span><span class="nx">Addr</span><span class="p">)</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">srv</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">();</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">!</span><span class="nx">errors</span><span class="p">.</span><span class="nx">Is</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ErrServerClosed</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">log</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">	</span><span class="p">}()</span>
+<span class="w">	</span><span class="o">&lt;-</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Done</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;বন্ধ হচ্ছে: চলমান request শেষ হওয়ার অপেক্ষা...&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">shutdown</span><span class="p">,</span><span class="w"> </span><span class="nx">cancel</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">WithTimeout</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Background</span><span class="p">(),</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+<span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">cancel</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">srv</span><span class="p">.</span><span class="nx">Shutdown</span><span class="p">(</span><span class="nx">shutdown</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term http"><div class="term-h">Response (curl)</div><pre>$ curl -s -X POST http://127.0.0.1:3000/api/v1/products -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;name&quot;:&quot;Redmi 13&quot;,&quot;brand&quot;:&quot;Xiaomi&quot;,&quot;price&quot;:17500,&quot;stock&quot;:5}&#x27;
+{
+  &quot;message&quot;: &quot;Unauthorized&quot;
+}
+← HTTP 401
+
+$ curl -s -X POST http://127.0.0.1:3000/api/v1/products -H &#x27;X-Api-Key: secret-123&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;name&quot;:&quot;Redmi 13&quot;,&quot;brand&quot;:&quot;Xiaomi&quot;,&quot;price&quot;:17500,&quot;stock&quot;:5}&#x27;
+{
+  &quot;id&quot;: 1,
+  &quot;name&quot;: &quot;Redmi 13&quot;,
+  &quot;brand&quot;: &quot;Xiaomi&quot;,
+  &quot;price&quot;: 17500,
+  &quot;stock&quot;: 5
+}
+← HTTP 201
+
+$ curl -s -X POST http://127.0.0.1:3000/api/v1/products -H &#x27;X-Api-Key: secret-123&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;name&quot;:&quot;Galaxy A15&quot;,&quot;brand&quot;:&quot;Samsung&quot;,&quot;price&quot;:21000,&quot;stock&quot;:2}&#x27;
+{
+  &quot;id&quot;: 2,
+  &quot;name&quot;: &quot;Galaxy A15&quot;,
+  &quot;brand&quot;: &quot;Samsung&quot;,
+  &quot;price&quot;: 21000,
+  &quot;stock&quot;: 2
+}
+← HTTP 201
+
+$ curl -s -X POST http://127.0.0.1:3000/api/v1/products -H &#x27;X-Api-Key: secret-123&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;name&quot;:&quot;&quot;,&quot;brand&quot;:&quot;Vivo&quot;,&quot;price&quot;:0,&quot;stock&quot;:-1}&#x27;
+{
+  &quot;errors&quot;: {
+    &quot;name&quot;: [
+      &quot;নাম দিতে হবে।&quot;
+    ],
+    &quot;price&quot;: [
+      &quot;দাম ০-এর বেশি হতে হবে।&quot;
+    ],
+    &quot;stock&quot;: [
+      &quot;স্টক ঋণাত্মক হতে পারে না।&quot;
+    ]
+  },
+  &quot;message&quot;: &quot;দেওয়া তথ্য ঠিক নেই।&quot;
+}
+← HTTP 422
+
+$ curl -s -X PUT http://127.0.0.1:3000/api/v1/products/2 -H &#x27;X-Api-Key: secret-123&#x27; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{&quot;name&quot;:&quot;Galaxy A15&quot;,&quot;brand&quot;:&quot;Samsung&quot;,&quot;price&quot;:20500,&quot;stock&quot;:3}&#x27;
+{
+  &quot;id&quot;: 2,
+  &quot;name&quot;: &quot;Galaxy A15&quot;,
+  &quot;brand&quot;: &quot;Samsung&quot;,
+  &quot;price&quot;: 20500,
+  &quot;stock&quot;: 3
+}
+← HTTP 200
+
+$ curl -s &#x27;http://127.0.0.1:3000/api/v1/products?q=xiaomi&#x27;
+{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: 1,
+      &quot;name&quot;: &quot;Redmi 13&quot;,
+      &quot;brand&quot;: &quot;Xiaomi&quot;,
+      &quot;price&quot;: 17500,
+      &quot;stock&quot;: 5
+    }
+  ],
+  &quot;meta&quot;: {
+    &quot;page&quot;: 1,
+    &quot;per_page&quot;: 10,
+    &quot;total&quot;: 1
+  }
+}
+← HTTP 200
+
+$ curl -s -X DELETE http://127.0.0.1:3000/api/v1/products/2 -H &#x27;X-Api-Key: secret-123&#x27;
+
+← HTTP 204
+
+$ curl -s http://127.0.0.1:3000/api/v1/products/2
+{
+  &quot;message&quot;: &quot;Product পাওয়া যায়নি।&quot;
+}
+← HTTP 404
+
+── server log ──
+Shop API চলছে: 127.0.0.1:3000
+POST /api/v1/products 0s
+POST /api/v1/products 1ms
+POST /api/v1/products 1ms
+POST /api/v1/products 0s
+PUT /api/v1/products/2 1ms
+GET /api/v1/products?q=xiaomi 0s
+DELETE /api/v1/products/2 1ms
+GET /api/v1/products/2 0s
+বন্ধ হচ্ছে: চলমান request শেষ হওয়ার অপেক্ষা...</pre></div></div></div></div></section>
+<section class="slide" data-part="সম্পূর্ণ API" data-title="Handler test: httptest"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>Handler test: httptest</h2></div><div class="body two"><div class="txt"><p><code>httptest.NewRecorder</code> দিয়ে server চালু না করেই handler-এ request পাঠানো যায় — দ্রুত, বিচ্ছিন্ন test।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel feature test-এর <code>$this-&gt;postJson('/api/products', [...])-&gt;assertStatus(422)</code>-এর মতো।</div></div><div class=codecol><div class="code"><div class="code-h"><span>main_test.go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;database/sql&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http&quot;</span>
+<span class="w">	</span><span class="s">&quot;net/http/httptest&quot;</span>
+<span class="w">	</span><span class="s">&quot;strings&quot;</span>
+<span class="w">	</span><span class="s">&quot;testing&quot;</span>
+
+<span class="w">	</span><span class="nx">_</span><span class="w"> </span><span class="s">&quot;modernc.org/sqlite&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">newTestApp</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="nx">App</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sql</span><span class="p">.</span><span class="nx">Open</span><span class="p">(</span><span class="s">&quot;sqlite&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;:memory:&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">t</span><span class="p">.</span><span class="nx">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">.</span><span class="nx">SetMaxOpenConns</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">db</span><span class="p">.</span><span class="nx">Exec</span><span class="p">(</span><span class="s">`CREATE TABLE products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, brand TEXT, price INTEGER, stock INTEGER)`</span><span class="p">)</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">App</span><span class="p">{</span><span class="nx">db</span><span class="p">:</span><span class="w"> </span><span class="nx">db</span><span class="p">,</span><span class="w"> </span><span class="nx">apiKey</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;k&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">TestStoreValidation</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">app</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">newTestApp</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">cases</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">name</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">		</span><span class="nx">body</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">		</span><span class="nx">want</span><span class="w"> </span><span class="kt">int</span>
+<span class="w">	</span><span class="p">}{</span>
+<span class="w">		</span><span class="p">{</span><span class="s">&quot;ঠিক তথ্য&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">`{&quot;name&quot;:&quot;Redmi 13&quot;,&quot;brand&quot;:&quot;Xiaomi&quot;,&quot;price&quot;:17500,&quot;stock&quot;:5}`</span><span class="p">,</span><span class="w"> </span><span class="mi">201</span><span class="p">},</span>
+<span class="w">		</span><span class="p">{</span><span class="s">&quot;দাম নেই&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">`{&quot;name&quot;:&quot;Redmi 13&quot;,&quot;brand&quot;:&quot;Xiaomi&quot;,&quot;price&quot;:0}`</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">},</span>
+<span class="w">		</span><span class="p">{</span><span class="s">&quot;ভাঙা JSON&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">`{&quot;name&quot;:`</span><span class="p">,</span><span class="w"> </span><span class="mi">400</span><span class="p">},</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">tc</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">cases</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">t</span><span class="p">.</span><span class="nx">Run</span><span class="p">(</span><span class="nx">tc</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">req</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">httptest</span><span class="p">.</span><span class="nx">NewRequest</span><span class="p">(</span><span class="s">&quot;POST&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/api/v1/products&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">NewReader</span><span class="p">(</span><span class="nx">tc</span><span class="p">.</span><span class="nx">body</span><span class="p">))</span>
+<span class="w">			</span><span class="nx">rec</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">httptest</span><span class="p">.</span><span class="nx">NewRecorder</span><span class="p">()</span>
+<span class="w">			</span><span class="nx">app</span><span class="p">.</span><span class="nx">store</span><span class="p">(</span><span class="nx">rec</span><span class="p">,</span><span class="w"> </span><span class="nx">req</span><span class="p">)</span>
+<span class="w">			</span><span class="k">if</span><span class="w"> </span><span class="nx">rec</span><span class="p">.</span><span class="nx">Code</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">tc</span><span class="p">.</span><span class="nx">want</span><span class="w"> </span><span class="p">{</span>
+<span class="w">				</span><span class="nx">t</span><span class="p">.</span><span class="nx">Fatalf</span><span class="p">(</span><span class="s">&quot;status %d, চাই %d: %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">rec</span><span class="p">.</span><span class="nx">Code</span><span class="p">,</span><span class="w"> </span><span class="nx">tc</span><span class="p">.</span><span class="nx">want</span><span class="p">,</span><span class="w"> </span><span class="nx">rec</span><span class="p">.</span><span class="nx">Body</span><span class="p">)</span>
+<span class="w">			</span><span class="p">}</span>
+<span class="w">		</span><span class="p">})</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">TestShowNotFound</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">app</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">newTestApp</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">req</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">httptest</span><span class="p">.</span><span class="nx">NewRequest</span><span class="p">(</span><span class="s">&quot;GET&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/api/v1/products/99&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">req</span><span class="p">.</span><span class="nx">SetPathValue</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;99&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">rec</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">httptest</span><span class="p">.</span><span class="nx">NewRecorder</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">app</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">rec</span><span class="p">,</span><span class="w"> </span><span class="nx">req</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">rec</span><span class="p">.</span><span class="nx">Code</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusNotFound</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">t</span><span class="p">.</span><span class="nx">Fatalf</span><span class="p">(</span><span class="s">&quot;status %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">rec</span><span class="p">.</span><span class="nx">Code</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">go test -v</div><pre>=== RUN   TestStoreValidation
+=== RUN   TestStoreValidation/ঠিক_তথ্য
+=== RUN   TestStoreValidation/দাম_নেই
+=== RUN   TestStoreValidation/ভাঙা_JSON
+--- PASS: TestStoreValidation 
+    --- PASS: TestStoreValidation/ঠিক_তথ্য 
+    --- PASS: TestStoreValidation/দাম_নেই 
+    --- PASS: TestStoreValidation/ভাঙা_JSON 
+=== RUN   TestShowNotFound
+--- PASS: TestShowNotFound 
+PASS
+ok  shop</pre></div></div></div></div></section>
+<section class="slide" data-part="Deploy" data-title="Docker: কয়েক MB-এর image"><div class="inner"><div class="head"><span class="tag">পাঠ ১৩</span><h2>Docker: কয়েক MB-এর image</h2></div><div class="body two"><div class="txt"><p>Multi-stage build: প্রথম ধাপে Go দিয়ে compile, দ্বিতীয় ধাপে শুধু binary একটা খালি (distroless) image-এ। <code>CGO_ENABLED=0</code> — pure Go binary, কোনো system library লাগে না।</p><div class="callout">💡 Laravel-এর Docker image সাধারণত কয়েকশো MB; Go-র এই image ১৫ MB-এর মতো। DevOps টিউটোরিয়ালে Docker আর Kubernetes বিস্তারিত।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dockerfile</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">golang:1.27</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">build</span>
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/src</span>
+<span class="k">COPY</span><span class="w"> </span>go.mod<span class="w"> </span>go.sum<span class="w"> </span>./
+<span class="k">RUN</span><span class="w"> </span>go<span class="w"> </span>mod<span class="w"> </span>download
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.
+<span class="k">RUN</span><span class="w"> </span><span class="nv">CGO_ENABLED</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>go<span class="w"> </span>build<span class="w"> </span>-ldflags<span class="o">=</span><span class="s2">&quot;-s -w&quot;</span><span class="w"> </span>-o<span class="w"> </span>/shop-api<span class="w"> </span>.
+
+<span class="k">FROM</span><span class="w"> </span><span class="s">gcr.io/distroless/static-debian12</span>
+<span class="k">COPY</span><span class="w"> </span>--from<span class="o">=</span>build<span class="w"> </span>/shop-api<span class="w"> </span>/shop-api
+<span class="k">ENV</span><span class="w"> </span><span class="nv">APP_ADDR</span><span class="o">=</span><span class="m">0</span>.0.0.0:3000<span class="w"> </span><span class="nv">DATABASE_PATH</span><span class="o">=</span>/data/shop.db
+<span class="k">VOLUME</span><span class="w"> </span><span class="s">/data</span>
+<span class="k">EXPOSE</span><span class="w"> </span><span class="s">3000</span>
+<span class="k">USER</span><span class="w"> </span><span class="s">nonroot</span>
+<span class="k">ENTRYPOINT</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/shop-api&quot;</span><span class="p">]</span>
+</pre></div>
+</div><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>shop-api<span class="w"> </span>.
+<span class="gp">$ </span>docker<span class="w"> </span>images<span class="w"> </span>shop-api
+<span class="gp">$ </span>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">3000</span>:3000<span class="w"> </span>-v<span class="w"> </span>shop-data:/data<span class="w"> </span>-e<span class="w"> </span><span class="nv">API_KEY</span><span class="o">=</span>change-me<span class="w"> </span>shop-api
+</pre></div>
+</div><div class="term"><div class="term-h">উদাহরণ আউটপুট</div><pre>REPOSITORY   TAG       IMAGE ID       SIZE
+shop-api     latest    3f2a9c1e7b4d   14.6MB</pre></div></div></div></div></section>
+<section class="slide" data-part="Deploy" data-title="এরপর কী"><div class="inner"><div class="head"><span class="tag">পাঠ ১৪</span><h2>এরপর কী</h2></div><div class="body one"><div class="txt"><table class="tbl"><tr><th>প্রয়োজন</th><th>জনপ্রিয় package</th></tr><tr><td>আরও সুবিধার router</td><td><code>chi</code>, <code>echo</code>, <code>gin</code></td></tr><tr><td>Type-safe SQL কোড বানানো</td><td><code>sqlc</code></td></tr><tr><td>PostgreSQL</td><td><code>pgx</code></td></tr><tr><td>Migration</td><td><code>golang-migrate</code>, <code>goose</code></td></tr><tr><td>Validation tag</td><td><code>go-playground/validator</code></td></tr><tr><td>Hot reload (development)</td><td><code>air</code></td></tr><tr><td>Structured log</td><td><code>log/slog</code> (standard library)</td></tr><tr><td>OpenAPI</td><td><code>oapi-codegen</code>, <code>huma</code></td></tr></table><div class="callout">💡 নতুন project-এ আগে standard library দিয়ে শুরু করুন; সত্যিই দরকার হলে তবেই package যোগ করুন — Go community এভাবেই কাজ করে।</div></div></div></div></section>
+<section class="slide hero end" data-part="Deploy" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>Go Web Development শেষ! 🎉</h1><p class="lead">Framework ছাড়াই Go দিয়ে পুরো একটা JSON API — database, validation, middleware, test আর ১৫ MB-এর Docker image।</p><div class="steps done"><div><i>✓</i><span><code>mux.HandleFunc("GET /products/{id}", h)</code> + <code>r.PathValue</code></span></div><div><i>✓</i><span><code>writeJSON</code> helper; Laravel-এর মতো 422</span></div><div><i>✓</i><span>Middleware = <code>func(http.Handler) http.Handler</code></span></div><div><i>✓</i><span><code>database/sql</code> + <code>?</code> placeholder, <code>sql.ErrNoRows</code> → 404</span></div><div><i>✓</i><span><code>httptest</code> দিয়ে handler test</span></div><div><i>✓</i><span>Graceful shutdown + distroless Docker</span></div></div><div class="btns"><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+</main>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>window.COURSE="go-web-development";
+(function(){
+  var B=function(n){return String(n).replace(/\d/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0,root=document.documentElement;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),menu=document.getElementById('menu');
+  var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'%)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
+    st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function buildMenu(){var h='',last=null;slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){h+='<h3>'+p+'</h3>';last=p}
+    h+='<a data-go="'+j+'" class="'+(st.seen[j]?'seen ':'')+(j===i?'cur':'')+'"><span>'+B(j+1)+'.</span><span>'+s.getAttribute('data-title')+'</span></a>'});menu.innerHTML=h}
+  function toggleMenu(){if(!menu.classList.contains('open'))buildMenu();menu.classList.toggle('open')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var dark=getComputedStyle(root).getPropertyValue('--bg').trim()==='#0B1220';var t=dark?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tut-theme',t)}catch(e){}}
+  try{var th=localStorage.getItem('tut-theme');if(th)root.setAttribute('data-theme',th)}catch(e){}
+  menu.addEventListener('click',function(e){var a=e.target.closest('a');if(a){go(+a.getAttribute('data-go'));menu.classList.remove('open')}else if(e.target===menu)menu.classList.remove('open')});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;
+    var pre=b.closest('.code').querySelector('pre');var t=pre.innerText.replace(/^\$ /gm,'');
+    var done=function(){b.textContent='কপি হয়েছে ✓';setTimeout(function(){b.textContent='কপি'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done()});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  // Swipe left/right changes slide; vertical drags scroll the slide. A swipe that actually scrolled a wide
+  // code block or table sideways is treated as scrolling that block, not as a slide change.
+  var x0=null,y0=null,box=null,box0=0;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY;
+    box=e.target.closest('pre,.tbl');box0=box?box.scrollLeft:0},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+    var scrolledBox=box&&Math.abs(box.scrollLeft-box0)>2;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5&&!scrolledBox)go(i+(dx<0?1:-1));x0=null;box=null});
+  var h=parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
+    if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';
+      r.classList.add('show');document.getElementById('resumeGo').onclick=function(){go(last);r.classList.remove('show')};
+      document.getElementById('resumeNo').onclick=function(){r.classList.remove('show')};}}
+})();
+</script>
+</body>
+</html>

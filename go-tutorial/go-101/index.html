@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Go 101 — শূন্য থেকে শুরু</title>
+<meta name="description" content="Variable, type, string, if/for/switch, function, error, slice, map আর defer — PHP-র পাশাপাশি">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.6vh);--navy:#0C1E38;--accent:#0D8A4A;--accent2:#E8F6EE;--amber:#B7791F;--red:#C53030;--php:#4F5B93;
+  --bg:#F4F7FA;--ink:#18263A;--muted:#5B6B80;--card:#fff;--line:#DCE4EE;--codebg:#1E2430}
+:root[data-theme=dark]{--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+html:has(body.deck){overflow:hidden;height:100%}
+/* the deck is pinned to the viewport: mobile browsers must not widen the layout to fit the off-screen slides */
+body.deck{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+#deck{position:absolute;inset:0;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100%;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;padding:60px 4vw 84px;
+  touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.slide .inner,.body,.txt,.codecol{min-width:0}
+.slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
+h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(15px,calc(var(--u)*1.9),28px);color:var(--muted);max-width:36em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--accent);color:#fff;font-weight:600;font-size:clamp(12px,calc(var(--u)*1.15),17px);padding:.3em 1em;border-radius:999px}
+.head{display:flex;flex-direction:column;gap:1vh}
+.body.two{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:3vw;align-items:start}
+.body.one{max-width:1100px}
+.txt{display:flex;flex-direction:column;gap:1.6vh}
+.txt p,.txt li{font-size:clamp(15px,calc(var(--u)*1.6),24px);line-height:1.7}
+.txt ul{list-style:none;padding:0;display:grid;gap:1vh}
+.txt li{padding-left:1.3em;position:relative}
+.txt li::before{content:"";position:absolute;left:0;top:.7em;width:.45em;height:.45em;border-radius:50%;background:var(--accent)}
+code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
+.callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.callout.warn{border-left-color:var(--amber)}
+.callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
+.callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
+.quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.quiz summary{cursor:pointer;font-weight:600;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--accent);font-weight:600;font-size:clamp(14px,calc(var(--u)*1.4),21px);line-height:1.6}
+.tbl{border-collapse:collapse;width:100%;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.tbl th,.tbl td{padding:.9vh .9vw;text-align:left;font-size:clamp(13px,calc(var(--u)*1.35),20px);border-bottom:1px solid var(--line);line-height:1.5}
+.tbl th{background:var(--accent2);font-weight:600}
+.steps{display:grid;gap:1vh}
+.steps div{background:var(--card);border-radius:10px;padding:1.1vh 1vw;font-size:clamp(14px,calc(var(--u)*1.5),22px);display:flex;gap:.9vw;align-items:center;box-shadow:0 3px 12px rgba(12,30,56,.07);line-height:1.5}
+.steps i{flex:0 0 auto;width:2em;height:2em;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.codecol{display:flex;flex-direction:column;gap:1.2vh;min-width:0}
+.code{background:var(--codebg);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#151A23;color:#9AA7B8;font:600 13px 'JetBrains Mono',monospace}
+.code-h.php{background:#262B47;color:#C3C9EE}
+.copy{border:0;background:#2A3242;color:#C9D4E3;font:600 12px 'Hind Siliguri',sans-serif;padding:3px 10px;border-radius:6px;cursor:pointer}
+.copy:hover{background:var(--accent);color:#fff}
+.hl pre{margin:0;padding:12px 16px;overflow-x:auto;font:clamp(12.5px,calc(var(--u)*1.08),17px)/1.55 'JetBrains Mono',monospace;color:#E3E8EF;tab-size:4}
+.hl .hll{background:rgba(255,214,102,.13);display:inline-block;width:100%}
+.term{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0F141C}
+.term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
+.term.error .term-h,.term.panic .term-h{background:#B83434}
+.term.http .term-h{background:#1F5FA8}
+.term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
+pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
+.term.error pre,.term.panic pre{color:#FFB4B4}
+.phone-shot{margin:0;align-self:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.phone-shot img{width:min(260px,60vw);border-radius:22px;border:6px solid #111827;box-shadow:0 12px 30px rgba(0,0,0,.3);background:#fff}
+.phone-shot figcaption{font-size:13px;color:var(--muted)}
+.codecol:has(.phone-shot){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:1.2vw}
+@media (max-width:900px){.codecol:has(.phone-shot){grid-template-columns:1fr}}
+.stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
+.hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
+.hero .inner{justify-content:center;max-width:1100px}
+.hero h1{color:#fff}.hero .lead{color:#CFDDEE}
+.hero .learn{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1vh 2vw}
+.hero .learn li{font-size:clamp(14px,calc(var(--u)*1.55),23px);padding-left:1.4em;position:relative;line-height:1.5;color:#E6EEF8}
+.hero .learn li::before{content:"✓";position:absolute;left:0;color:#4ADE80;font-weight:700}
+.hero .need,.hero .howto{color:#AFC2D8;font-size:clamp(13px,calc(var(--u)*1.35),20px)}
+.hero .need b{color:#fff}
+.hero.end .steps div{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.hero.end .steps i{background:#4ADE80;color:#0C1E38}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:#4ADE80;color:#0C1E38;font-weight:700;text-decoration:none;padding:.7em 1.4em;border-radius:999px;font-size:clamp(14px,calc(var(--u)*1.5),21px)}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+#top{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px}
+#top a{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+#top .crumb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#top .hub{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+#bar{position:fixed;left:0;top:44px;height:3px;background:var(--accent);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:600 14px 'Hind Siliguri',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.9);padding:6px 10px;border-radius:999px;white-space:nowrap}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--accent)}
+#count{min-width:64px;text-align:center}
+#menu{position:fixed;inset:0;background:rgba(8,15,28,.94);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:20px;margin:2.4vh 0 .8vh}
+#menu a{display:flex;gap:.6em;color:#dbe7f5;text-decoration:none;padding:.55vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a.seen::after{content:"✓";color:#4ADE80;margin-left:auto}
+#menu a.cur{background:rgba(74,222,128,.18)}
+#menu a:hover{background:var(--accent);color:#fff}
+#resume{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25);border-radius:14px;padding:12px 16px;z-index:8;display:none;gap:10px;align-items:center;font-size:15px;flex-wrap:wrap;justify-content:center}
+#resume.show{display:flex}
+#resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
+#resume button.alt{background:var(--line);color:var(--ink)}
+@media (max-width:900px){.slide{padding:54px 16px 92px}.body.two{grid-template-columns:minmax(0,1fr);gap:16px}.hero .learn{grid-template-columns:1fr}
+  .tbl{display:block;overflow-x:auto;white-space:nowrap}.tbl td,.tbl th{white-space:normal;min-width:7em}
+  .hl pre,.term pre{font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere}   /* wrap instead of side-scroll: swipes stay free */.txt p,.txt li{font-size:15.5px}h2{font-size:22px}h1{font-size:30px}
+  #top .crumb{display:none}#top{justify-content:space-between}
+  #nav{gap:4px;padding:5px 8px;bottom:10px}#nav button{width:34px;height:34px}#count{min-width:52px;font-size:13px}}
+@media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
+
+.hl .c,.hl .c1,.hl .cm,.hl .cs,.hl .ch,.hl .cp,.hl .cpf{color:#7F8C98;font-style:italic}
+.hl .k,.hl .kd,.hl .kn,.hl .kr,.hl .kp,.hl .ow{color:#C678DD}
+.hl .kc{color:#D19A66}
+.hl .kt,.hl .nc,.hl .nn{color:#E5C07B}
+.hl .s,.hl .s1,.hl .s2,.hl .sb,.hl .sc,.hl .sd,.hl .sh,.hl .sx,.hl .dl{color:#98C379}
+.hl .se,.hl .si,.hl .sa{color:#56B6C2}
+.hl .m,.hl .mi,.hl .mf,.hl .mh,.hl .mb,.hl .il,.hl .mo{color:#D19A66}
+.hl .nf,.hl .fm{color:#61AFEF}
+.hl .nb,.hl .bp{color:#56B6C2}
+.hl .nd,.hl .nl{color:#E06C75}
+.hl .nt{color:#E06C75}.hl .na{color:#D19A66}
+.hl .nv,.hl .vi,.hl .vc,.hl .vg{color:#E06C75}
+.hl .o{color:#ABB2BF}.hl .p{color:#ABB2BF}
+.hl .gp{color:#4ADE80;font-weight:600;user-select:none}.hl .go{color:#9AA7B8}
+.hl .err{color:#E3E8EF;background:none}
+</style>
+</head>
+<body class="deck">
+<div id="top"><a href="../index.html">← সব কোর্স</a><span class="crumb">Go 101 · <b id="part"></b></span><a class="hub" href="../../index.html">সব টিউটোরিয়াল</a></div>
+<div id="bar"></div>
+<div id="resume"><span id="resumeText"></span><button id="resumeGo">চালিয়ে যান</button><button class="alt" id="resumeNo">শুরু থেকে</button></div>
+<main id="deck">
+<section class="slide hero" data-part="শুরু" data-title="Go 101শূন্য থেকে শুরু"><div class="inner"><span class="tag">Go 101</span><h1>Go 101<br>শূন্য থেকে শুরু</h1><p class="lead">Go (Golang) — Google-এর বানানো সহজ, দ্রুত ভাষা। Docker, Kubernetes, Grafana, Terraform — DevOps-এর প্রায় সব টুল Go-তে লেখা। PHP জানলে Go শেখা খুবই সহজ, কারণ ভাষাটা ছোট।</p><ul class="learn"><li>Go কেন, install আর go run</li><li>var, := আর zero value</li><li>Type আর type conversion</li><li>String, byte আর rune (বাংলা)</li><li>if, for, switch</li><li>Function আর একাধিক return</li><li>error: Go-র নিজস্ব ধরন</li><li>Slice, map, defer</li></ul><p class="need"><b>আগে জানা দরকার:</b> সাধারণ programming (PHP যথেষ্ট)।</p><p class="howto">→ তীর চাপুন বা swipe করুন · <b>M</b> সব পাঠের তালিকা · অগ্রগতি নিজে থেকেই সেভ হয়</p></div></section>
+<section class="slide" data-part="শুরু" data-title="Go কেন?"><div class="inner"><div class="head"><span class="tag">পাঠ ১</span><h2>Go কেন?</h2></div><div class="body one"><div class="txt"><table class="tbl"><tr><th></th><th>PHP</th><th>Go</th></tr><tr><td>চলে কীভাবে</td><td>Interpreter</td><td>Compile হয়ে একটা binary — server-এ শুধু ঐ file</td></tr><tr><td>Type</td><td>Dynamic</td><td>Static, কিন্তু <code>:=</code> দিয়ে অনুমান</td></tr><tr><td>Error</td><td>Exception, try/catch</td><td>Error একটা সাধারণ return মান</td></tr><tr><td>একসাথে কাজ</td><td>Queue, আলাদা process</td><td>goroutine — হাজার হাজার, খুব হালকা</td></tr><tr><td>কোথায়</td><td>Web app</td><td>API, CLI, DevOps tool (Docker, Kubernetes)</td></tr></table><div class="callout">💡 Go ইচ্ছা করে ছোট রাখা — class নেই, exception নেই, inheritance নেই। কম জিনিস শিখতে হয়, সবার কোড একই রকম দেখায়।</div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="Install আর Hello, World!"><div class="inner"><div class="head"><span class="tag">পাঠ ২</span><h2>Install আর Hello, World!</h2></div><div class="body two"><div class="txt"><ul><li>প্রতিটি file শুরু হয় <code>package</code> দিয়ে; চালানোর program হলো <code>package main</code></li><li><code>import "fmt"</code> — print-এর package</li><li>Statement-এর শেষে <code>;</code> লাগে না</li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>echo "Hello, World!\n";</code> → <code>fmt.Println("Hello, World!")</code>। <code>go mod init</code> হলো <code>composer init</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>go<span class="w"> </span>version
+<span class="gp">$ </span>mkdir<span class="w"> </span>hello<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>hello
+<span class="gp">$ </span>go<span class="w"> </span>mod<span class="w"> </span>init<span class="w"> </span>hello
+<span class="gp">$ </span>go<span class="w"> </span>run<span class="w"> </span>.
+</pre></div>
+</div><div class="term"><div class="term-h">উদাহরণ আউটপুট</div><pre>go version go1.27.3 darwin/arm64
+go: creating new go.mod: module hello
+Hello, World!</pre></div><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Hello, World!&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Go শেখা শুরু হলো&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Hello, World!
+Go শেখা শুরু হলো</pre></div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="fmt.Printf: সাজিয়ে প্রিন্ট"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>fmt.Printf: সাজিয়ে প্রিন্ট</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র <code>printf()</code>/<code>sprintf()</code> একই — <code>%v</code> হলো Go-র "যেকোনো মান", <code>%T</code> type দেখায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">name</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s">&quot;Rahim&quot;</span>
+<span class="w">	</span><span class="nx">price</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mf">1250.5</span>
+<span class="w">	</span><span class="nx">qty</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">3</span>
+
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;Customer: %s\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;Total: %.2f টাকা\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">price</span><span class="o">*</span><span class="nb">float64</span><span class="p">(</span><span class="nx">qty</span><span class="p">))</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;[%8s] [%-8s]\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ডানে&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;বামে&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;%v | %T | %q\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">qty</span><span class="p">,</span><span class="w"> </span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">line</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;%s × %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">qty</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">line</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Customer: Rahim
+Total: 3751.50 টাকা
+[    ডানে] [বামে    ]
+3 | float64 | &quot;Rahim&quot;
+Rahim × 3</pre></div></div></div></div></section>
+<section class="slide" data-part="Variable ও Type" data-title="var, := আর zero value"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>var, := আর zero value</h2></div><div class="body two"><div class="txt"><p><code>:=</code> দিয়ে variable বানানো আর মান দেওয়া একসাথে (শুধু function-এর ভিতরে)। মান না দিলে Go নিজেই "zero value" বসায় — null নেই।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে মান না দেওয়া variable <code>null</code>/undefined। Go-তে int হলে 0, string হলে "" — কখনো "নেই" হয় না।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">shop</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;Rahim Mobile&quot;</span>
+<span class="w">	</span><span class="nx">balance</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">500</span><span class="w"> </span><span class="c1">// type অনুমান: int</span>
+<span class="w">	</span><span class="nx">balance</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">200</span>
+
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">stock</span><span class="w"> </span><span class="kt">int</span><span class="w">   </span><span class="c1">// মান দিইনি → 0</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">note</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="c1">// → &quot;&quot;</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">paid</span><span class="w"> </span><span class="kt">bool</span><span class="w">   </span><span class="c1">// → false</span>
+
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">shop</span><span class="p">,</span><span class="w"> </span><span class="nx">balance</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;stock=%d note=%q paid=%t\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">stock</span><span class="p">,</span><span class="w"> </span><span class="nx">note</span><span class="p">,</span><span class="w"> </span><span class="nx">paid</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Rahim Mobile 700
+stock=0 note=&quot;&quot; paid=false</pre></div></div></div></div></section>
+<section class="slide" data-part="Variable ও Type" data-title="ব্যবহার না করা variable = error"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>ব্যবহার না করা variable = error</h2></div><div class="body two"><div class="txt"><p>Go কঠোর: variable বানিয়ে ব্যবহার না করলে, বা package import করে ব্যবহার না করলে — compile হবে না। কোড পরিষ্কার থাকে।</p><div class="callout">💡 সাময়িকভাবে কিছু উপেক্ষা করতে <code>_</code> ব্যবহার করুন: <code>_ = total</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;os&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">total</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">1500</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;হিসাব&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Go compiler বলছে (ইচ্ছাকৃত ভুল)</div><pre>./main.go:5:2: &quot;os&quot; imported and not used
+./main.go:9:2: declared and not used: total</pre></div></div></div></div></section>
+<section class="slide" data-part="Variable ও Type" data-title="Type আর conversion"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>Type আর conversion</h2></div><div class="body two"><div class="txt"><p>আলাদা type মেশানো যায় না — নিজে বদলাতে হয়: <code>float64(qty)</code>। Integer ভাগে দশমিক বাদ।</p><div class="callout warn">⚠️ <code>string(65)</code> দিলে "65" না, "A" হয় (অক্ষর কোড)! সংখ্যাকে লেখা বানাতে সবসময় <code>strconv.Itoa</code> বা <code>fmt.Sprint</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;strconv&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">a</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">a</span><span class="o">/</span><span class="nx">b</span><span class="p">,</span><span class="w"> </span><span class="nx">a</span><span class="o">%</span><span class="nx">b</span><span class="p">,</span><span class="w"> </span><span class="nb">float64</span><span class="p">(</span><span class="nx">a</span><span class="p">)</span><span class="o">/</span><span class="nb">float64</span><span class="p">(</span><span class="nx">b</span><span class="p">))</span>
+
+<span class="w">	</span><span class="nx">price</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">17500</span>
+<span class="w">	</span><span class="nx">vat</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">float64</span><span class="p">(</span><span class="nx">price</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">0.15</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;VAT: %.0f\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">vat</span><span class="p">)</span>
+
+<span class="w">	</span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strconv</span><span class="p">.</span><span class="nx">Atoi</span><span class="p">(</span><span class="s">&quot;250&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">s</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strconv</span><span class="p">.</span><span class="nx">Itoa</span><span class="p">(</span><span class="nx">price</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">n</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nx">s</span><span class="o">+</span><span class="s">&quot; টাকা&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>3 1 3.5
+VAT: 2625
+251 17500 টাকা</pre></div></div></div></div></section>
+<section class="slide" data-part="Variable ও Type" data-title="const আর iota"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>const আর iota</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>iota</code> নিজে থেকে ০, ১, ২ ... বসায় — PHP enum-এর মতো ক্রমিক মানের জন্য।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">VatPercent</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">15</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">ShopName</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;Rahim Mobile&quot;</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Status</span><span class="w"> </span><span class="kt">int</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="nx">Pending</span><span class="w">  </span><span class="nx">Status</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">iota</span><span class="w"> </span><span class="c1">// 0</span>
+<span class="w">	</span><span class="nx">Paid</span><span class="w">                   </span><span class="c1">// 1</span>
+<span class="w">	</span><span class="nx">Returned</span><span class="w">               </span><span class="c1">// 2</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">ShopName</span><span class="p">,</span><span class="w"> </span><span class="nx">VatPercent</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">Pending</span><span class="p">,</span><span class="w"> </span><span class="nx">Paid</span><span class="p">,</span><span class="w"> </span><span class="nx">Returned</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Rahim Mobile 15
+0 1 2</pre></div></div></div></div></section>
+<section class="slide" data-part="Variable ও Type" data-title="String, byte আর rune"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>String, byte আর rune</h2></div><div class="body two"><div class="txt"><p>Go string হলো UTF-8 byte। <code>len()</code> byte গোনে। অক্ষর (rune) ধরে চলতে <code>for range</code> বা <code>utf8.RuneCountInString</code>।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>strlen</code>/<code>mb_strlen</code> → <code>len</code>/<code>utf8.RuneCountInString</code>; <code>explode</code> → <code>strings.Split</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;strings&quot;</span>
+<span class="w">	</span><span class="s">&quot;unicode/utf8&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">city</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s">&quot;ঢাকা&quot;</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">city</span><span class="p">),</span><span class="w"> </span><span class="nx">utf8</span><span class="p">.</span><span class="nx">RuneCountInString</span><span class="p">(</span><span class="nx">city</span><span class="p">))</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">city</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;%d:%c &quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">()</span>
+
+<span class="w">	</span><span class="nx">model</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s">&quot;  Redmi Note 13  &quot;</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">strings</span><span class="p">.</span><span class="nx">TrimSpace</span><span class="p">(</span><span class="nx">model</span><span class="p">),</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">ToUpper</span><span class="p">(</span><span class="s">&quot;redmi&quot;</span><span class="p">),</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">Contains</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Note&quot;</span><span class="p">))</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">strings</span><span class="p">.</span><span class="nx">Split</span><span class="p">(</span><span class="s">&quot;Mirpur,Uttara,Gulshan&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;,&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>12 4
+0:ঢ 3:া 6:ক 9:া 
+Redmi Note 13 REDMI true
+[Mirpur Uttara Gulshan]</pre></div></div></div></div></section>
+<section class="slide" data-part="Control flow" data-title="if — ছোট statement সহ"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>if — ছোট statement সহ</h2></div><div class="body two"><div class="txt"><p>শর্তের চারপাশে bracket নেই, কিন্তু <code>{}</code> বাধ্যতামূলক। <code>if</code>-এর আগে ছোট statement লেখা যায়। Ternary (<code>?:</code>) নেই।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">amount</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">1800</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1500</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;ফ্রি ডেলিভারি&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;ডেলিভারি ৩০&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;ডেলিভারি ৬০&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">discount</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w"> </span><span class="nx">discount</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;ছাড়:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">discount</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>ফ্রি ডেলিভারি
+ছাড়: 180</pre></div></div></div></div></section>
+<section class="slide" data-part="Control flow" data-title="for — Go-র একমাত্র loop"><div class="inner"><div class="head"><span class="tag">পাঠ ১০</span><h2>for — Go-র একমাত্র loop</h2></div><div class="body two"><div class="txt"><p><code>while</code> নেই, <code>foreach</code> নেই — সব <code>for</code>। <code>range</code> দিয়ে slice/map/string ঘোরা।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>foreach ($cities as $i =&gt; $city)</code> → <code>for i, city := range cities</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="o">++</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;7 × %d = %d\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="o">*</span><span class="nx">i</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+
+<span class="w">	</span><span class="nx">seconds</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">seconds</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// while-এর মতো</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Print</span><span class="p">(</span><span class="nx">seconds</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;... &quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="nx">seconds</span><span class="o">--</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">()</span>
+
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="nx">city</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;Dhaka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Khulna&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Sylhet&quot;</span><span class="p">}</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="nx">city</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>7 × 1 = 7
+7 × 2 = 14
+7 × 3 = 21
+3... 2... 1... 
+0 Dhaka
+1 Khulna
+2 Sylhet</pre></div></div></div></div></section>
+<section class="slide" data-part="Control flow" data-title="switch"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>switch</h2></div><div class="body two"><div class="txt"><p><code>break</code> লিখতে হয় না — মিল হলে শুধু সেই case চলে। শর্ত ছাড়া <code>switch</code> লিখলে if-else-এর মতো।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">grade</span><span class="p">(</span><span class="nx">marks</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nx">marks</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">80</span><span class="p">:</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="s">&quot;A+&quot;</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nx">marks</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">70</span><span class="p">:</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="s">&quot;A&quot;</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nx">marks</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">33</span><span class="p">:</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="s">&quot;পাস&quot;</span>
+<span class="w">	</span><span class="k">default</span><span class="p">:</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="s">&quot;F&quot;</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">m</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">95</span><span class="p">,</span><span class="w"> </span><span class="mi">72</span><span class="p">,</span><span class="w"> </span><span class="mi">48</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">}</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">m</span><span class="p">,</span><span class="w"> </span><span class="nx">grade</span><span class="p">(</span><span class="nx">m</span><span class="p">))</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="nx">day</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s">&quot;Friday&quot;</span><span class="p">;</span><span class="w"> </span><span class="nx">day</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="s">&quot;Friday&quot;</span><span class="p">:</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;ছুটি&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="s">&quot;Saturday&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Sunday&quot;</span><span class="p">:</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;কাজের দিন&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>95 A+
+72 A
+48 পাস
+20 F
+ছুটি</pre></div></div></div></div></section>
+<section class="slide" data-part="Function ও Error" data-title="Function আর একাধিক return"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>Function আর একাধিক return</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে কয়েকটা মান ফেরত দিতে array লাগে; Go সরাসরি <code>(int, int)</code> ফেরত দেয়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">total</span><span class="p">(</span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">qty</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">qty</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">minMax</span><span class="p">(</span><span class="nx">nums</span><span class="w"> </span><span class="p">[]</span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">lo</span><span class="p">,</span><span class="w"> </span><span class="nx">hi</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">nums</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="nx">nums</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">nums</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">lo</span><span class="p">,</span><span class="w"> </span><span class="nx">hi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="nx">lo</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">),</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="nx">hi</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">lo</span><span class="p">,</span><span class="w"> </span><span class="nx">hi</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">total</span><span class="p">(</span><span class="mi">450</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">))</span>
+<span class="w">	</span><span class="nx">lo</span><span class="p">,</span><span class="w"> </span><span class="nx">hi</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">minMax</span><span class="p">([]</span><span class="kt">int</span><span class="p">{</span><span class="mi">18150</span><span class="p">,</span><span class="w"> </span><span class="mi">2100</span><span class="p">,</span><span class="w"> </span><span class="mi">48000</span><span class="p">,</span><span class="w"> </span><span class="mi">1300</span><span class="p">})</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;ছোট&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">lo</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;বড়&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">hi</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>1800
+ছোট 1300 বড় 48000</pre></div></div></div></div></section>
+<section class="slide" data-part="Function ও Error" data-title="error: Go-র নিয়ম"><div class="inner"><div class="head"><span class="tag">পাঠ ১৩</span><h2>error: Go-র নিয়ম</h2></div><div class="body two"><div class="txt"><p>ব্যর্থ হতে পারে এমন function শেষে একটা <code>error</code> ফেরত দেয়। ডাকার পরেই <code>if err != nil</code> — Go কোডে এটা সবচেয়ে বেশি দেখবেন।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র <code>throw</code>/<code>catch</code> নেই। Rust-এর <code>Result</code>-এর মতো — error উপেক্ষা করা কঠিন, কারণ চোখের সামনে থাকে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;errors&quot;</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;strconv&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">withdraw</span><span class="p">(</span><span class="nx">balance</span><span class="p">,</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="nx">balance</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="nx">balance</span><span class="p">,</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;ব্যালেন্স কম: আছে %d, চাইছেন %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">balance</span><span class="p">,</span><span class="w"> </span><span class="nx">amount</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">balance</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">amount</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">var</span><span class="w"> </span><span class="nx">ErrZero</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;০ টাকা তোলা যায় না&quot;</span><span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strconv</span><span class="p">.</span><span class="nx">Atoi</span><span class="p">(</span><span class="s">&quot;দুইশো&quot;</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;ভুল:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">left</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">withdraw</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mi">5000</span><span class="p">)</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;ব্যর্থ:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;বাকি:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">left</span><span class="p">,</span><span class="w"> </span><span class="nx">ErrZero</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>ভুল: strconv.Atoi: parsing &quot;দুইশো&quot;: invalid syntax
+ব্যর্থ: ব্যালেন্স কম: আছে 1000, চাইছেন 5000
+বাকি: 1000 ০ টাকা তোলা যায় না</pre></div></div></div></div></section>
+<section class="slide" data-part="Function ও Error" data-title="panic: সত্যিকারের অপ্রত্যাশিত ভুল"><div class="inner"><div class="head"><span class="tag">পাঠ ১৪</span><h2>panic: সত্যিকারের অপ্রত্যাশিত ভুল</h2></div><div class="body two"><div class="txt"><p>Slice-এর বাইরে index বা nil map-এ লেখা — Go program থামায় (panic)। সাধারণ ভুলে panic না, error ব্যবহার করুন।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">sales</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1200</span><span class="p">,</span><span class="w"> </span><span class="mi">3400</span><span class="p">,</span><span class="w"> </span><span class="mi">2100</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">i</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">sales</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;চেষ্টা করছি index&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">sales</span><span class="p">[</span><span class="nx">i</span><span class="p">])</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term panic"><div class="term-h">panic (program থেমে গেল)</div><pre>চেষ্টা করছি index 5
+panic: runtime error: index out of range [5] with length 3</pre></div></div></div></div></section>
+<section class="slide" data-part="Slice, Map, defer" data-title="Slice: বাড়ানো যায় এমন list"><div class="inner"><div class="head"><span class="tag">পাঠ ১৫</span><h2>Slice: বাড়ানো যায় এমন list</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>$brands[] = 'Walton'</code> → <code>brands = append(brands, "Walton")</code> — append নতুন slice ফেরত দেয়, তাই আবার বসাতে হয়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;slices&quot;</span>
+<span class="w">	</span><span class="s">&quot;strings&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">brands</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;Samsung&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Xiaomi&quot;</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">brands</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">brands</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Walton&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Vivo&quot;</span><span class="p">)</span>
+
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">brands</span><span class="p">,</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">brands</span><span class="p">))</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">brands</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span><span class="w"> </span><span class="c1">// index ১ থেকে ২</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">slices</span><span class="p">.</span><span class="nx">Contains</span><span class="p">(</span><span class="nx">brands</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Walton&quot;</span><span class="p">))</span>
+<span class="w">	</span><span class="nx">slices</span><span class="p">.</span><span class="nx">Sort</span><span class="p">(</span><span class="nx">brands</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">strings</span><span class="p">.</span><span class="nx">Join</span><span class="p">(</span><span class="nx">brands</span><span class="p">,</span><span class="w"> </span><span class="s">&quot; | &quot;</span><span class="p">))</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>[Samsung Xiaomi Walton Vivo] 4
+[Xiaomi Walton]
+true
+Samsung | Vivo | Walton | Xiaomi</pre></div></div></div></div></section>
+<section class="slide" data-part="Slice, Map, defer" data-title="Map আর &quot;comma ok&quot;"><div class="inner"><div class="head"><span class="tag">পাঠ ১৬</span><h2>Map আর "comma ok"</h2></div><div class="body two"><div class="txt"><div class="callout warn">⚠️ Map-এর <code>range</code>-এর ক্রম প্রতিবার আলাদা হতে পারে। ক্রম লাগলে key নিয়ে <code>slices.Sort</code> করুন।</div><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>$stock['Nokia'] ?? 0</code> আর <code>isset()</code> — Go-তে একসাথে: <code>qty, ok := stock["Nokia"]</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">stock</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">int</span><span class="p">{</span>
+<span class="w">		</span><span class="s">&quot;Redmi 13&quot;</span><span class="p">:</span><span class="w">   </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">		</span><span class="s">&quot;Galaxy A15&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">stock</span><span class="p">[</span><span class="s">&quot;Vivo Y28&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">4</span>
+<span class="w">	</span><span class="nx">stock</span><span class="p">[</span><span class="s">&quot;Redmi 13&quot;</span><span class="p">]</span><span class="o">--</span>
+
+<span class="w">	</span><span class="nx">qty</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">stock</span><span class="p">[</span><span class="s">&quot;Nokia&quot;</span><span class="p">]</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">qty</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="p">)</span><span class="w"> </span><span class="c1">// নেই: 0 false</span>
+
+<span class="w">	</span><span class="nb">delete</span><span class="p">(</span><span class="nx">stock</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Galaxy A15&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">stock</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">stock</span><span class="p">))</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>0 false
+Redmi 13 4
+Vivo Y28 4
+2</pre></div></div></div></div></section>
+<section class="slide" data-part="Slice, Map, defer" data-title="defer: শেষে চালাও"><div class="inner"><div class="head"><span class="tag">পাঠ ১৭</span><h2>defer: শেষে চালাও</h2></div><div class="body two"><div class="txt"><p><code>defer</code> দেওয়া কাজ function শেষ হওয়ার ঠিক আগে চলে — file বন্ধ, lock খোলা, connection ফেরত। একাধিক defer উল্টো ক্রমে চলে।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র <code>try { } finally { }</code>-এর কাজ, কিন্তু যেখানে resource খোলেন ঠিক তার পাশেই লেখা যায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">sell</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;lock নিলাম&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;lock ছাড়লাম&quot;</span><span class="p">)</span><span class="w"> </span><span class="c1">// যাই হোক, শেষে চলবে</span>
+<span class="w">	</span><span class="k">defer</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;log লিখলাম&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;স্টক কমালাম&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">sell</span><span class="p">()</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>lock নিলাম
+স্টক কমালাম
+log লিখলাম
+lock ছাড়লাম</pre></div></div></div></div></section>
+<section class="slide" data-part="Slice, Map, defer" data-title="Project: টাকার নোট ভাঙানো"><div class="inner"><div class="head"><span class="tag">পাঠ ১৮</span><h2>Project: টাকার নোট ভাঙানো</h2></div><div class="body two"><div class="txt"><div class="callout task"><b>নিজে করুন</b> একটা <code>map[int]int</code>-এ রাখুন কোন নোট কয়টা, আর ভুল input-এ আবার জিজ্ঞেস করুন (<code>for</code> loop)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;bufio&quot;</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;os&quot;</span>
+<span class="w">	</span><span class="s">&quot;strconv&quot;</span>
+<span class="w">	</span><span class="s">&quot;strings&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">notes</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Print</span><span class="p">(</span><span class="s">&quot;কত টাকা ফেরত? &quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">line</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">bufio</span><span class="p">.</span><span class="nx">NewReader</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Stdin</span><span class="p">).</span><span class="nx">ReadString</span><span class="p">(</span><span class="sc">&#39;\n&#39;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">amount</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strconv</span><span class="p">.</span><span class="nx">Atoi</span><span class="p">(</span><span class="nx">strings</span><span class="p">.</span><span class="nx">TrimSpace</span><span class="p">(</span><span class="nx">line</span><span class="p">))</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;সংখ্যা লিখুন&quot;</span><span class="p">)</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">total</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">note</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">notes</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">count</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">note</span><span class="p">;</span><span class="w"> </span><span class="nx">count</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;%5d টাকা × %d\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">note</span><span class="p">,</span><span class="w"> </span><span class="nx">count</span><span class="p">)</span>
+<span class="w">			</span><span class="nx">amount</span><span class="w"> </span><span class="o">%=</span><span class="w"> </span><span class="nx">note</span>
+<span class="w">			</span><span class="nx">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nx">count</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;মোট নোট:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">total</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><div class="stdin">ইনপুট: 2785</div><pre>কত টাকা ফেরত? 
+ 1000 টাকা × 2
+  500 টাকা × 1
+  200 টাকা × 1
+   50 টাকা × 1
+   20 টাকা × 1
+   10 টাকা × 1
+    5 টাকা × 1
+মোট নোট: 8</pre></div></div></div></div></section>
+<section class="slide hero end" data-part="Slice, Map, defer" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>Go 101 শেষ! 🎉</h1><p class="lead">Go-র ভিত্তি তৈরি। এবার struct, method, interface আর package — Go-তে "class" ছাড়াই কীভাবে বড় কোড সাজানো হয়।</p><div class="steps done"><div><i>✓</i><span><code>:=</code> আর zero value — null নেই</span></div><div><i>✓</i><span>ব্যবহার না করা variable/import = compile error</span></div><div><i>✓</i><span><code>for</code>-ই একমাত্র loop, <code>range</code> দিয়ে ঘোরা</span></div><div><i>✓</i><span>একাধিক return; শেষেরটা <code>error</code></span></div><div><i>✓</i><span><code>if err != nil</code> — Go-র প্রতিদিনের লাইন</span></div><div><i>✓</i><span>Slice + <code>append</code>, map + comma-ok, <code>defer</code></span></div></div><div class="btns"><a class="btn" href="../go-102/index.html">পরের কোর্স: Go 102 — Struct, Interface ও Package →</a><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+</main>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>window.COURSE="go-101";
+(function(){
+  var B=function(n){return String(n).replace(/\d/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0,root=document.documentElement;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),menu=document.getElementById('menu');
+  var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'%)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
+    st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function buildMenu(){var h='',last=null;slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){h+='<h3>'+p+'</h3>';last=p}
+    h+='<a data-go="'+j+'" class="'+(st.seen[j]?'seen ':'')+(j===i?'cur':'')+'"><span>'+B(j+1)+'.</span><span>'+s.getAttribute('data-title')+'</span></a>'});menu.innerHTML=h}
+  function toggleMenu(){if(!menu.classList.contains('open'))buildMenu();menu.classList.toggle('open')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var dark=getComputedStyle(root).getPropertyValue('--bg').trim()==='#0B1220';var t=dark?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tut-theme',t)}catch(e){}}
+  try{var th=localStorage.getItem('tut-theme');if(th)root.setAttribute('data-theme',th)}catch(e){}
+  menu.addEventListener('click',function(e){var a=e.target.closest('a');if(a){go(+a.getAttribute('data-go'));menu.classList.remove('open')}else if(e.target===menu)menu.classList.remove('open')});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;
+    var pre=b.closest('.code').querySelector('pre');var t=pre.innerText.replace(/^\$ /gm,'');
+    var done=function(){b.textContent='কপি হয়েছে ✓';setTimeout(function(){b.textContent='কপি'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done()});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  // Swipe left/right changes slide; vertical drags scroll the slide. A swipe that actually scrolled a wide
+  // code block or table sideways is treated as scrolling that block, not as a slide change.
+  var x0=null,y0=null,box=null,box0=0;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY;
+    box=e.target.closest('pre,.tbl');box0=box?box.scrollLeft:0},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+    var scrolledBox=box&&Math.abs(box.scrollLeft-box0)>2;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5&&!scrolledBox)go(i+(dx<0?1:-1));x0=null;box=null});
+  var h=parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
+    if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';
+      r.classList.add('show');document.getElementById('resumeGo').onclick=function(){go(last);r.classList.remove('show')};
+      document.getElementById('resumeNo').onclick=function(){r.classList.remove('show')};}}
+})();
+</script>
+</body>
+</html>

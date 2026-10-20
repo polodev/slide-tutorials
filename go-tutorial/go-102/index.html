@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Go 102 — Struct, Interface ও Package</title>
+<meta name="description" content="Class ছাড়াই object-oriented: struct, method, pointer, embedding, interface, generic, error wrapping, JSON আর package">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.6vh);--navy:#0C1E38;--accent:#0D8A4A;--accent2:#E8F6EE;--amber:#B7791F;--red:#C53030;--php:#4F5B93;
+  --bg:#F4F7FA;--ink:#18263A;--muted:#5B6B80;--card:#fff;--line:#DCE4EE;--codebg:#1E2430}
+:root[data-theme=dark]{--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+html:has(body.deck){overflow:hidden;height:100%}
+/* the deck is pinned to the viewport: mobile browsers must not widen the layout to fit the off-screen slides */
+body.deck{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+#deck{position:absolute;inset:0;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100%;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;padding:60px 4vw 84px;
+  touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.slide .inner,.body,.txt,.codecol{min-width:0}
+.slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
+h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(15px,calc(var(--u)*1.9),28px);color:var(--muted);max-width:36em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--accent);color:#fff;font-weight:600;font-size:clamp(12px,calc(var(--u)*1.15),17px);padding:.3em 1em;border-radius:999px}
+.head{display:flex;flex-direction:column;gap:1vh}
+.body.two{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:3vw;align-items:start}
+.body.one{max-width:1100px}
+.txt{display:flex;flex-direction:column;gap:1.6vh}
+.txt p,.txt li{font-size:clamp(15px,calc(var(--u)*1.6),24px);line-height:1.7}
+.txt ul{list-style:none;padding:0;display:grid;gap:1vh}
+.txt li{padding-left:1.3em;position:relative}
+.txt li::before{content:"";position:absolute;left:0;top:.7em;width:.45em;height:.45em;border-radius:50%;background:var(--accent)}
+code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
+.callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.callout.warn{border-left-color:var(--amber)}
+.callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
+.callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
+.quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.quiz summary{cursor:pointer;font-weight:600;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--accent);font-weight:600;font-size:clamp(14px,calc(var(--u)*1.4),21px);line-height:1.6}
+.tbl{border-collapse:collapse;width:100%;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.tbl th,.tbl td{padding:.9vh .9vw;text-align:left;font-size:clamp(13px,calc(var(--u)*1.35),20px);border-bottom:1px solid var(--line);line-height:1.5}
+.tbl th{background:var(--accent2);font-weight:600}
+.steps{display:grid;gap:1vh}
+.steps div{background:var(--card);border-radius:10px;padding:1.1vh 1vw;font-size:clamp(14px,calc(var(--u)*1.5),22px);display:flex;gap:.9vw;align-items:center;box-shadow:0 3px 12px rgba(12,30,56,.07);line-height:1.5}
+.steps i{flex:0 0 auto;width:2em;height:2em;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.codecol{display:flex;flex-direction:column;gap:1.2vh;min-width:0}
+.code{background:var(--codebg);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#151A23;color:#9AA7B8;font:600 13px 'JetBrains Mono',monospace}
+.code-h.php{background:#262B47;color:#C3C9EE}
+.copy{border:0;background:#2A3242;color:#C9D4E3;font:600 12px 'Hind Siliguri',sans-serif;padding:3px 10px;border-radius:6px;cursor:pointer}
+.copy:hover{background:var(--accent);color:#fff}
+.hl pre{margin:0;padding:12px 16px;overflow-x:auto;font:clamp(12.5px,calc(var(--u)*1.08),17px)/1.55 'JetBrains Mono',monospace;color:#E3E8EF;tab-size:4}
+.hl .hll{background:rgba(255,214,102,.13);display:inline-block;width:100%}
+.term{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0F141C}
+.term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
+.term.error .term-h,.term.panic .term-h{background:#B83434}
+.term.http .term-h{background:#1F5FA8}
+.term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
+pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
+.term.error pre,.term.panic pre{color:#FFB4B4}
+.phone-shot{margin:0;align-self:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.phone-shot img{width:min(260px,60vw);border-radius:22px;border:6px solid #111827;box-shadow:0 12px 30px rgba(0,0,0,.3);background:#fff}
+.phone-shot figcaption{font-size:13px;color:var(--muted)}
+.codecol:has(.phone-shot){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:1.2vw}
+@media (max-width:900px){.codecol:has(.phone-shot){grid-template-columns:1fr}}
+.stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
+.hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
+.hero .inner{justify-content:center;max-width:1100px}
+.hero h1{color:#fff}.hero .lead{color:#CFDDEE}
+.hero .learn{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1vh 2vw}
+.hero .learn li{font-size:clamp(14px,calc(var(--u)*1.55),23px);padding-left:1.4em;position:relative;line-height:1.5;color:#E6EEF8}
+.hero .learn li::before{content:"✓";position:absolute;left:0;color:#4ADE80;font-weight:700}
+.hero .need,.hero .howto{color:#AFC2D8;font-size:clamp(13px,calc(var(--u)*1.35),20px)}
+.hero .need b{color:#fff}
+.hero.end .steps div{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.hero.end .steps i{background:#4ADE80;color:#0C1E38}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:#4ADE80;color:#0C1E38;font-weight:700;text-decoration:none;padding:.7em 1.4em;border-radius:999px;font-size:clamp(14px,calc(var(--u)*1.5),21px)}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+#top{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px}
+#top a{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+#top .crumb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#top .hub{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+#bar{position:fixed;left:0;top:44px;height:3px;background:var(--accent);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:600 14px 'Hind Siliguri',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.9);padding:6px 10px;border-radius:999px;white-space:nowrap}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--accent)}
+#count{min-width:64px;text-align:center}
+#menu{position:fixed;inset:0;background:rgba(8,15,28,.94);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:20px;margin:2.4vh 0 .8vh}
+#menu a{display:flex;gap:.6em;color:#dbe7f5;text-decoration:none;padding:.55vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a.seen::after{content:"✓";color:#4ADE80;margin-left:auto}
+#menu a.cur{background:rgba(74,222,128,.18)}
+#menu a:hover{background:var(--accent);color:#fff}
+#resume{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25);border-radius:14px;padding:12px 16px;z-index:8;display:none;gap:10px;align-items:center;font-size:15px;flex-wrap:wrap;justify-content:center}
+#resume.show{display:flex}
+#resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
+#resume button.alt{background:var(--line);color:var(--ink)}
+@media (max-width:900px){.slide{padding:54px 16px 92px}.body.two{grid-template-columns:minmax(0,1fr);gap:16px}.hero .learn{grid-template-columns:1fr}
+  .tbl{display:block;overflow-x:auto;white-space:nowrap}.tbl td,.tbl th{white-space:normal;min-width:7em}
+  .hl pre,.term pre{font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere}   /* wrap instead of side-scroll: swipes stay free */.txt p,.txt li{font-size:15.5px}h2{font-size:22px}h1{font-size:30px}
+  #top .crumb{display:none}#top{justify-content:space-between}
+  #nav{gap:4px;padding:5px 8px;bottom:10px}#nav button{width:34px;height:34px}#count{min-width:52px;font-size:13px}}
+@media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
+
+.hl .c,.hl .c1,.hl .cm,.hl .cs,.hl .ch,.hl .cp,.hl .cpf{color:#7F8C98;font-style:italic}
+.hl .k,.hl .kd,.hl .kn,.hl .kr,.hl .kp,.hl .ow{color:#C678DD}
+.hl .kc{color:#D19A66}
+.hl .kt,.hl .nc,.hl .nn{color:#E5C07B}
+.hl .s,.hl .s1,.hl .s2,.hl .sb,.hl .sc,.hl .sd,.hl .sh,.hl .sx,.hl .dl{color:#98C379}
+.hl .se,.hl .si,.hl .sa{color:#56B6C2}
+.hl .m,.hl .mi,.hl .mf,.hl .mh,.hl .mb,.hl .il,.hl .mo{color:#D19A66}
+.hl .nf,.hl .fm{color:#61AFEF}
+.hl .nb,.hl .bp{color:#56B6C2}
+.hl .nd,.hl .nl{color:#E06C75}
+.hl .nt{color:#E06C75}.hl .na{color:#D19A66}
+.hl .nv,.hl .vi,.hl .vc,.hl .vg{color:#E06C75}
+.hl .o{color:#ABB2BF}.hl .p{color:#ABB2BF}
+.hl .gp{color:#4ADE80;font-weight:600;user-select:none}.hl .go{color:#9AA7B8}
+.hl .err{color:#E3E8EF;background:none}
+</style>
+</head>
+<body class="deck">
+<div id="top"><a href="../index.html">← সব কোর্স</a><span class="crumb">Go 102 · <b id="part"></b></span><a class="hub" href="../../index.html">সব টিউটোরিয়াল</a></div>
+<div id="bar"></div>
+<div id="resume"><span id="resumeText"></span><button id="resumeGo">চালিয়ে যান</button><button class="alt" id="resumeNo">শুরু থেকে</button></div>
+<main id="deck">
+<section class="slide hero" data-part="শুরু" data-title="Go 102Struct, Interface ও Package"><div class="inner"><span class="tag">Go 102</span><h1>Go 102<br>Struct, Interface ও Package</h1><p class="lead">Go-তে class নেই — আছে struct আর method। Inheritance নেই — আছে embedding আর interface। শুনতে অদ্ভুত, কিন্তু কোড অনেক সরল হয়।</p><ul class="learn"><li>struct আর method</li><li>Value বনাম pointer receiver</li><li>Embedding: inheritance-এর বদলে</li><li>Interface: নিজে থেকেই মেলে</li><li>Type switch আর Stringer</li><li>Generic function ও type</li><li>errors.Is, errors.As, %w</li><li>JSON tag আর package সাজানো</li></ul><p class="need"><b>আগে জানা দরকার:</b> Go 101।</p><p class="howto">→ তীর চাপুন বা swipe করুন · <b>M</b> সব পাঠের তালিকা · অগ্রগতি নিজে থেকেই সেভ হয়</p></div></section>
+<section class="slide" data-part="Struct" data-title="struct আর method"><div class="inner"><div class="head"><span class="tag">পাঠ ১</span><h2>struct আর method</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>class Product { public string $name; ... public function stockValue() }</code> — Go-তে data (<code>struct</code>) আর method আলাদা লেখা; <code>(p Product)</code> হলো PHP-র <code>$this</code>।</div><div class="callout">💡 বড় হাতের অক্ষরে শুরু নাম (<code>Name</code>, <code>StockValue</code>) package-এর বাইরে দেখা যায় = public। ছোট হাতের = private।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Product</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">Name</span><span class="w">  </span><span class="kt">string</span>
+<span class="w">	</span><span class="nx">Price</span><span class="w"> </span><span class="kt">int</span>
+<span class="w">	</span><span class="nx">Stock</span><span class="w"> </span><span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">p</span><span class="w"> </span><span class="nx">Product</span><span class="p">)</span><span class="w"> </span><span class="nx">StockValue</span><span class="p">()</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">p</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">Product</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">Price</span><span class="p">:</span><span class="w"> </span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="nx">Stock</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">StockValue</span><span class="p">())</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;%+v\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Redmi 13 87500
+{Name:Redmi 13 Price:17500 Stock:5}</pre></div></div></div></div></section>
+<section class="slide" data-part="Struct" data-title="Pointer receiver: নিজেকে বদলানো"><div class="inner"><div class="head"><span class="tag">পাঠ ২</span><h2>Pointer receiver: নিজেকে বদলানো</h2></div><div class="body two"><div class="txt"><p>Value receiver <code>(p Product)</code> কপি পায় — বদলালে আসলটা বদলায় না। বদলাতে চাইলে pointer receiver <code>(p *Product)</code>।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP object সবসময় handle হিসেবে যায় (তাই বদলায়)। Go-তে struct ডিফল্টভাবে কপি হয় — বদলাতে <code>*</code> (pointer) লাগে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Product</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">Name</span><span class="w">  </span><span class="kt">string</span>
+<span class="w">	</span><span class="nx">Stock</span><span class="w"> </span><span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">p</span><span class="w"> </span><span class="nx">Product</span><span class="p">)</span><span class="w"> </span><span class="nx">SellCopy</span><span class="p">(</span><span class="nx">qty</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="nx">qty</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="c1">// কপি বদলাল</span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">p</span><span class="w"> </span><span class="o">*</span><span class="nx">Product</span><span class="p">)</span><span class="w"> </span><span class="nx">Sell</span><span class="p">(</span><span class="nx">qty</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="nx">qty</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="c1">// আসলটা বদলাল</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">p</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">Product</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Vivo Y28&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">Stock</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">p</span><span class="p">.</span><span class="nx">SellCopy</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;SellCopy-এর পর:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">p</span><span class="p">.</span><span class="nx">Sell</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Sell-এর পর:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>SellCopy-এর পর: 4
+Sell-এর পর: 3</pre></div></div></div></div></section>
+<section class="slide" data-part="Struct" data-title="Constructor function"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>Constructor function</h2></div><div class="body two"><div class="txt"><p>Go-তে constructor নেই — প্রথা হলো <code>NewXxx</code> function, যা validation করে pointer ফেরত দেয়।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;errors&quot;</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Customer</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">Name</span><span class="w">  </span><span class="kt">string</span>
+<span class="w">	</span><span class="nx">Phone</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">	</span><span class="nx">Due</span><span class="w">   </span><span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewCustomer</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">phone</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="nx">Customer</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">phone</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">11</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;ফোন নম্বর ১১ সংখ্যার হতে হবে&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">Customer</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">Phone</span><span class="p">:</span><span class="w"> </span><span class="nx">phone</span><span class="p">},</span><span class="w"> </span><span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">c</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">NewCustomer</span><span class="p">(</span><span class="s">&quot;Karim&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;01711000001&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">c</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">NewCustomer</span><span class="p">(</span><span class="s">&quot;Nusrat&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;0181&quot;</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>&amp;{Karim 01711000001 0} &lt;nil&gt;
+ফোন নম্বর ১১ সংখ্যার হতে হবে</pre></div></div></div></div></section>
+<section class="slide" data-part="Struct" data-title="Embedding: inheritance-এর বদলে"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>Embedding: inheritance-এর বদলে</h2></div><div class="body two"><div class="txt"><p>একটা struct-এর ভিতরে আরেকটা struct নাম ছাড়া বসালে তার field আর method সরাসরি পাওয়া যায় — "is-a" না, "has-a"।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel model-এর trait (<code>use HasTimestamps;</code>)-এর মতো কাজ করে।</div><div class="callout">💡 Go-তে তারিখের format লেখা হয় একটা নির্দিষ্ট তারিখ দিয়ে: <code>2006-01-02 15:04:05</code> (১-২-৩-৪-৫-৬)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;time&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Timestamps</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">CreatedAt</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Time</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">Timestamps</span><span class="p">)</span><span class="w"> </span><span class="nx">Touch</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">t</span><span class="p">.</span><span class="nx">CreatedAt</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Date</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">21</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">UTC</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Customer</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">Timestamps</span><span class="w"> </span><span class="c1">// embedded</span>
+<span class="w">	</span><span class="nx">Name</span><span class="w">       </span><span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">c</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">Customer</span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Karim&quot;</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">c</span><span class="p">.</span><span class="nx">Touch</span><span class="p">()</span><span class="w"> </span><span class="c1">// Timestamps-এর method সরাসরি</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span><span class="w"> </span><span class="nx">c</span><span class="p">.</span><span class="nx">CreatedAt</span><span class="p">.</span><span class="nx">Format</span><span class="p">(</span><span class="s">&quot;2006-01-02 15:04&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Karim 2026-10-21 10:30</pre></div></div></div></div></section>
+<section class="slide" data-part="Interface" data-title="Interface: নিজে থেকেই মেলে"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>Interface: নিজে থেকেই মেলে</h2></div><div class="body two"><div class="txt"><p>Go-তে <code>implements</code> লেখা লাগে না। কোনো type-এর interface-এর সব method থাকলেই সে ঐ interface — একে বলে implicit interface।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-তে <code>class Invoice implements Payable</code> লিখতে হয়। Go-তে লেখার দরকারই নেই — test-এ fake বানানো খুব সহজ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Payable</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">Amount</span><span class="p">()</span><span class="w"> </span><span class="kt">int</span>
+<span class="w">	</span><span class="nx">Label</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span>
+<span class="p">}</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Invoice</span><span class="w"> </span><span class="kd">struct</span><span class="p">{</span><span class="w"> </span><span class="nx">No</span><span class="p">,</span><span class="w"> </span><span class="nx">Total</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">type</span><span class="w"> </span><span class="nx">ServiceBill</span><span class="w"> </span><span class="kd">struct</span><span class="p">{</span><span class="w"> </span><span class="nx">Parts</span><span class="p">,</span><span class="w"> </span><span class="nx">Labour</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">i</span><span class="w"> </span><span class="nx">Invoice</span><span class="p">)</span><span class="w"> </span><span class="nx">Amount</span><span class="p">()</span><span class="w"> </span><span class="kt">int</span><span class="w">       </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">i</span><span class="p">.</span><span class="nx">Total</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">i</span><span class="w"> </span><span class="nx">Invoice</span><span class="p">)</span><span class="w"> </span><span class="nx">Label</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w">     </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;Invoice #%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">.</span><span class="nx">No</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">s</span><span class="w"> </span><span class="nx">ServiceBill</span><span class="p">)</span><span class="w"> </span><span class="nx">Amount</span><span class="p">()</span><span class="w"> </span><span class="kt">int</span><span class="w">   </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">s</span><span class="p">.</span><span class="nx">Parts</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">s</span><span class="p">.</span><span class="nx">Labour</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">s</span><span class="w"> </span><span class="nx">ServiceBill</span><span class="p">)</span><span class="w"> </span><span class="nx">Label</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;Service&quot;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">items</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="nx">Payable</span><span class="p">{</span><span class="nx">Invoice</span><span class="p">{</span><span class="mi">101</span><span class="p">,</span><span class="w"> </span><span class="mi">23500</span><span class="p">},</span><span class="w"> </span><span class="nx">ServiceBill</span><span class="p">{</span><span class="mi">1800</span><span class="p">,</span><span class="w"> </span><span class="mi">500</span><span class="p">}}</span>
+<span class="w">	</span><span class="nx">total</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">it</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">items</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;%-13s %6d\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">it</span><span class="p">.</span><span class="nx">Label</span><span class="p">(),</span><span class="w"> </span><span class="nx">it</span><span class="p">.</span><span class="nx">Amount</span><span class="p">())</span>
+<span class="w">		</span><span class="nx">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nx">it</span><span class="p">.</span><span class="nx">Amount</span><span class="p">()</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;মোট:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">total</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Invoice #101   23500
+Service         2300
+মোট: 25800</pre></div></div></div></div></section>
+<section class="slide" data-part="Interface" data-title="Stringer আর type switch"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>Stringer আর type switch</h2></div><div class="body two"><div class="txt"><p><code>String() string</code> method থাকলে <code>fmt</code> সেটা দিয়েই প্রিন্ট করে (PHP-র <code>__toString</code>)। <code>switch v := x.(type)</code> দিয়ে আসল type দেখা।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Taka</span><span class="w"> </span><span class="kt">int</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="nx">Taka</span><span class="p">)</span><span class="w"> </span><span class="nx">String</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;৳%d&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="nx">t</span><span class="p">))</span><span class="w"> </span><span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">describe</span><span class="p">(</span><span class="nx">x</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">switch</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">x</span><span class="p">.(</span><span class="kd">type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="nx">Taka</span><span class="p">:</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="s">&quot;টাকা: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">v</span><span class="p">.</span><span class="nx">String</span><span class="p">()</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="kt">int</span><span class="p">:</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;সংখ্যা %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">v</span><span class="p">)</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="kt">string</span><span class="p">:</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="s">&quot;লেখা: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">v</span>
+<span class="w">	</span><span class="k">case</span><span class="w"> </span><span class="kc">nil</span><span class="p">:</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="s">&quot;কিছু নেই&quot;</span>
+<span class="w">	</span><span class="k">default</span><span class="p">:</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;অজানা %T&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">v</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">Taka</span><span class="p">(</span><span class="mi">17500</span><span class="p">))</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="p">[]</span><span class="kt">any</span><span class="p">{</span><span class="nx">Taka</span><span class="p">(</span><span class="mi">650</span><span class="p">),</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Redmi&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="mf">3.5</span><span class="p">}</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">describe</span><span class="p">(</span><span class="nx">x</span><span class="p">))</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>৳17500
+টাকা: ৳650
+সংখ্যা 42
+লেখা: Redmi
+কিছু নেই
+অজানা float64</pre></div></div></div></div></section>
+<section class="slide" data-part="Generic ও Error" data-title="Generic"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>Generic</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel Collection-এর <code>filter()</code>/<code>sum()</code> যেকোনো data-তে চলে — Go generic দিয়ে সেটাই, কিন্তু type-নিরাপদ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="s">&quot;fmt&quot;</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Number</span><span class="w"> </span><span class="kd">interface</span><span class="p">{</span><span class="w"> </span><span class="o">~</span><span class="kt">int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="o">~</span><span class="kt">float64</span><span class="w"> </span><span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">Sum</span><span class="p">[</span><span class="nx">T</span><span class="w"> </span><span class="nx">Number</span><span class="p">](</span><span class="nx">items</span><span class="w"> </span><span class="p">[]</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">total</span><span class="w"> </span><span class="nx">T</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">items</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nx">x</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">total</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">Filter</span><span class="p">[</span><span class="nx">T</span><span class="w"> </span><span class="kt">any</span><span class="p">](</span><span class="nx">items</span><span class="w"> </span><span class="p">[]</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">keep</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="kt">bool</span><span class="p">)</span><span class="w"> </span><span class="p">[]</span><span class="nx">T</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">out</span><span class="w"> </span><span class="p">[]</span><span class="nx">T</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">items</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">keep</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">out</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">out</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">)</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">out</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">prices</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="mi">650</span><span class="p">,</span><span class="w"> </span><span class="mi">21000</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">Sum</span><span class="p">(</span><span class="nx">prices</span><span class="p">),</span><span class="w"> </span><span class="nx">Sum</span><span class="p">([]</span><span class="kt">float64</span><span class="p">{</span><span class="mf">4.5</span><span class="p">,</span><span class="w"> </span><span class="mf">3.9</span><span class="p">}))</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">Filter</span><span class="p">(</span><span class="nx">prices</span><span class="p">,</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">p</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">}))</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">Filter</span><span class="p">([]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;Dhaka&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Khulna&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Dinajpur&quot;</span><span class="p">},</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">s</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sc">&#39;D&#39;</span><span class="w"> </span><span class="p">}))</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>39400 8.4
+[17500 21000]
+[Dhaka Dinajpur]</pre></div></div></div></div></section>
+<section class="slide" data-part="Generic ও Error" data-title="Error wrapping: %w, errors.Is, errors.As"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>Error wrapping: %w, errors.Is, errors.As</h2></div><div class="body two"><div class="txt"><p><code>fmt.Errorf("...: %w", err)</code> দিয়ে error-এর উপর প্রসঙ্গ যোগ হয়, ভিতরের error হারায় না। পরে <code>errors.Is</code> (নির্দিষ্ট error?) আর <code>errors.As</code> (নির্দিষ্ট type?) দিয়ে খোঁজা যায়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র exception chaining (<code>new Exception('...', 0, $previous)</code>) আর <code>instanceof</code>-এর মতো।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;errors&quot;</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">var</span><span class="w"> </span><span class="nx">ErrNotFound</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;পাওয়া যায়নি&quot;</span><span class="p">)</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">StockError</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">Product</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">	</span><span class="nx">Have</span><span class="w">    </span><span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">e</span><span class="w"> </span><span class="o">*</span><span class="nx">StockError</span><span class="p">)</span><span class="w"> </span><span class="nx">Error</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;%s: আছে মাত্র %d&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">e</span><span class="p">.</span><span class="nx">Product</span><span class="p">,</span><span class="w"> </span><span class="nx">e</span><span class="p">.</span><span class="nx">Have</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">findProduct</span><span class="p">(</span><span class="nx">id</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">id</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="nx">ErrNotFound</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">StockError</span><span class="p">{</span><span class="nx">Product</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;iPhone 12&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">Have</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">sell</span><span class="p">(</span><span class="nx">id</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">findProduct</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;sell %d: %w&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sell</span><span class="p">(</span><span class="mi">999</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;| not found?&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">Is</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">ErrNotFound</span><span class="p">))</span>
+
+<span class="w">	</span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">sell</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">se</span><span class="w"> </span><span class="o">*</span><span class="nx">StockError</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">As</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">se</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;| product:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">se</span><span class="p">.</span><span class="nx">Product</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>sell 999: পাওয়া যায়নি | not found? true
+sell 4: iPhone 12: আছে মাত্র 0 | product: iPhone 12</pre></div></div></div></div></section>
+<section class="slide" data-part="JSON ও Package" data-title="JSON আর struct tag"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>JSON আর struct tag</h2></div><div class="body two"><div class="txt"><p>Struct-এর field-এর পাশে <code>`json:"name"`</code> tag দিয়ে JSON-এর key ঠিক করি। <code>omitempty</code> — ফাঁকা হলে বাদ, <code>-</code> — কখনো না।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>json_encode()</code> আর Laravel model-এর <code>$hidden = ['cost_price']</code> — Go-তে <code>`json:"-"`</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;encoding/json&quot;</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Product</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">ID</span><span class="w">        </span><span class="kt">int</span><span class="w">      </span><span class="s">`json:&quot;id&quot;`</span>
+<span class="w">	</span><span class="nx">Name</span><span class="w">      </span><span class="kt">string</span><span class="w">   </span><span class="s">`json:&quot;name&quot;`</span>
+<span class="w">	</span><span class="nx">Price</span><span class="w">     </span><span class="kt">int</span><span class="w">      </span><span class="s">`json:&quot;price&quot;`</span>
+<span class="w">	</span><span class="nx">Colors</span><span class="w">    </span><span class="p">[]</span><span class="kt">string</span><span class="w"> </span><span class="s">`json:&quot;colors,omitempty&quot;`</span>
+<span class="w">	</span><span class="nx">CostPrice</span><span class="w"> </span><span class="kt">int</span><span class="w">      </span><span class="s">`json:&quot;-&quot;`</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">p</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">Product</span><span class="p">{</span><span class="nx">ID</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">Price</span><span class="p">:</span><span class="w"> </span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="nx">CostPrice</span><span class="p">:</span><span class="w"> </span><span class="mi">15800</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">out</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">json</span><span class="p">.</span><span class="nx">Marshal</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nb">string</span><span class="p">(</span><span class="nx">out</span><span class="p">))</span>
+
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">in</span><span class="w"> </span><span class="nx">Product</span>
+<span class="w">	</span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">`{&quot;id&quot;:2,&quot;name&quot;:&quot;Galaxy A15&quot;,&quot;price&quot;:21000,&quot;colors&quot;:[&quot;Blue&quot;]}`</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">in</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;%+v %v\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">in</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+
+<span class="w">	</span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">json</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="s">`{&quot;id&quot;:&quot;two&quot;}`</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">in</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>{&quot;id&quot;:7,&quot;name&quot;:&quot;Redmi 13&quot;,&quot;price&quot;:17500}
+{ID:2 Name:Galaxy A15 Price:21000 Colors:[Blue] CostPrice:0} &lt;nil&gt;
+json: cannot unmarshal string into Go struct field Product.id of type int</pre></div></div></div></div></section>
+<section class="slide" data-part="JSON ও Package" data-title="Package আর module সাজানো"><div class="inner"><div class="head"><span class="tag">পাঠ ১০</span><h2>Package আর module সাজানো</h2></div><div class="body two"><div class="txt"><p>একটা folder = একটা package। <code>go.mod</code> module-এর নাম আর dependency রাখে (<code>composer.json</code>)। বাইরে ব্যবহার করতে নাম বড় হাতের অক্ষরে।</p><div class="callout">💡 <code>internal/</code> folder-এর package বাইরের project import করতে পারে না — Go নিজেই এই নিয়ম মানায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Folder structure</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span>shop/
+├── go.mod                  module github.com/rahim/shop
+├── cmd/
+│   └── api/
+│       └── main.go         package main — চালানোর জায়গা
+├── internal/               শুধু এই module ব্যবহার করতে পারে
+│   ├── product/
+│   │   ├── product.go      package product
+│   │   └── product_test.go
+│   └── store/
+│       └── sqlite.go       package store
+└── README.md
+</pre></div>
+</div><div class="code"><div class="code-h"><span>cmd/api/main.go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+
+<span class="w">	</span><span class="s">&quot;github.com/rahim/shop/internal/product&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">p</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">product</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">17500</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>go<span class="w"> </span>get<span class="w"> </span>github.com/google/uuid@latest<span class="w">     </span><span class="c1"># composer require</span>
+<span class="gp">$ </span>go<span class="w"> </span>mod<span class="w"> </span>tidy<span class="w">                                </span><span class="c1"># অপ্রয়োজনীয় সরায়</span>
+<span class="gp">$ </span>go<span class="w"> </span>build<span class="w"> </span>./...
+<span class="gp">$ </span>go<span class="w"> </span>run<span class="w"> </span>./cmd/api
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="JSON ও Package" data-title="Project: Inventory"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>Project: Inventory</h2></div><div class="body two"><div class="txt"><div class="callout task"><b>নিজে করুন</b> <code>Inventory</code>-কে JSON-এ save আর load করুন (<code>encoding/json</code> + <code>os.WriteFile</code>)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Go</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">	</span><span class="s">&quot;errors&quot;</span>
+<span class="w">	</span><span class="s">&quot;fmt&quot;</span>
+<span class="w">	</span><span class="s">&quot;slices&quot;</span>
+<span class="w">	</span><span class="s">&quot;strings&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Product</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">Name</span><span class="w">  </span><span class="kt">string</span>
+<span class="w">	</span><span class="nx">Price</span><span class="w"> </span><span class="kt">int</span>
+<span class="w">	</span><span class="nx">Stock</span><span class="w"> </span><span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="kd">type</span><span class="w"> </span><span class="nx">Inventory</span><span class="w"> </span><span class="kd">struct</span><span class="p">{</span><span class="w"> </span><span class="nx">items</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">Product</span><span class="w"> </span><span class="p">}</span>
+
+<span class="kd">var</span><span class="w"> </span><span class="nx">ErrNoStock</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;স্টক নেই&quot;</span><span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">NewInventory</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="nx">Inventory</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">Inventory</span><span class="p">{</span><span class="nx">items</span><span class="p">:</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">Product</span><span class="p">{}}</span><span class="w"> </span><span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">inv</span><span class="w"> </span><span class="o">*</span><span class="nx">Inventory</span><span class="p">)</span><span class="w"> </span><span class="nx">Add</span><span class="p">(</span><span class="nx">name</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">qty</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">inv</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">name</span><span class="p">];</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nx">qty</span>
+<span class="w">		</span><span class="k">return</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">inv</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">Product</span><span class="p">{</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">qty</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">inv</span><span class="w"> </span><span class="o">*</span><span class="nx">Inventory</span><span class="p">)</span><span class="w"> </span><span class="nx">Sell</span><span class="p">(</span><span class="nx">name</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">qty</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">inv</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;%q: পাওয়া যায়নি&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">if</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">qty</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;%s (আছে %d): %w&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="p">,</span><span class="w"> </span><span class="nx">ErrNoStock</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="nx">qty</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">qty</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">inv</span><span class="w"> </span><span class="o">*</span><span class="nx">Inventory</span><span class="p">)</span><span class="w"> </span><span class="nx">Report</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">names</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">make</span><span class="p">([]</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">inv</span><span class="p">.</span><span class="nx">items</span><span class="p">))</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">inv</span><span class="p">.</span><span class="nx">items</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">names</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">names</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">slices</span><span class="p">.</span><span class="nx">Sort</span><span class="p">(</span><span class="nx">names</span><span class="p">)</span>
+<span class="w">	</span><span class="kd">var</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">Builder</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">names</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">p</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">inv</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">n</span><span class="p">]</span>
+<span class="w">		</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Fprintf</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">b</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%-12s %3dটা  ৳%d\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Price</span><span class="o">*</span><span class="nx">p</span><span class="p">.</span><span class="nx">Stock</span><span class="p">)</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="k">return</span><span class="w"> </span><span class="nx">b</span><span class="p">.</span><span class="nx">String</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">	</span><span class="nx">inv</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">NewInventory</span><span class="p">()</span>
+<span class="w">	</span><span class="nx">inv</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">inv</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="s">&quot;Galaxy A15&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">21000</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">	</span><span class="nx">inv</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">17500</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+
+<span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="p">[]</span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="nx">name</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">		</span><span class="nx">qty</span><span class="w">  </span><span class="kt">int</span>
+<span class="w">	</span><span class="p">}{{</span><span class="s">&quot;Redmi 13&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;Galaxy A15&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;Nokia&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">}}</span><span class="w"> </span><span class="p">{</span>
+<span class="w">		</span><span class="k">if</span><span class="w"> </span><span class="nx">amount</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">inv</span><span class="p">.</span><span class="nx">Sell</span><span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">s</span><span class="p">.</span><span class="nx">qty</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;✗&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;| no stock?&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">Is</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">ErrNoStock</span><span class="p">))</span>
+<span class="w">		</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">			</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;✓&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">s</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;বিক্রি:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">amount</span><span class="p">)</span>
+<span class="w">		</span><span class="p">}</span>
+<span class="w">	</span><span class="p">}</span>
+<span class="w">	</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Print</span><span class="p">(</span><span class="nx">inv</span><span class="p">.</span><span class="nx">Report</span><span class="p">())</span>
+<span class="p">}</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>✓ Redmi 13 বিক্রি: 35000
+✗ Galaxy A15 (আছে 2): স্টক নেই | no stock? true
+✗ &quot;Nokia&quot;: পাওয়া যায়নি | no stock? false
+Galaxy A15     2টা  ৳42000
+Redmi 13       4টা  ৳70000</pre></div></div></div></div></section>
+<section class="slide hero end" data-part="JSON ও Package" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>Go 102 শেষ! 🎉</h1><p class="lead">Struct, interface, generic আর error wrapping — Go-র গঠন জানা হলো। এবার Go-র আসল শক্তি: goroutine আর channel।</p><div class="steps done"><div><i>✓</i><span>struct + method; বদলাতে pointer receiver</span></div><div><i>✓</i><span><code>NewXxx</code> constructor প্রথা</span></div><div><i>✓</i><span>Embedding = has-a, inheritance না</span></div><div><i>✓</i><span>Interface নিজে থেকেই মেলে</span></div><div><i>✓</i><span><code>%w</code>, <code>errors.Is</code>, <code>errors.As</code></span></div><div><i>✓</i><span>JSON tag; বড় হাতের নাম = public</span></div></div><div class="btns"><a class="btn" href="../go-103/index.html">পরের কোর্স: Go 103 — Goroutine, Channel ও Test →</a><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+</main>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>window.COURSE="go-102";
+(function(){
+  var B=function(n){return String(n).replace(/\d/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0,root=document.documentElement;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),menu=document.getElementById('menu');
+  var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'%)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
+    st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function buildMenu(){var h='',last=null;slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){h+='<h3>'+p+'</h3>';last=p}
+    h+='<a data-go="'+j+'" class="'+(st.seen[j]?'seen ':'')+(j===i?'cur':'')+'"><span>'+B(j+1)+'.</span><span>'+s.getAttribute('data-title')+'</span></a>'});menu.innerHTML=h}
+  function toggleMenu(){if(!menu.classList.contains('open'))buildMenu();menu.classList.toggle('open')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var dark=getComputedStyle(root).getPropertyValue('--bg').trim()==='#0B1220';var t=dark?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tut-theme',t)}catch(e){}}
+  try{var th=localStorage.getItem('tut-theme');if(th)root.setAttribute('data-theme',th)}catch(e){}
+  menu.addEventListener('click',function(e){var a=e.target.closest('a');if(a){go(+a.getAttribute('data-go'));menu.classList.remove('open')}else if(e.target===menu)menu.classList.remove('open')});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;
+    var pre=b.closest('.code').querySelector('pre');var t=pre.innerText.replace(/^\$ /gm,'');
+    var done=function(){b.textContent='কপি হয়েছে ✓';setTimeout(function(){b.textContent='কপি'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done()});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  // Swipe left/right changes slide; vertical drags scroll the slide. A swipe that actually scrolled a wide
+  // code block or table sideways is treated as scrolling that block, not as a slide change.
+  var x0=null,y0=null,box=null,box0=0;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY;
+    box=e.target.closest('pre,.tbl');box0=box?box.scrollLeft:0},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+    var scrolledBox=box&&Math.abs(box.scrollLeft-box0)>2;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5&&!scrolledBox)go(i+(dx<0?1:-1));x0=null;box=null});
+  var h=parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
+    if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';
+      r.classList.add('show');document.getElementById('resumeGo').onclick=function(){go(last);r.classList.remove('show')};
+      document.getElementById('resumeNo').onclick=function(){r.classList.remove('show')};}}
+})();
+</script>
+</body>
+</html>

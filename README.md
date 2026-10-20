@@ -6,6 +6,7 @@ at build time, and the real output (or real compiler error) is shown on the slid
 | Folder | Tutorial |
 |---|---|
 | `rust-tutorial/` | Rust 101, 102, 103 and Rust Web Development (axum), with PHP/Laravel comparisons |
+| `go-tutorial/` | Go 101, 102, 103 and Go Web Development (net/http + SQLite) |
 | `dart-tutorial/` | Dart 101, 102, 103 and Flutter (screenshots rendered by `flutter test`) |
 | `mysql-tutorial/` | MySQL from the first table to joins, indexes and transactions |
 | `postgresql-tutorial/` | PostgreSQL, including JSONB, window functions and full-text search |
@@ -23,7 +24,7 @@ python3 rust-tutorial/build.py # one series
 python3 build.py --hub         # hub page only
 ```
 
-Requirements for verifying code: `rustc`/`cargo` (Rust), `php` (PHP comparisons), a local MySQL server
+Requirements for verifying code: `rustc`/`cargo` (Rust), `go` (Go), `dart`/`flutter`, `php` (PHP comparisons), a local MySQL server
 (`mysql -uroot`) and PostgreSQL (`psql`). Laravel snippets run through `illuminate/database`:
 run `composer install` in `tutorial-kit/eloquent` once. Results are cached in `tutorial-kit/.cache` (git-ignored).
 

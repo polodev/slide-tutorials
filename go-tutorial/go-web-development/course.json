@@ -1,0 +1,7 @@
+{
+ "slug": "go-web-development",
+ "title": "Go Web Development — net/http দিয়ে API",
+ "subtitle": "Framework ছাড়াই: Go-র নিজের router, JSON, Laravel-এর মতো 422 validation, middleware, SQLite, test আর Docker",
+ "lessons": 14,
+ "slides": 16
+}
