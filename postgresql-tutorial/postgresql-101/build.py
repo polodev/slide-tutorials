@@ -50,7 +50,7 @@ c.lesson("psql-এর ছোট কমান্ড",
         ["<code>\\l</code>", "সব database", "<code>SHOW DATABASES</code>"], ["<code>\\c shop</code>", "database বদলানো", "<code>USE shop</code>"],
         ["<code>\\dt</code>", "সব table", "<code>SHOW TABLES</code>"], ["<code>\\d products</code>", "table-এর গঠন", "<code>DESCRIBE products</code>"],
         ["<code>\\x</code>", "লম্বা row লম্বালম্বি দেখানো", "<code>\\G</code>"], ["<code>\\q</code>", "বের হওয়া", "<code>exit</code>"]]),
-    sql("SELECT 2 + 3 AS total, now() > '2020-01-01' AS is_after_2020, 'Assalamu Alaikum' AS greeting;"))
+    sql("SELECT 2 + 3 AS total, now() > '2020-01-01' AS is_after_2020, 'Hello, World!' AS greeting;"))
 
 # ================================================================== table
 c.section("Table")

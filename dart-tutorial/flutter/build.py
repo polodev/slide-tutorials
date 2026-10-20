@@ -63,7 +63,7 @@ class App extends StatelessWidget {
       home: Scaffold(
         appBar: AppBar(title: const Text('Rahim Mobile')),
         body: const Center(
-          child: Text('আসসালামু আলাইকুম!', style: TextStyle(fontSize: 26)),
+          child: Text('Hello, World!', style: TextStyle(fontSize: 26)),
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {},

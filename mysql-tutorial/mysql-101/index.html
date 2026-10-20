@@ -140,13 +140,13 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 +-----------+
 | 8.0.43    |
 +-----------+</pre></div></div></div></div></section>
-<section class="slide" data-part="শুরু" data-title="প্রথম query"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>প্রথম query</h2></div><div class="body two"><div class="txt"><p>SQL-এ <code>SELECT</code> মানে "দেখাও"। Table ছাড়াও হিসাব করা যায়। প্রতিটি statement-এর শেষে <code>;</code>।</p><ul><li><code>AS</code> দিয়ে column-এর নাম দেওয়া যায়</li><li>SQL keyword ছোট-বড় হাতের যেকোনো অক্ষরে লেখা যায়; বড় হাতের অক্ষরে লেখা প্রচলিত</li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এ <code>DB::select('SELECT 2 + 3 AS total')</code> দিয়ে সরাসরি SQL চালানো যায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="nf">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">&#39;2020-01-01&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">is_after_2020</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Assalamu Alaikum&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">greeting</span><span class="p">;</span>
+<section class="slide" data-part="শুরু" data-title="প্রথম query"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>প্রথম query</h2></div><div class="body two"><div class="txt"><p>SQL-এ <code>SELECT</code> মানে "দেখাও"। Table ছাড়াও হিসাব করা যায়। প্রতিটি statement-এর শেষে <code>;</code>।</p><ul><li><code>AS</code> দিয়ে column-এর নাম দেওয়া যায়</li><li>SQL keyword ছোট-বড় হাতের যেকোনো অক্ষরে লেখা যায়; বড় হাতের অক্ষরে লেখা প্রচলিত</li></ul><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এ <code>DB::select('SELECT 2 + 3 AS total')</code> দিয়ে সরাসরি SQL চালানো যায়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="nf">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">&#39;2020-01-01&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">is_after_2020</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Hello, World!&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">greeting</span><span class="p">;</span>
 </pre></div>
-</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-------+---------------+------------------+
-| total | is_after_2020 | greeting         |
-+-------+---------------+------------------+
-|     5 |             1 | Assalamu Alaikum |
-+-------+---------------+------------------+
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>+-------+---------------+---------------+
+| total | is_after_2020 | greeting      |
++-------+---------------+---------------+
+|     5 |             1 | Hello, World! |
++-------+---------------+---------------+
 1 row in set</pre></div></div></div></div></section>
 <section class="slide" data-part="শুরু" data-title="Database বানানো"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>Database বানানো</h2></div><div class="body two"><div class="txt"><p>একটা app-এর সব table একটা database-এ থাকে। বাংলা লেখার জন্য character set অবশ্যই <code>utf8mb4</code>।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>.env</code>-এ <code>DB_DATABASE=shop</code> — database আগে নিজে বানিয়ে নিতে হয়, তারপর <code>php artisan migrate</code>।</div><div class="callout warn">⚠️ পুরনো <code>utf8</code> (utf8mb3) emoji রাখতে পারে না। সবসময় <code>utf8mb4</code> — Laravel-এর ডিফল্টও এটাই।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="go">mysql&gt; CREATE DATABASE shop CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;</span>
 <span class="go">mysql&gt; SHOW DATABASES;</span>
@@ -227,11 +227,11 @@ Records: 8  Duplicates: 0  Warnings: 0</pre></div><div class="code php"><div cla
 </div><div class="term out"><div class="term-h">ফলাফল</div><pre>+----+--------------+-------------+----------+---------------------+
 | id | name         | phone       | district | created_at          |
 +----+--------------+-------------+----------+---------------------+
-|  1 | Karim Uddin  | 01711000001 | Dhaka    | 2026-10-21 01:10:46 |
-|  2 | Nusrat Jahan | 01811000002 | Sylhet   | 2026-10-21 01:10:46 |
-|  3 | Rahim Mia    | 01911000003 | Khulna   | 2026-10-21 01:10:46 |
-|  4 | Sadia Islam  | 01611000004 | Dhaka    | 2026-10-21 01:10:46 |
-|  5 | Tanvir Hasan | 01511000005 | NULL     | 2026-10-21 01:10:46 |
+|  1 | Karim Uddin  | 01711000001 | Dhaka    | 2026-10-21 01:22:35 |
+|  2 | Nusrat Jahan | 01811000002 | Sylhet   | 2026-10-21 01:22:35 |
+|  3 | Rahim Mia    | 01911000003 | Khulna   | 2026-10-21 01:22:35 |
+|  4 | Sadia Islam  | 01611000004 | Dhaka    | 2026-10-21 01:22:35 |
+|  5 | Tanvir Hasan | 01511000005 | NULL     | 2026-10-21 01:22:35 |
 +----+--------------+-------------+----------+---------------------+
 5 rows in set</pre></div></div></div></div></section>
 <section class="slide" data-part="INSERT ও SELECT" data-title="শুধু দরকারি column"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>শুধু দরকারি column</h2></div><div class="body two"><div class="txt"><p><code>*</code> না দিয়ে column-এর নাম দিন — কম data আসে, query দ্রুত হয়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>Product::select('name', 'brand', 'price')-&gt;get()</code></div></div><div class=codecol><div class="code"><div class="code-h"><span>MySQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="p">;</span>

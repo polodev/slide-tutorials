@@ -45,10 +45,10 @@ c.lesson("প্রথম program",
     points("<code>fn</code> দিয়ে function বানানো হয়",
            "<code>println!</code>-এর শেষে <code>!</code> মানে এটা একটা <b>macro</b> (সাধারণ function না)",
            "প্রতিটি statement-এর শেষে <code>;</code>"),
-    php_note("<code>echo \"Assalamu Alaikum\\n\";</code> — Rust-এ এর জন্য পুরো <code>main</code> function লাগে।"),
+    php_note("<code>echo \"Hello, World!\\n\";</code> — Rust-এ এর জন্য পুরো <code>main</code> function লাগে।"),
     code(r'''
 fn main() {
-    println!("Assalamu Alaikum, Bangladesh!");
+    println!("Hello, World!");
     println!("Rust শেখা শুরু হলো 🚀");
 }
 '''),

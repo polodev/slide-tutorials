@@ -41,7 +41,7 @@ c.lesson("Install আর প্রথম program",
     shell("$ dart --version\n$ dart create hello\n$ cd hello && dart run", out="Dart SDK version: 3.13.4 (stable)\nHello world: 42!"),
     dart('''
 void main() {
-  print('Assalamu Alaikum, Bangladesh!');
+  print('Hello, World!');
   print('Dart শেখা শুরু হলো 🎯');
 }
 '''),

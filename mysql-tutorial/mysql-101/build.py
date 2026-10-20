@@ -43,7 +43,7 @@ c.lesson("MySQL install আর connect",
 
 c.lesson("প্রথম query",
     say("SQL-এ <code>SELECT</code> মানে \"দেখাও\"। Table ছাড়াও হিসাব করা যায়। প্রতিটি statement-এর শেষে <code>;</code>।"),
-    sql("SELECT 2 + 3 AS total, NOW() > '2020-01-01' AS is_after_2020, 'Assalamu Alaikum' AS greeting;"),
+    sql("SELECT 2 + 3 AS total, NOW() > '2020-01-01' AS is_after_2020, 'Hello, World!' AS greeting;"),
     points("<code>AS</code> দিয়ে column-এর নাম দেওয়া যায়", "SQL keyword ছোট-বড় হাতের যেকোনো অক্ষরে লেখা যায়; বড় হাতের অক্ষরে লেখা প্রচলিত"),
     php_note("Laravel-এ <code>DB::select('SELECT 2 + 3 AS total')</code> দিয়ে সরাসরি SQL চালানো যায়।"))
 

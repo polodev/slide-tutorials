@@ -138,11 +138,11 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 </pre></div>
 </div><div class="term"><div class="term-h">উদাহরণ আউটপুট</div><pre>Dart SDK version: 3.13.4 (stable)
 Hello world: 42!</pre></div><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;Assalamu Alaikum, Bangladesh!&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;Hello, World!&#39;</span><span class="p">);</span>
 <span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;Dart শেখা শুরু হলো 🎯&#39;</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
-</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Assalamu Alaikum, Bangladesh!
+</div><div class="term out"><div class="term-h">আউটপুট</div><pre>Hello, World!
 Dart শেখা শুরু হলো 🎯</pre></div></div></div></div></section>
 <section class="slide" data-part="Variable ও Type" data-title="var, final, const"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>var, final, const</h2></div><div class="body two"><div class="txt"><p><code>var</code> — বদলানো যায়। <code>final</code> — একবারই মান দেওয়া যায়। <code>const</code> — compile-এর সময়েই জানা স্থির মান।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PHP-র <code>const VAT = 15;</code> ≈ Dart <code>const</code>। <code>final</code>-এর মতো কিছু PHP-তে variable-এ নেই (PHP 8.1-এর <code>readonly</code> property কাছাকাছি)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Dart</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="kd">var</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">500</span><span class="p">;</span><span class="w">        </span><span class="c1">// type অনুমান: int</span>

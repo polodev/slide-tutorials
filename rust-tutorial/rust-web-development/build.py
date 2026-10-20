@@ -72,7 +72,7 @@ c.lesson("প্রথম server",
 use axum::{Router, routing::get};
 
 async fn home() -> &'static str {
-    "Assalamu Alaikum! Shop API চলছে।"
+    "Hello, World! Shop API চলছে।"
 }
 
 #[tokio::main]
@@ -86,7 +86,7 @@ async fn main() {
 ''', deps=AXUM, requests=["curl -s http://127.0.0.1:3000/"]),
     laravel('''
 Route::get('/', function () {
-    return 'Assalamu Alaikum! Shop API চলছে।';
+    return 'Hello, World! Shop API চলছে।';
 });
 '''),
     shell("$ cargo run"))

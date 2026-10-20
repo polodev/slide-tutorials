@@ -154,7 +154,7 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <section class="slide" data-part="শুরু" data-title="প্রথম server"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>প্রথম server</h2></div><div class="body two"><div class="txt"><p><code>Router</code>-এ route যোগ করি, তারপর port-এ listen করে <code>axum::serve</code>। Handler হলো সাধারণ <code>async fn</code>।</p></div><div class=codecol><div class="code"><div class="code-h"><span>Rust</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">use</span><span class="w"> </span><span class="n">axum</span><span class="p">::{</span><span class="n">Router</span><span class="p">,</span><span class="w"> </span><span class="n">routing</span><span class="p">::</span><span class="n">get</span><span class="p">};</span>
 
 <span class="k">async</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">home</span><span class="p">()</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">&#39;</span><span class="nb">static</span><span class="w"> </span><span class="kt">str</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="s">&quot;Assalamu Alaikum! Shop API চলছে।&quot;</span>
+<span class="w">    </span><span class="s">&quot;Hello, World! Shop API চলছে।&quot;</span>
 <span class="p">}</span>
 
 <span class="cp">#[tokio::main]</span>
@@ -167,9 +167,9 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 <span class="p">}</span>
 </pre></div>
 </div><div class="term http"><div class="term-h">Response (curl)</div><pre>$ curl -s http://127.0.0.1:3000/
-Assalamu Alaikum! Shop API চলছে।
+Hello, World! Shop API চলছে।
 ← HTTP 200</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nx">Route</span><span class="o">::</span><span class="na">get</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="k">function</span> <span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="s1">&#39;Assalamu Alaikum! Shop API চলছে।&#39;</span><span class="p">;</span>
+    <span class="k">return</span> <span class="s1">&#39;Hello, World! Shop API চলছে।&#39;</span><span class="p">;</span>
 <span class="p">});</span>
 </pre></div>
 </div><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>cargo<span class="w"> </span>run
