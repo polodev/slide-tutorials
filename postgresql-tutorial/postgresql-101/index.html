@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PostgreSQL 101 — শূন্য থেকে শুরু</title>
+<meta name="description" content="psql, data type, CRUD আর RETURNING, ILIKE, তারিখ — আর MySQL থেকে কোথায় আলাদা">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--u:min(1vw,1.6vh);--navy:#0C1E38;--accent:#0D8A4A;--accent2:#E8F6EE;--amber:#B7791F;--red:#C53030;--php:#4F5B93;
+  --bg:#F4F7FA;--ink:#18263A;--muted:#5B6B80;--card:#fff;--line:#DCE4EE;--codebg:#1E2430}
+:root[data-theme=dark]{--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0B1220;--ink:#E6EDF5;--muted:#98A7BA;--card:#131C2D;--line:#24324A;--navy:#fff;--accent:#34C77B;--accent2:#12301F;--amber:#E0A93B;--red:#F0716F;--php:#8892BF;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+.deck html,.deck body{height:100%}
+body.deck{height:100vh;overflow:hidden}
+#deck{height:100%;display:flex;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.slide{flex:0 0 100vw;height:100%;overflow-y:auto;padding:60px 4vw 84px}
+.slide .inner{max-width:1500px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:safe center;gap:2.2vh}
+h1{font-size:clamp(28px,calc(var(--u)*5),76px);font-weight:700;line-height:1.2;color:var(--navy)}
+h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;color:var(--navy)}
+.lead{font-size:clamp(15px,calc(var(--u)*1.9),28px);color:var(--muted);max-width:36em;line-height:1.6}
+.tag{display:inline-block;align-self:flex-start;background:var(--accent);color:#fff;font-weight:600;font-size:clamp(12px,calc(var(--u)*1.15),17px);padding:.3em 1em;border-radius:999px}
+.head{display:flex;flex-direction:column;gap:1vh}
+.body.two{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:3vw;align-items:start}
+.body.one{max-width:1100px}
+.txt{display:flex;flex-direction:column;gap:1.6vh}
+.txt p,.txt li{font-size:clamp(15px,calc(var(--u)*1.6),24px);line-height:1.7}
+.txt ul{list-style:none;padding:0;display:grid;gap:1vh}
+.txt li{padding-left:1.3em;position:relative}
+.txt li::before{content:"";position:absolute;left:0;top:.7em;width:.45em;height:.45em;border-radius:50%;background:var(--accent)}
+code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
+.callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.callout.warn{border-left-color:var(--amber)}
+.callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
+.callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
+.quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.quiz summary{cursor:pointer;font-weight:600;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.5}
+.quiz p{margin-top:.8vh;color:var(--accent);font-weight:600;font-size:clamp(14px,calc(var(--u)*1.4),21px);line-height:1.6}
+.tbl{border-collapse:collapse;width:100%;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(12,30,56,.07)}
+.tbl th,.tbl td{padding:.9vh .9vw;text-align:left;font-size:clamp(13px,calc(var(--u)*1.35),20px);border-bottom:1px solid var(--line);line-height:1.5}
+.tbl th{background:var(--accent2);font-weight:600}
+.steps{display:grid;gap:1vh}
+.steps div{background:var(--card);border-radius:10px;padding:1.1vh 1vw;font-size:clamp(14px,calc(var(--u)*1.5),22px);display:flex;gap:.9vw;align-items:center;box-shadow:0 3px 12px rgba(12,30,56,.07);line-height:1.5}
+.steps i{flex:0 0 auto;width:2em;height:2em;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.codecol{display:flex;flex-direction:column;gap:1.2vh;min-width:0}
+.code{background:var(--codebg);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.code-h{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#151A23;color:#9AA7B8;font:600 13px 'JetBrains Mono',monospace}
+.code-h.php{background:#262B47;color:#C3C9EE}
+.copy{border:0;background:#2A3242;color:#C9D4E3;font:600 12px 'Hind Siliguri',sans-serif;padding:3px 10px;border-radius:6px;cursor:pointer}
+.copy:hover{background:var(--accent);color:#fff}
+.hl pre{margin:0;padding:12px 16px;overflow-x:auto;font:clamp(12.5px,calc(var(--u)*1.08),17px)/1.55 'JetBrains Mono',monospace;color:#E3E8EF;tab-size:4}
+.hl .hll{background:rgba(255,214,102,.13);display:inline-block;width:100%}
+.term{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0F141C}
+.term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
+.term.error .term-h,.term.panic .term-h{background:#B83434}
+.term.http .term-h{background:#1F5FA8}
+.term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
+pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
+.term.error pre,.term.panic pre{color:#FFB4B4}
+.stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
+.hero{background:radial-gradient(ellipse at 30% 20%,#173a66 0%,#0C1E38 70%);color:#fff}
+.hero .inner{justify-content:center;max-width:1100px}
+.hero h1{color:#fff}.hero .lead{color:#CFDDEE}
+.hero .learn{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1vh 2vw}
+.hero .learn li{font-size:clamp(14px,calc(var(--u)*1.55),23px);padding-left:1.4em;position:relative;line-height:1.5;color:#E6EEF8}
+.hero .learn li::before{content:"✓";position:absolute;left:0;color:#4ADE80;font-weight:700}
+.hero .need,.hero .howto{color:#AFC2D8;font-size:clamp(13px,calc(var(--u)*1.35),20px)}
+.hero .need b{color:#fff}
+.hero.end .steps div{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.hero.end .steps i{background:#4ADE80;color:#0C1E38}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:#4ADE80;color:#0C1E38;font-weight:700;text-decoration:none;padding:.7em 1.4em;border-radius:999px;font-size:clamp(14px,calc(var(--u)*1.5),21px)}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+#top{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 16px;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:14px}
+#top a{color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+#top .crumb{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#top .hub{border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+#bar{position:fixed;left:0;top:44px;height:3px;background:var(--accent);transition:width .4s;z-index:7}
+#nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;font:600 14px 'Hind Siliguri',sans-serif;color:#fff;z-index:7;background:rgba(12,30,56,.9);padding:6px 10px;border-radius:999px;white-space:nowrap}
+#nav button{border:0;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;cursor:pointer}
+#nav button:hover{background:var(--accent)}
+#count{min-width:64px;text-align:center}
+#menu{position:fixed;inset:0;background:rgba(8,15,28,.94);z-index:9;display:none;overflow:auto;padding:5vh 6vw}
+#menu.open{display:block}
+#menu h3{color:#fff;font-size:20px;margin:2.4vh 0 .8vh}
+#menu a{display:flex;gap:.6em;color:#dbe7f5;text-decoration:none;padding:.55vh 1vw;border-radius:8px;font-size:17px;cursor:pointer}
+#menu a.seen::after{content:"✓";color:#4ADE80;margin-left:auto}
+#menu a.cur{background:rgba(74,222,128,.18)}
+#menu a:hover{background:var(--accent);color:#fff}
+#resume{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.25);border-radius:14px;padding:12px 16px;z-index:8;display:none;gap:10px;align-items:center;font-size:15px;flex-wrap:wrap;justify-content:center}
+#resume.show{display:flex}
+#resume button{border:0;border-radius:999px;padding:6px 14px;font:600 14px 'Hind Siliguri',sans-serif;cursor:pointer;background:var(--accent);color:#fff}
+#resume button.alt{background:var(--line);color:var(--ink)}
+@media (max-width:900px){body.deck{overflow:hidden}.slide{padding:56px 5vw 96px}.body.two{grid-template-columns:1fr}.hero .learn{grid-template-columns:1fr}}
+@media print{#nav,#bar,#top,#menu,#resume{display:none!important}body.deck{overflow:visible;height:auto}#deck{display:block;transform:none!important}.slide{height:auto;min-height:100vh;page-break-after:always}}
+
+.hl .c,.hl .c1,.hl .cm,.hl .cs,.hl .ch,.hl .cp,.hl .cpf{color:#7F8C98;font-style:italic}
+.hl .k,.hl .kd,.hl .kn,.hl .kr,.hl .kp,.hl .ow{color:#C678DD}
+.hl .kc{color:#D19A66}
+.hl .kt,.hl .nc,.hl .nn{color:#E5C07B}
+.hl .s,.hl .s1,.hl .s2,.hl .sb,.hl .sc,.hl .sd,.hl .sh,.hl .sx,.hl .dl{color:#98C379}
+.hl .se,.hl .si,.hl .sa{color:#56B6C2}
+.hl .m,.hl .mi,.hl .mf,.hl .mh,.hl .mb,.hl .il,.hl .mo{color:#D19A66}
+.hl .nf,.hl .fm{color:#61AFEF}
+.hl .nb,.hl .bp{color:#56B6C2}
+.hl .nd,.hl .nl{color:#E06C75}
+.hl .nt{color:#E06C75}.hl .na{color:#D19A66}
+.hl .nv,.hl .vi,.hl .vc,.hl .vg{color:#E06C75}
+.hl .o{color:#ABB2BF}.hl .p{color:#ABB2BF}
+.hl .gp{color:#4ADE80;font-weight:600;user-select:none}.hl .go{color:#9AA7B8}
+.hl .err{color:#E3E8EF;background:none}
+</style>
+</head>
+<body class="deck">
+<div id="top"><a href="../index.html">← সব কোর্স</a><span class="crumb">PostgreSQL 101 · <b id="part"></b></span><a class="hub" href="../../index.html">সব টিউটোরিয়াল</a></div>
+<div id="bar"></div>
+<div id="resume"><span id="resumeText"></span><button id="resumeGo">চালিয়ে যান</button><button class="alt" id="resumeNo">শুরু থেকে</button></div>
+<main id="deck">
+<section class="slide hero" data-part="শুরু" data-title="PostgreSQL 101শূন্য থেকে শুরু"><div class="inner"><span class="tag">PostgreSQL 101</span><h1>PostgreSQL 101<br>শূন্য থেকে শুরু</h1><p class="lead">PostgreSQL পৃথিবীর সবচেয়ে উন্নত open-source database — কঠোর নিয়ম, শক্তিশালী type, JSON, full-text search সব ভিতরেই। Laravel-ও এর সাথে চমৎকার চলে।</p><ul class="learn"><li>PostgreSQL কেন, MySQL-এর সাথে পার্থক্য</li><li>psql আর \d কমান্ড</li><li>Identity, text, numeric, boolean, timestamp</li><li>INSERT ... RETURNING</li><li>WHERE, ILIKE, IN, NULL</li><li>UPDATE/DELETE আর RETURNING</li><li>Constraint আর ALTER TABLE</li><li>String আর তারিখের function</li></ul><p class="need"><b>আগে জানা দরকার:</b> কিছুই না। MySQL জানলে তুলনাগুলো বাড়তি সুবিধা।</p><p class="howto">→ তীর চাপুন বা swipe করুন · <b>M</b> সব পাঠের তালিকা · অগ্রগতি নিজে থেকেই সেভ হয়</p></div></section>
+<section class="slide" data-part="শুরু" data-title="PostgreSQL কেন?"><div class="inner"><div class="head"><span class="tag">পাঠ ১</span><h2>PostgreSQL কেন?</h2></div><div class="body one"><div class="txt"><table class="tbl"><tr><th></th><th>MySQL</th><th>PostgreSQL</th></tr><tr><td>নিয়ম</td><td>কিছু ক্ষেত্রে ছাড় দেয়</td><td>কঠোর — ভুল type বা ভুল GROUP BY সাথে সাথে error</td></tr><tr><td>বিশেষ type</td><td>JSON</td><td>JSONB, array, UUID, range, enum, geometry</td></tr><tr><td>Index</td><td>B-tree, full-text</td><td>B-tree, GIN, GiST, BRIN, partial, expression</td></tr><tr><td>নতুন id ফেরত</td><td><code>LAST_INSERT_ID()</code></td><td><code>RETURNING id</code></td></tr><tr><td>কোথায় দেখবেন</td><td>শেয়ার্ড hosting, WordPress</td><td>Supabase, Neon, Heroku, অনেক SaaS</td></tr></table><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel দুটোই সমর্থন করে — <code>.env</code>-এ <code>DB_CONNECTION=pgsql</code> দিলেই হয়। পার্থক্যগুলো এই কোর্সে আর PostgreSQL for Laravel-এ।</div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="Install আর psql"><div class="inner"><div class="head"><span class="tag">পাঠ ২</span><h2>Install আর psql</h2></div><div class="body two"><div class="txt"><ul><li><b>macOS:</b> Postgres.app অথবা <code>brew install postgresql@16</code></li><li><b>Windows:</b> EDB installer (pgAdmin সাথে আসে)</li><li><b>Ubuntu:</b> <code>sudo apt install postgresql</code></li><li>অথবা Docker: <code>docker run -e POSTGRES_PASSWORD=secret -p 5432:5432 postgres:16</code></li></ul><div class="callout">💡 এই কোর্সের প্রতিটি query আসল PostgreSQL 16-এ চালিয়ে ফলাফল বসানো।</div></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>psql<span class="w"> </span>-U<span class="w"> </span>postgres
+<span class="go">postgres=# CREATE DATABASE shop;</span>
+<span class="go">postgres=# \c shop</span>
+<span class="gp">shop=# </span>SELECT<span class="w"> </span>version<span class="o">()</span><span class="p">;</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="শুরু" data-title="psql-এর ছোট কমান্ড"><div class="inner"><div class="head"><span class="tag">পাঠ ৩</span><h2>psql-এর ছোট কমান্ড</h2></div><div class="body two"><div class="txt"><p><code>\</code> দিয়ে শুরু কমান্ডগুলো psql-এর নিজের (SQL না)। সবচেয়ে কাজের কয়েকটা:</p><table class="tbl"><tr><th>কমান্ড</th><th>কাজ</th><th>MySQL-এ</th></tr><tr><td><code>\l</code></td><td>সব database</td><td><code>SHOW DATABASES</code></td></tr><tr><td><code>\c shop</code></td><td>database বদলানো</td><td><code>USE shop</code></td></tr><tr><td><code>\dt</code></td><td>সব table</td><td><code>SHOW TABLES</code></td></tr><tr><td><code>\d products</code></td><td>table-এর গঠন</td><td><code>DESCRIBE products</code></td></tr><tr><td><code>\x</code></td><td>লম্বা row লম্বালম্বি দেখানো</td><td><code>\G</code></td></tr><tr><td><code>\q</code></td><td>বের হওয়া</td><td><code>exit</code></td></tr></table></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">3</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">&#39;2020-01-01&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">is_after_2020</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Assalamu Alaikum&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">greeting</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre> total | is_after_2020 |     greeting     
+-------+---------------+------------------
+     5 | t             | Assalamu Alaikum
+(1 row)</pre></div></div></div></div></section>
+<section class="slide" data-part="Table" data-title="CREATE TABLE: identity column"><div class="inner"><div class="head"><span class="tag">পাঠ ৪</span><h2>CREATE TABLE: identity column</h2></div><div class="body two"><div class="txt"><p>PostgreSQL-এ auto-increment-এর আধুনিক উপায় <code>GENERATED ALWAYS AS IDENTITY</code> (পুরনো <code>serial</code>-ও চলে)। লেখার জন্য সাধারণত <code>text</code> — দৈর্ঘ্যের সীমা না দিলেও চলে, গতিতেও পার্থক্য নেই।</p></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">         </span><span class="nb">bigint</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">name</span><span class="w">       </span><span class="nb">text</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">phone</span><span class="w">      </span><span class="nb">varchar</span><span class="p">(</span><span class="mf">15</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">district</span><span class="w">   </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="nb">timestamp</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>CREATE TABLE</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="err">\</span><span class="n">d</span><span class="w"> </span><span class="n">customers</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>                                    Table &quot;public.customers&quot;
+   Column   |            Type             | Collation | Nullable |           Default            
+------------+-----------------------------+-----------+----------+------------------------------
+ id         | bigint                      |           | not null | generated always as identity
+ name       | text                        |           | not null | 
+ phone      | character varying(15)       |           | not null | 
+ district   | text                        |           |          | 
+ created_at | timestamp without time zone |           | not null | now()
+Indexes:
+    &quot;customers_pkey&quot; PRIMARY KEY, btree (id)</pre></div><div class="code php"><div class="code-h php"><span>Laravel-এ</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="nv">$table</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">();</span>   <span class="c1">// pgsql-এ: bigserial primary key</span>
+</pre></div>
+</div></div></div></div></section>
+<section class="slide" data-part="Table" data-title="Data type বেছে নেওয়া"><div class="inner"><div class="head"><span class="tag">পাঠ ৫</span><h2>Data type বেছে নেওয়া</h2></div><div class="body one"><div class="txt"><table class="tbl"><tr><th>কী রাখবেন</th><th>PostgreSQL</th><th>MySQL-এ ছিল</th></tr><tr><td>id</td><td><code>bigint ... IDENTITY</code></td><td><code>BIGINT AUTO_INCREMENT</code></td></tr><tr><td>টাকা</td><td><code>numeric(12,2)</code></td><td><code>DECIMAL(12,2)</code></td></tr><tr><td>লেখা</td><td><code>text</code> / <code>varchar(n)</code></td><td><code>VARCHAR</code>, <code>TEXT</code></td></tr><tr><td>হ্যাঁ/না</td><td><code>boolean</code> (আসল true/false)</td><td><code>TINYINT(1)</code></td></tr><tr><td>সময়</td><td><code>timestamptz</code> (timezone সহ — সুপারিশকৃত)</td><td><code>DATETIME</code>/<code>TIMESTAMP</code></td></tr><tr><td>আলাদা পরিচয়</td><td><code>uuid</code></td><td><code>CHAR(36)</code></td></tr><tr><td>নমনীয় data</td><td><code>jsonb</code></td><td><code>JSON</code></td></tr><tr><td>তালিকা</td><td><code>text[]</code> (array)</td><td>—</td></tr></table><div class="callout warn">⚠️ PostgreSQL-এ <code>unsigned</code> নেই। ঋণাত্মক আটকাতে <code>CHECK (stock &gt;= 0)</code> দিন।</div></div></div></div></section>
+<section class="slide" data-part="Table" data-title="products table"><div class="inner"><div class="head"><span class="tag">পাঠ ৬</span><h2>products table</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>$table-&gt;boolean('is_used')</code> pgsql-এ আসল <code>boolean</code> হয় — query-তে <code>where('is_used', true)</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">        </span><span class="nb">bigint</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">name</span><span class="w">      </span><span class="nb">text</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">brand</span><span class="w">     </span><span class="nb">text</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">price</span><span class="w">     </span><span class="nb">numeric</span><span class="p">(</span><span class="mf">10</span><span class="p">,</span><span class="mf">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">stock</span><span class="w">     </span><span class="nb">integer</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mf">0</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">stock</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mf">0</span><span class="p">),</span>
+<span class="w">    </span><span class="n">is_used</span><span class="w">   </span><span class="nb">boolean</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">false</span>
+<span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>CREATE TABLE</pre></div></div></div></div></section>
+<section class="slide" data-part="INSERT ও SELECT" data-title="INSERT ... RETURNING"><div class="inner"><div class="head"><span class="tag">পাঠ ৭</span><h2>INSERT ... RETURNING</h2></div><div class="body two"><div class="txt"><p><code>RETURNING</code> দিলে নতুন row-এর id (বা যেকোনো column) সাথে সাথে ফেরত আসে — আলাদা query লাগে না।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এর <code>insertGetId()</code> pgsql-এ ভিতরে <code>RETURNING id</code>-ই ব্যবহার করে।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">)</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Karim Uddin&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01711000001&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Dhaka&#39;</span><span class="p">)</span>
+<span class="k">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="o">::</span><span class="nb">date</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">joined</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre> id |    name     |   joined   
+----+-------------+------------
+  1 | Karim Uddin | 2026-10-21
+(1 row)
+
+INSERT 0 1</pre></div></div></div></div></section>
+<section class="slide" data-part="INSERT ও SELECT" data-title="একসাথে অনেক row"><div class="inner"><div class="head"><span class="tag">পাঠ ৮</span><h2>একসাথে অনেক row</h2></div><div class="body two"><div class="txt"><p>আউটপুট <code>INSERT 0 4</code>: শেষ সংখ্যাটা কয়টা row ঢুকল।</p></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Nusrat Jahan&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01811000002&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Sylhet&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Rahim Mia&#39;</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;01911000003&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Khulna&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Sadia Islam&#39;</span><span class="p">,</span><span class="w">  </span><span class="s1">&#39;01611000004&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Dhaka&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Tanvir Hasan&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01511000005&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">);</span>
+
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="p">,</span><span class="w"> </span><span class="n">is_used</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Redmi 13&#39;</span><span class="p">,</span><span class="w">       </span><span class="s1">&#39;Xiaomi&#39;</span><span class="p">,</span><span class="w">  </span><span class="mf">17500</span><span class="p">,</span><span class="w"> </span><span class="mf">5</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Redmi Note 13&#39;</span><span class="p">,</span><span class="w">  </span><span class="s1">&#39;Xiaomi&#39;</span><span class="p">,</span><span class="w">  </span><span class="mf">23500</span><span class="p">,</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Galaxy A15&#39;</span><span class="p">,</span><span class="w">     </span><span class="s1">&#39;Samsung&#39;</span><span class="p">,</span><span class="w"> </span><span class="mf">21000</span><span class="p">,</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Galaxy S21&#39;</span><span class="p">,</span><span class="w">     </span><span class="s1">&#39;Samsung&#39;</span><span class="p">,</span><span class="w"> </span><span class="mf">32000</span><span class="p">,</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;iPhone 12&#39;</span><span class="p">,</span><span class="w">      </span><span class="s1">&#39;Apple&#39;</span><span class="p">,</span><span class="w">   </span><span class="mf">48000</span><span class="p">,</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Vivo Y28&#39;</span><span class="p">,</span><span class="w">       </span><span class="s1">&#39;Vivo&#39;</span><span class="p">,</span><span class="w">    </span><span class="mf">18000</span><span class="p">,</span><span class="w"> </span><span class="mf">4</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Walton NEXG N9&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Walton&#39;</span><span class="p">,</span><span class="w">   </span><span class="mf">9990</span><span class="p">,</span><span class="w"> </span><span class="mf">7</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Charger 20W&#39;</span><span class="p">,</span><span class="w">    </span><span class="s1">&#39;Anker&#39;</span><span class="p">,</span><span class="w">     </span><span class="mf">650</span><span class="p">,</span><span class="w"> </span><span class="mf">30</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>INSERT 0 4
+INSERT 0 8</pre></div></div></div></div></section>
+<section class="slide" data-part="INSERT ও SELECT" data-title="SELECT"><div class="inner"><div class="head"><span class="tag">পাঠ ৯</span><h2>SELECT</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mf">4</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>     name      |  brand  |  price   
+---------------+---------+----------
+ iPhone 12     | Apple   | 48000.00
+ Galaxy S21    | Samsung | 32000.00
+ Redmi Note 13 | Xiaomi  | 23500.00
+ Galaxy A15    | Samsung | 21000.00
+(4 rows)</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre> id |     name     |    phone    | district |         created_at         
+----+--------------+-------------+----------+----------------------------
+  1 | Karim Uddin  | 01711000001 | Dhaka    | 2026-10-21 00:48:51.093056
+  2 | Nusrat Jahan | 01811000002 | Sylhet   | 2026-10-21 00:48:51.138959
+  3 | Rahim Mia    | 01911000003 | Khulna   | 2026-10-21 00:48:51.138959
+  4 | Sadia Islam  | 01611000004 | Dhaka    | 2026-10-21 00:48:51.138959
+  5 | Tanvir Hasan | 01511000005 |          | 2026-10-21 00:48:51.138959
+(5 rows)</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা" data-title="WHERE আর boolean"><div class="inner"><div class="head"><span class="tag">পাঠ ১০</span><h2>WHERE আর boolean</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Xiaomi&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">20000</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>   name   |  price   
+----------+----------
+ Redmi 13 | 17500.00
+(1 row)</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">is_used</span><span class="p">;</span><span class="w">            </span><span class="c1">-- = true লিখতে হয় না</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>    name    |  brand  
+------------+---------
+ Galaxy S21 | Samsung
+ iPhone 12  | Apple
+(2 rows)</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="n">is_used</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">5</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>      name      | brand  
+----------------+--------
+ Walton NEXG N9 | Walton
+ Charger 20W    | Anker
+(2 rows)</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা" data-title="LIKE বনাম ILIKE"><div class="inner"><div class="head"><span class="tag">পাঠ ১১</span><h2>LIKE বনাম ILIKE</h2></div><div class="body two"><div class="txt"><p>PostgreSQL-এ <code>LIKE</code> ছোট-বড় হাতের অক্ষর <b>আলাদা ধরে</b> (MySQL ধরে না)। ছোট-বড় না মানতে <code>ILIKE</code>।</p><div class="callout warn">⚠️ MySQL থেকে Laravel app সরালে search হঠাৎ কাজ না করার সবচেয়ে বড় কারণ এটা। Laravel-এ <code>where('name', 'ilike', ...)</code> অথবা <code>whereLike(..., caseSensitive: false)</code>।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;redmi%&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre> name 
+------
+(0 rows)</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;redmi%&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>     name      
+---------------
+ Redmi 13
+ Redmi Note 13
+(2 rows)</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা" data-title="IN, BETWEEN, NULL"><div class="inner"><div class="head"><span class="tag">পাঠ ১২</span><h2>IN, BETWEEN, NULL</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> <code>COALESCE(a, b)</code> হলো PHP-র <code>$a ?? $b</code> — SQL standard, MySQL-এও চলে (<code>IFNULL</code>-এর বদলে এটাই অভ্যাস করুন)।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Samsung&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Vivo&#39;</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>    name    |  brand  
+------------+---------
+ Galaxy A15 | Samsung
+ Galaxy S21 | Samsung
+ Vivo Y28   | Vivo
+(3 rows)</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mf">15000</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="mf">25000</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>     name      |  price   
+---------------+----------
+ Redmi 13      | 17500.00
+ Redmi Note 13 | 23500.00
+ Galaxy A15    | 21000.00
+ Vivo Y28      | 18000.00
+(4 rows)</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">district</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;জানা নেই&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>     name     | district 
+--------------+----------
+ Tanvir Hasan | জানা নেই
+(1 row)</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা" data-title="হিসাব, CASE আর type cast"><div class="inner"><div class="head"><span class="tag">পাঠ ১৩</span><h2>হিসাব, CASE আর type cast</h2></div><div class="body two"><div class="txt"><p><code>::</code> দিয়ে type বদলানো যায়: <code>price::int</code>, <code>'2026-10-21'::date</code>।</p><div class="callout">💡 <code>||</code> দিয়ে লেখা জোড়া লাগে (MySQL-এ <code>CONCAT</code>)। PostgreSQL-এ <code>concat()</code>-ও আছে, যেটা NULL পেলে বাদ দেয়।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span>
+<span class="w">       </span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">stock</span><span class="w">                    </span><span class="k">AS</span><span class="w"> </span><span class="n">stock_value</span><span class="p">,</span>
+<span class="w">       </span><span class="n">round</span><span class="p">(</span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">1.15</span><span class="p">,</span><span class="w"> </span><span class="mf">2</span><span class="p">)</span><span class="w">           </span><span class="k">AS</span><span class="w"> </span><span class="n">with_vat</span><span class="p">,</span>
+<span class="w">       </span><span class="n">brand</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39; — &#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">name</span><span class="w">           </span><span class="k">AS</span><span class="w"> </span><span class="k">label</span><span class="p">,</span>
+<span class="w">       </span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;শেষ&#39;</span>
+<span class="w">            </span><span class="k">WHEN</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;কম&#39;</span>
+<span class="w">            </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;আছে&#39;</span><span class="w"> </span><span class="k">END</span><span class="w">              </span><span class="k">AS</span><span class="w"> </span><span class="n">status</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">products</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">stock_value</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>      name      | stock_value | with_vat |          label          | status 
+----------------+-------------+----------+-------------------------+--------
+ iPhone 12      |    96000.00 | 55200.00 | Apple — iPhone 12       | কম
+ Redmi 13       |    87500.00 | 20125.00 | Xiaomi — Redmi 13       | আছে
+ Vivo Y28       |    72000.00 | 20700.00 | Vivo — Vivo Y28         | আছে
+ Walton NEXG N9 |    69930.00 | 11488.50 | Walton — Walton NEXG N9 | আছে
+ Redmi Note 13  |    47000.00 | 27025.00 | Xiaomi — Redmi Note 13  | কম
+ Galaxy S21     |    32000.00 | 36800.00 | Samsung — Galaxy S21    | কম
+ Charger 20W    |    19500.00 |   747.50 | Anker — Charger 20W     | আছে
+ Galaxy A15     |        0.00 | 24150.00 | Samsung — Galaxy A15    | শেষ
+(8 rows)</pre></div></div></div></div></section>
+<section class="slide" data-part="খোঁজা" data-title="Type নিয়ে কঠোরতা"><div class="inner"><div class="head"><span class="tag">পাঠ ১৪</span><h2>Type নিয়ে কঠোরতা</h2></div><div class="body two"><div class="txt"><p>MySQL অনেক সময় নীরবে type বদলে নেয়। PostgreSQL সোজা error দেয় — ভুল আগেই ধরা পড়ে।</p><details class="quiz"><summary>❓ <code>7 / 2</code> কেন ৩?</summary><p>দুটোই integer, তাই integer ভাগ — দশমিক চাইলে একটাকে numeric দিন: <code>7 / 2.0</code> বা <code>7::numeric / 2</code>।</p></details></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;free&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Database বলছে (ইচ্ছাকৃত ভুল)</div><pre>ERROR:  invalid input syntax for type numeric: &quot;free&quot;
+LINE 1: SELECT name FROM products WHERE price = &#x27;free&#x27;;
+                                                ^</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;Stock: &#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="mf">7</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">int_div</span><span class="p">,</span><span class="w"> </span><span class="mf">7</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">2.0</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">decimal_div</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>    ok    | int_div |    decimal_div     
+----------+---------+--------------------
+ Stock: 5 |       3 | 3.5000000000000000
+(1 row)</pre></div></div></div></div></section>
+<section class="slide" data-part="বদলানো ও মোছা" data-title="UPDATE ... RETURNING"><div class="inner"><div class="head"><span class="tag">পাঠ ১৫</span><h2>UPDATE ... RETURNING</h2></div><div class="body two"><div class="txt"><p>কী বদলাল সেটা সাথে সাথে দেখা যায় — আলাদা SELECT লাগে না।</p></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">10</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Xiaomi&#39;</span>
+<span class="k">RETURNING</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>     name      | stock 
+---------------+-------
+ Redmi 13      |    15
+ Redmi Note 13 |    12
+(2 rows)
+
+UPDATE 2</pre></div></div></div></div></section>
+<section class="slide" data-part="বদলানো ও মোছা" data-title="DELETE ... RETURNING"><div class="inner"><div class="head"><span class="tag">পাঠ ১৬</span><h2>DELETE ... RETURNING</h2></div><div class="body two"><div class="txt"><div class="callout">💡 হাতে UPDATE/DELETE চালানোর আগে <code>BEGIN;</code> দিন, ফলাফল দেখে <code>COMMIT;</code> বা <code>ROLLBACK;</code>। psql-এ এটা খুব সহজ।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span>
+<span class="k">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">name</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre> id |     name     
+----+--------------
+  5 | Tanvir Hasan
+(1 row)
+
+DELETE 1</pre></div></div></div></div></section>
+<section class="slide" data-part="বদলানো ও মোছা" data-title="CHECK constraint কাজ করছে"><div class="inner"><div class="head"><span class="tag">পাঠ ১৭</span><h2>CHECK constraint কাজ করছে</h2></div><div class="body two"><div class="txt"><p>স্টক ১ থেকে ৫ কমালে ঋণাত্মক হতো — table বানানোর সময় দেওয়া <code>CHECK</code> আটকে দিল।</p></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Galaxy S21&#39;</span><span class="p">;</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Database বলছে (ইচ্ছাকৃত ভুল)</div><pre>ERROR:  new row for relation &quot;products&quot; violates check constraint &quot;products_stock_check&quot;
+DETAIL:  Failing row contains (4, Galaxy S21, Samsung, 32000.00, -4, t).</pre></div></div></div></div></section>
+<section class="slide" data-part="বদলানো ও মোছা" data-title="UNIQUE আর NOT NULL"><div class="inner"><div class="head"><span class="tag">পাঠ ১৮</span><h2>UNIQUE আর NOT NULL</h2></div><div class="body one"><div class="txt"></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">CONSTRAINT</span><span class="w"> </span><span class="n">customers_phone_unique</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="p">(</span><span class="n">phone</span><span class="p">);</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>ALTER TABLE</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Another Karim&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01711000001&#39;</span><span class="p">);</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Database বলছে (ইচ্ছাকৃত ভুল)</div><pre>ERROR:  duplicate key value violates unique constraint &quot;customers_phone_unique&quot;
+DETAIL:  Key (phone)=(01711000001) already exists.</pre></div><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Mitu&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">);</span>
+</pre></div>
+</div><div class="term error"><div class="term-h">Database বলছে (ইচ্ছাকৃত ভুল)</div><pre>ERROR:  null value in column &quot;phone&quot; of relation &quot;customers&quot; violates not-null constraint
+DETAIL:  Failing row contains (7, Mitu, null, null, 2026-10-21 00:48:51.99376).</pre></div></div></div></div></section>
+<section class="slide" data-part="বদলানো ও মোছা" data-title="ALTER TABLE"><div class="inner"><div class="head"><span class="tag">পাঠ ১৯</span><h2>ALTER TABLE</h2></div><div class="body two"><div class="txt"><div class="callout">💡 PostgreSQL-এ DDL (ALTER, CREATE) transaction-এর ভিতরে চলে — migration মাঝপথে ভাঙলে পুরোটা ফিরে যায়। MySQL-এ এটা হয় না।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">due</span><span class="w"> </span><span class="nb">numeric</span><span class="p">(</span><span class="mf">10</span><span class="p">,</span><span class="mf">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;Dhaka&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">RENAME</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">district</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">city</span><span class="p">;</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">due</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1500</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Rahim Mia&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">city</span><span class="p">,</span><span class="w"> </span><span class="n">due</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">id</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+UPDATE 1
+     name     |  city  |   due   
+--------------+--------+---------
+ Karim Uddin  | Dhaka  |    0.00
+ Nusrat Jahan | Sylhet |    0.00
+ Rahim Mia    | Khulna | 1500.00
+ Sadia Islam  | Dhaka  |    0.00
+(4 rows)</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="String function আর বাংলা"><div class="inner"><div class="head"><span class="tag">পাঠ ২০</span><h2>String function আর বাংলা</h2></div><div class="body two"><div class="txt"><div class="callout php"><b>PHP/Laravel-এ যেমন</b> PostgreSQL-এ <code>length()</code> অক্ষর গোনে (PHP-র <code>mb_strlen</code>), byte গুনতে <code>octet_length()</code> — MySQL-এর উল্টো।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="p">(</span><span class="k">name</span><span class="p">,</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="n">city</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;রাশেদ খান&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;01311000006&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;রাজশাহী&#39;</span><span class="p">);</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="k">name</span><span class="p">,</span>
+<span class="w">       </span><span class="n">length</span><span class="p">(</span><span class="k">name</span><span class="p">)</span><span class="w">        </span><span class="k">AS</span><span class="w"> </span><span class="n">chars</span><span class="p">,</span>
+<span class="w">       </span><span class="n">octet_length</span><span class="p">(</span><span class="k">name</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">bytes</span><span class="p">,</span>
+<span class="w">       </span><span class="n">upper</span><span class="p">(</span><span class="k">name</span><span class="p">)</span><span class="w">         </span><span class="k">AS</span><span class="w"> </span><span class="n">upper_name</span><span class="p">,</span>
+<span class="w">       </span><span class="k">left</span><span class="p">(</span><span class="n">phone</span><span class="p">,</span><span class="w"> </span><span class="mf">3</span><span class="p">)</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="k">operator</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">customers</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">id</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>INSERT 0 1
+     name     | chars | bytes |  upper_name  | operator 
+--------------+-------+-------+--------------+----------
+ Karim Uddin  |    11 |    11 | KARIM UDDIN  | 017
+ Nusrat Jahan |    12 |    12 | NUSRAT JAHAN | 018
+ Rahim Mia    |     9 |     9 | RAHIM MIA    | 019
+ Sadia Islam  |    11 |    11 | SADIA ISLAM  | 016
+ রাশেদ খান    |     9 |    25 | রাশেদ খান    | 013
+(5 rows)</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="তারিখ আর সময়"><div class="inner"><div class="head"><span class="tag">পাঠ ২১</span><h2>তারিখ আর সময়</h2></div><div class="body two"><div class="txt"><table class="tbl"><tr><th>PostgreSQL</th><th>MySQL</th><th>Carbon</th></tr><tr><td><code>now()</code>, <code>current_date</code></td><td><code>NOW()</code>, <code>CURDATE()</code></td><td><code>now()</code></td></tr><tr><td><code>d + interval '7 days'</code></td><td><code>DATE_ADD(d, INTERVAL 7 DAY)</code></td><td><code>addDays(7)</code></td></tr><tr><td><code>date_trunc('month', t)</code></td><td><code>DATE_FORMAT(t, '%Y-%m-01')</code></td><td><code>startOfMonth()</code></td></tr></table></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="nb">date</span><span class="w"> </span><span class="s1">&#39;2026-10-21&#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">7</span><span class="w">                          </span><span class="k">AS</span><span class="w"> </span><span class="n">plus_7_days</span><span class="p">,</span>
+<span class="w">       </span><span class="nb">date</span><span class="w"> </span><span class="s1">&#39;2026-12-16&#39;</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">date</span><span class="w"> </span><span class="s1">&#39;2026-10-21&#39;</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">days_to_victory_day</span><span class="p">,</span>
+<span class="w">       </span><span class="n">to_char</span><span class="p">(</span><span class="nb">date</span><span class="w"> </span><span class="s1">&#39;2026-10-21&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;DD/MM/YYYY&#39;</span><span class="p">)</span><span class="w">        </span><span class="k">AS</span><span class="w"> </span><span class="n">bd_format</span><span class="p">,</span>
+<span class="w">       </span><span class="n">date_trunc</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">timestamp</span><span class="w"> </span><span class="s1">&#39;2026-10-21 15:30&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">month_start</span><span class="p">,</span>
+<span class="w">       </span><span class="k">extract</span><span class="p">(</span><span class="n">dow</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="nb">date</span><span class="w"> </span><span class="s1">&#39;2026-10-23&#39;</span><span class="p">)</span><span class="w">            </span><span class="k">AS</span><span class="w"> </span><span class="n">weekday_no</span><span class="p">,</span>
+<span class="w">       </span><span class="n">age</span><span class="p">(</span><span class="nb">date</span><span class="w"> </span><span class="s1">&#39;2026-10-21&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">date</span><span class="w"> </span><span class="s1">&#39;1971-12-16&#39;</span><span class="p">)</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">bangladesh_age</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre> plus_7_days | days_to_victory_day | bd_format  |     month_start     | weekday_no |     bangladesh_age      
+-------------+---------------------+------------+---------------------+------------+-------------------------
+ 2026-10-28  |                  56 | 21/10/2026 | 2026-10-01 00:00:00 |          5 | 54 years 10 mons 5 days
+(1 row)</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="timestamp বনাম timestamptz"><div class="inner"><div class="head"><span class="tag">পাঠ ২২</span><h2>timestamp বনাম timestamptz</h2></div><div class="body two"><div class="txt"><p><code>timestamptz</code> সময়কে UTC-তে রাখে আর দেখানোর সময় session-এর timezone-এ বদলায়। Bangladesh (UTC+6) থেকে দেখলে ঠিক স্থানীয় সময়।</p><div class="callout php"><b>PHP/Laravel-এ যেমন</b> Laravel-এ <code>$table-&gt;timestampsTz()</code> আর <code>config/app.php</code>-এর <code>timezone</code>। একাধিক দেশের user হলে সবসময় timestamptz।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">timezone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Asia/Dhaka&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="nb">timestamptz</span><span class="w"> </span><span class="s1">&#39;2026-10-21 10:00:00+00&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">utc_10am_in_dhaka</span><span class="p">;</span>
+
+<span class="k">SET</span><span class="w"> </span><span class="n">timezone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;UTC&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="nb">timestamptz</span><span class="w"> </span><span class="s1">&#39;2026-10-21 10:00:00+00&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">same_moment_in_utc</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>SET
+   utc_10am_in_dhaka    
+------------------------
+ 2026-10-21 16:00:00+06
+(1 row)
+
+SET
+   same_moment_in_utc   
+------------------------
+ 2026-10-21 10:00:00+00
+(1 row)</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="Project: দোকানের প্রশ্ন"><div class="inner"><div class="head"><span class="tag">পাঠ ২৩</span><h2>Project: দোকানের প্রশ্ন</h2></div><div class="body two"><div class="txt"><div class="callout task"><b>নিজে করুন</b> লিখুন: (১) used ফোনের মোট স্টক-মূল্য; (২) যাদের বাকি ১০০০-এর বেশি তাদের নাম আর বাকি, <code>RETURNING</code> দিয়ে বাকি ১০% কমিয়ে দিন।</div></div><div class=codecol><div class="code"><div class="code-h"><span>PostgreSQL</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">brand</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">phone</span><span class="p">,</span>
+<span class="w">       </span><span class="n">price</span><span class="p">,</span>
+<span class="w">       </span><span class="n">stock</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">products</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="n">is_used</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">20000</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">name</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;charger%&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">price</span><span class="p">;</span>
+</pre></div>
+</div><div class="term out"><div class="term-h">ফলাফল</div><pre>         phone         |  price   | stock 
+-----------------------+----------+-------
+ Walton Walton NEXG N9 |  9990.00 |     7
+ Xiaomi Redmi 13       | 17500.00 |    15
+ Vivo Vivo Y28         | 18000.00 |     4
+(3 rows)</pre></div></div></div></div></section>
+<section class="slide" data-part="Function" data-title="Backup আর restore"><div class="inner"><div class="head"><span class="tag">পাঠ ২৪</span><h2>Backup আর restore</h2></div><div class="body two"><div class="txt"><ul><li><code>-Fc</code> — compressed custom format; <code>pg_restore</code> দিয়ে বাছাই করে restore করা যায়</li><li>শুধু SQL চাইলে: <code>pg_dump shop &gt; shop.sql</code></li><li>শুধু গঠন: <code>pg_dump --schema-only</code></li></ul></div><div class=codecol><div class="code"><div class="code-h"><span>Terminal</span><button class="copy" type="button">কপি</button></div><div class="hl"><pre><span></span><span class="gp">$ </span>pg_dump<span class="w"> </span>-Fc<span class="w"> </span>shop<span class="w"> </span>&gt;<span class="w"> </span>shop.dump
+<span class="gp">$ </span>createdb<span class="w"> </span>shop_copy
+<span class="gp">$ </span>pg_restore<span class="w"> </span>-d<span class="w"> </span>shop_copy<span class="w"> </span>shop.dump
+</pre></div>
+</div></div></div></div></section>
+<section class="slide hero end" data-part="Function" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>PostgreSQL 101 শেষ! 🎉</h1><p class="lead">Table, type আর CRUD হলো। এবার অনেক table জুড়ে কাজ — আর PostgreSQL-এর নিজস্ব কৌশল যেগুলো MySQL-এ নেই।</p><div class="steps done"><div><i>✓</i><span>Identity column, <code>text</code>, <code>numeric</code>, আসল <code>boolean</code></span></div><div><i>✓</i><span><code>RETURNING</code> — INSERT/UPDATE/DELETE-এর ফল সাথে সাথে</span></div><div><i>✓</i><span><code>LIKE</code> case-sensitive; <code>ILIKE</code> না</span></div><div><i>✓</i><span>কঠোর type, <code>::</code> দিয়ে cast</span></div><div><i>✓</i><span><code>CHECK</code> দিয়ে নিজের নিয়ম</span></div><div><i>✓</i><span><code>length()</code> অক্ষর গোনে; সময়ের জন্য <code>timestamptz</code></span></div></div><div class="btns"><a class="btn" href="../postgresql-102/index.html">পরের কোর্স: PostgreSQL 102 — JOIN ও PostgreSQL-এর বিশেষ কৌশল →</a><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+</main>
+<div id="menu"></div>
+<div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>
+<script>window.COURSE="postgresql-101";
+(function(){
+  var B=function(n){return String(n).replace(/\d/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+  var deck=document.getElementById('deck'),slides=[].slice.call(deck.children),n=slides.length,i=0,root=document.documentElement;
+  var bar=document.getElementById('bar'),count=document.getElementById('count'),part=document.getElementById('part'),menu=document.getElementById('menu');
+  var KEY='tut:'+window.COURSE,st={last:0,seen:{}};
+  try{var s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)st=s}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function go(k){i=Math.max(0,Math.min(n-1,k));deck.style.transform='translateX(-'+(i*100)+'vw)';
+    bar.style.width=((i+1)/n*100)+'%';count.textContent=B(i+1)+' / '+B(n);part.textContent=slides[i].getAttribute('data-part')||'';
+    st.last=i;st.seen[i]=1;st.total=n;save();slides[i].scrollTop=0;
+    try{history.replaceState(null,'','#'+(i+1))}catch(e){}}
+  function buildMenu(){var h='',last=null;slides.forEach(function(s,j){var p=s.getAttribute('data-part');if(p!==last){h+='<h3>'+p+'</h3>';last=p}
+    h+='<a data-go="'+j+'" class="'+(st.seen[j]?'seen ':'')+(j===i?'cur':'')+'"><span>'+B(j+1)+'.</span><span>'+s.getAttribute('data-title')+'</span></a>'});menu.innerHTML=h}
+  function toggleMenu(){if(!menu.classList.contains('open'))buildMenu();menu.classList.toggle('open')}
+  function toggleFs(){try{document.fullscreenElement?document.exitFullscreen():root.requestFullscreen()}catch(e){}}
+  function toggleTheme(){var dark=getComputedStyle(root).getPropertyValue('--bg').trim()==='#0B1220';var t=dark?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('tut-theme',t)}catch(e){}}
+  try{var th=localStorage.getItem('tut-theme');if(th)root.setAttribute('data-theme',th)}catch(e){}
+  menu.addEventListener('click',function(e){var a=e.target.closest('a');if(a){go(+a.getAttribute('data-go'));menu.classList.remove('open')}else if(e.target===menu)menu.classList.remove('open')});
+  document.getElementById('prev').onclick=function(){go(i-1)};
+  document.getElementById('next').onclick=function(){go(i+1)};
+  document.getElementById('menuBtn').onclick=toggleMenu;
+  document.getElementById('fs').onclick=toggleFs;
+  document.getElementById('theme').onclick=toggleTheme;
+  document.addEventListener('click',function(e){var b=e.target.closest('.copy');if(!b)return;
+    var pre=b.closest('.code').querySelector('pre');var t=pre.innerText.replace(/^\$ /gm,'');
+    var done=function(){b.textContent='কপি হয়েছে ✓';setTimeout(function(){b.textContent='কপি'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,done);else done()});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='SUMMARY'&&(e.key===' '||e.key==='Enter'))return;
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='Escape'){menu.classList.remove('open');return}
+    if(['ArrowRight','PageDown'].indexOf(e.key)>-1){e.preventDefault();go(i+1)}
+    else if(['ArrowLeft','PageUp'].indexOf(e.key)>-1){e.preventDefault();go(i-1)}
+    else if(e.key==='Home')go(0);else if(e.key==='End')go(n-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if(e.key==='d'||e.key==='D')toggleTheme();
+    else if(e.key==='m'||e.key==='M')toggleMenu();});
+  var x0=null,y0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  document.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!e.target.closest('pre'))go(i+(dx<0?1:-1));x0=null});
+  var h=parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(h)){go(h-1)}else{var last=st.last||0;go(0);
+    if(last>0){var r=document.getElementById('resume');document.getElementById('resumeText').textContent='আগেরবার স্লাইড '+B(last+1)+' পর্যন্ত পড়েছিলেন।';
+      r.classList.add('show');document.getElementById('resumeGo').onclick=function(){go(last);r.classList.remove('show')};
+      document.getElementById('resumeNo').onclick=function(){r.classList.remove('show')};}}
+})();
+</script>
+</body>
+</html>

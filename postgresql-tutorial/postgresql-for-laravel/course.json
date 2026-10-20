@@ -1,0 +1,7 @@
+{
+ "slug": "postgresql-for-laravel",
+ "title": "PostgreSQL for Laravel",
+ "subtitle": "Laravel app PostgreSQL-এ: migration কোন SQL বানায়, LIKE/GROUP BY-এর ফাঁদ, RETURNING, JSONB, sequence আর aborted transaction",
+ "lessons": 12,
+ "slides": 14
+}

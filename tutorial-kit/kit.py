@@ -293,6 +293,42 @@ def run_eloquent(c: Code, sql, models):
     return dict(kind="out", text=r.stdout.rstrip())
 
 
+PG_PORT = 5544   # private throwaway cluster, never the user's own PostgreSQL
+
+
+def pg_bin():
+    """PostgreSQL binaries: $PG_BIN, then Homebrew postgresql@17/@16, then PATH."""
+    if os.environ.get("PG_BIN"):
+        return Path(os.environ["PG_BIN"])
+    for v in ("17", "16"):
+        r = subprocess.run(["brew", "--prefix", f"postgresql@{v}"], capture_output=True, text=True)
+        if r.returncode == 0 and (Path(r.stdout.strip()) / "bin/psql").exists():
+            return Path(r.stdout.strip()) / "bin"
+    return Path(shutil.which("psql")).parent
+
+
+class PgCluster:
+    """initdb + pg_ctl in .cache/pgdata on PG_PORT; started for a build, stopped afterwards."""
+
+    def __init__(self):
+        self.bin, self.data = pg_bin(), CACHE / "pgdata"
+        self.env = {**os.environ, "PGHOST": "127.0.0.1", "PGPORT": str(PG_PORT), "PGUSER": "postgres",
+                    "LC_ALL": "en_US.UTF-8"}
+
+    def __enter__(self):
+        if not (self.data / "PG_VERSION").exists():
+            subprocess.run([str(self.bin / "initdb"), "-D", str(self.data), "-U", "postgres", "-E", "UTF8",
+                            "--locale=en_US.UTF-8", "-A", "trust"], check=True, capture_output=True)
+        subprocess.run([str(self.bin / "pg_ctl"), "-D", str(self.data), "-l", str(CACHE / "pg.log"), "-w",
+                        "-o", f"-p {PG_PORT} -k {CACHE} -c listen_addresses=127.0.0.1", "start"],
+                       check=True, capture_output=True)
+        os.environ.update({k: self.env[k] for k in ("PGHOST", "PGPORT", "PGUSER")})
+        return self
+
+    def __exit__(self, *exc):
+        subprocess.run([str(self.bin / "pg_ctl"), "-D", str(self.data), "-m", "fast", "stop"], capture_output=True)
+
+
 class SqlSession:
     """One fresh database per course; blocks run in order so they can build on each other."""
 
@@ -301,8 +337,9 @@ class SqlSession:
         if engine == "mysql":
             self._mysql(f"DROP DATABASE IF EXISTS {db}; CREATE DATABASE {db} CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;", use_db=False)
         else:
-            subprocess.run(["psql", "-X", "-q", "-d", "postgres", "-c", f"DROP DATABASE IF EXISTS {db}"], check=True, capture_output=True)
-            subprocess.run(["psql", "-X", "-q", "-d", "postgres", "-c", f"CREATE DATABASE {db}"], check=True, capture_output=True)
+            self.psql = str(pg_bin() / "psql")
+            for q in (f"DROP DATABASE IF EXISTS {db}", f"CREATE DATABASE {db}"):
+                subprocess.run([self.psql, "-X", "-q", "-d", "postgres", "-c", q], check=True, capture_output=True)
 
     def _mysql(self, sql, use_db=True, verbose=False):
         cmd = ["mysql", "-uroot", "--default-character-set=utf8mb4", "-t"] + (["-vvv"] if verbose else []) \
@@ -326,10 +363,11 @@ class SqlSession:
             r = self._mysql(c.src, verbose=True)
             text = self._clean_mysql(r.stdout + r.stderr)
         else:
-            r = subprocess.run(["psql", "-X", "-d", self.db, "-v", "ON_ERROR_STOP=1"], input=c.src,
+            r = subprocess.run([self.psql, "-X", "-d", self.db, "-v", "ON_ERROR_STOP=1"], input=c.src,
                                capture_output=True, text=True, timeout=60)
             text = (r.stdout + r.stderr).rstrip()
             text = re.sub(r"^psql:<stdin>:\d+: ", "", text, flags=re.M)
+            text = re.sub(r"(?m)^Time: .*\n?", "", text)
         failed = r.returncode != 0 or "ERROR" in text
         if c.err:
             if not failed or c.err not in text:
@@ -422,6 +460,12 @@ class Course:
 
     # ---- verify every runnable block, then write index.html
     def run_all(self):
+        if self.sql_engine == "postgresql":
+            with PgCluster():
+                return self._run_all()
+        return self._run_all()
+
+    def _run_all(self):
         res = Results()
         sql = SqlSession(self.sql_engine, f"tut_{self.slug.replace('-', '_')}") if self.sql_engine else None
         n = 0

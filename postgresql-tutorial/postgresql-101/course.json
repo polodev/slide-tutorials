@@ -1,0 +1,7 @@
+{
+ "slug": "postgresql-101",
+ "title": "PostgreSQL 101 — শূন্য থেকে শুরু",
+ "subtitle": "psql, data type, CRUD আর RETURNING, ILIKE, তারিখ — আর MySQL থেকে কোথায় আলাদা",
+ "lessons": 24,
+ "slides": 26
+}

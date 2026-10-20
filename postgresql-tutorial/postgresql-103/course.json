@@ -1,0 +1,7 @@
+{
+ "slug": "postgresql-103",
+ "title": "PostgreSQL 103 — Index, JSONB ও Full-text",
+ "subtitle": "Index-এর ধরন আর EXPLAIN, transaction ও SKIP LOCKED, window function, JSONB, array, full-text search, materialized view আর trigger",
+ "lessons": 22,
+ "slides": 24
+}

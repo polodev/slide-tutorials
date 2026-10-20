@@ -1,0 +1,7 @@
+{
+ "slug": "postgresql-102",
+ "title": "PostgreSQL 102 — JOIN ও বিশেষ কৌশল",
+ "subtitle": "Relationship, GROUP BY, JOIN — আর PostgreSQL-এর নিজস্ব: FILTER, DISTINCT ON, string_agg, LATERAL, ON CONFLICT",
+ "lessons": 18,
+ "slides": 20
+}
