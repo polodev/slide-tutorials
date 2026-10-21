@@ -66,6 +66,7 @@ right column automatically.
 |---|---|
 | `rust` | rustc --edition 2024; `err="E0382"` expects that compile error; `panic=True`; `stdin=`; `test=True` (rustc --test) |
 | `rust` + `deps={...}` | Cargo project with crates; `requests=[curl ...]` starts the server and records responses |
+| `c` / `cpp` | clang with `-Wall -Wextra` (`err="..."` expects a compile error); output of the real program |
 | `rust` + `web=True` | **Leptos CSR**: wasm32 build → wasm-bindgen → headless Chromium (Playwright). `actions=[("click",sel),("fill",sel,txt),("select",sel,v),("wait",ms),("shot",label)]`; real before/after screenshots; `site={"products.json": "..."}` serves extra static files |
 | `rust` + `topcoat="html"\|"runtime"` | **Topcoat** (tokio-rs/topcoat): app built with cargo, started on the test port, `requests=[curl ...]`; `files={"src/about.rs": ...}` adds module files. `"runtime"` uses `topcoat asset bundle` and then drives the page in headless Chromium like `web=True` (`actions=` incl. `("goto", "/path")`). Needs `cargo install topcoat-cli --root tutorial-kit/.cache/tcbin` |
 | `rust` + `fullstack=True` | **Leptos SSR + hydration**: `src`=lib.rs (built for wasm `hydrate` + native `ssr`), `app`=src/main.rs (axum server); curl `requests=` show the server HTML, `actions=` run in the browser after hydration |
@@ -118,7 +119,7 @@ Co-Authored-By trailers** (author: the user's git identity). Pages deploys autom
 
 ## Status / queue (keep this updated)
 
-- Done: Rust (6, incl. Rust Leptos and Rust Topcoat), Go (4), Dart+Flutter (4), MySQL (4), PostgreSQL (4), Accounts 101.
+- Done: Rust (7, incl. Software Development 101, Rust Leptos and Rust Topcoat), Go (4), Dart+Flutter (4), MySQL (4), PostgreSQL (4), Accounts 101.
 - In progress: **DevOps** — devops-101 (Linux in an Ubuntu container), docker, kubernetes (kind) written;
   still to write: ci-cd (GitHub Actions, actionlint), monitoring (Prometheus + Grafana with screenshots),
   infrastructure-as-code (OpenTofu). Then `devops-tutorial/build.py`, hub entry, README row.

@@ -106,7 +106,7 @@ class Code:
                  save=False, validate=None, timeout=300, max_lines=40, hidden=False):
         self.src = src.strip("\n")
         self.lang = lang
-        self.run = (lang in ("rust", "php", "mysql", "postgresql", "dart", "go")) if run is None else run
+        self.run = (lang in ("rust", "php", "mysql", "postgresql", "dart", "go", "c", "cpp")) if run is None else run
         self.err, self.panic, self.stdin = err, panic, stdin
         self.file, self.deps, self.requests, self.hl, self.args = file, deps, requests, hl, args or []
         self.show_output, self.label, self.test, self.server_log = show_output, label, test, server_log
@@ -726,6 +726,35 @@ def run_topcoat(c: Code, res: Results, folder: Path):
     return out
 
 
+def run_c(c: Code, res: Results):
+    """C or C++ program: clang with -Wall -Wextra (warnings are a lesson bug), then run."""
+    key = _hash(c.lang, c.src, c.stdin, c.err, c.panic)
+    if key in res.data:
+        return res.data[key]
+    d = CACHE / "c" / key
+    d.mkdir(parents=True, exist_ok=True)
+    ext, cc, std = ("c", "cc", "-std=c17") if c.lang == "c" else ("cpp", "c++", "-std=c++20")
+    (d / f"main.{ext}").write_text(c.src + "\n")
+    comp = subprocess.run([cc, std, "-Wall", "-Wextra", "-fno-color-diagnostics", "-o", "app", f"main.{ext}"],
+                          cwd=d, capture_output=True, text=True)
+    if c.err:
+        if comp.returncode == 0 or c.err not in comp.stderr:
+            raise SystemExit(f"expected {c.lang} error {c.err}:\n{comp.stderr}\n{c.src}")
+        out = dict(kind="error", text=re.sub(r"\n\d+ (warning|error)s? generated\.", "", comp.stderr.replace(str(d) + "/", "")).strip())
+    else:
+        if comp.returncode != 0:
+            raise SystemExit(f"{c.lang} compile failed:\n{comp.stderr}\n--- source ---\n{c.src}")
+        if "warning" in comp.stderr:
+            print(f"  ! warning:\n{comp.stderr}", file=sys.stderr)
+        r = subprocess.run([str(d / "app")], input=c.stdin, capture_output=True, text=True, timeout=20, cwd=d)
+        if r.returncode != 0 and not c.panic:
+            raise SystemExit(f"{c.lang} run failed ({r.returncode}):\n{r.stderr}\n{c.src}")
+        out = dict(kind="out", text=r.stdout.rstrip())
+    res.data[key] = out
+    res.save()
+    return out
+
+
 def _clean_go(text, d):
     text = text.replace(str(d) + "/", "./")
     text = re.sub(r"(?s)\n\ngoroutine \d+ .*", "", text)        # panic stack trace
@@ -1002,7 +1031,7 @@ class SqlSession:
 
 # ------------------------------------------------------------------ rendering
 FORMATTER_OPTS = dict(nowrap=False, wrapcode=False, cssclass="hl")
-LANG_LABEL = {"rust": "Rust", "dart": "Dart", "go": "Go", "yaml": "YAML", "php": "PHP", "mysql": "MySQL", "postgresql": "PostgreSQL", "toml": "TOML",
+LANG_LABEL = {"c": "C", "cpp": "C++", "rust": "Rust", "dart": "Dart", "go": "Go", "yaml": "YAML", "php": "PHP", "mysql": "MySQL", "postgresql": "PostgreSQL", "toml": "TOML",
               "console": "Terminal", "bash": "Terminal", "sql": "SQL", "json": "JSON", "ini": ".env", "html": "HTML",
               "dockerfile": "Dockerfile", "nginx": "Nginx", "text": ""}
 LEXER = {"mysql": "mysql", "postgresql": "postgresql", "console": "console", "ini": "ini", "php": "php"}
@@ -1186,6 +1215,8 @@ class Course:
                     c.result = run_cargo(c, res)
                 elif c.lang == "rust":
                     c.result = run_rust(c, res)
+                elif c.lang in ("c", "cpp"):
+                    c.result = run_c(c, res)
                 elif c.lang == "go":
                     c.result = run_go(c, res)
                 elif c.lang == "dart" and c.flutter:

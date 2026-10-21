@@ -8,7 +8,7 @@ from kit import Course, code, jargon, php_note, points, quiz, say, shell, steps,
 
 c = Course(slug="rust-101", title="Rust 101 — শূন্য থেকে শুরু", folder=Path(__file__).parent,
            subtitle="Install, variables, types, function, if/loop/match আর keyboard input — PHP জানা থাকলেই যথেষ্ট",
-           series="Rust 101", next_course=("../rust-102/index.html", "Rust 102 — Ownership ও Data"))
+           series="Rust 101", prev_course=("../software-development-101/index.html", "Software Development 101"), next_course=("../rust-102/index.html", "Rust 102 — Ownership ও Data"))
 
 c.cover("Rust 101<br>শূন্য থেকে শুরু",
         "PHP/Laravel জানেন? তাহলে Rust শেখা অনেক সহজ হবে। প্রতিটি স্লাইডে একটা ছোট ধারণা, একটা ছোট কোড আর তার আসল আউটপুট।",

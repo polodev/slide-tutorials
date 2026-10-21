@@ -5,7 +5,7 @@ at build time, and the real output (or real compiler error) is shown on the slid
 
 | Folder | Tutorial |
 |---|---|
-| `rust-tutorial/` | Rust 101, 102, 103, Rust Web Development (axum), Rust Leptos (reactive full-stack web) and Rust Topcoat (Tokio's server-first framework), with PHP/Laravel comparisons |
+| `rust-tutorial/` | Software Development 101 (jargon and foundations), Rust 101, 102, 103, Rust Web Development (axum), Rust Leptos (reactive full-stack web) and Rust Topcoat (Tokio's server-first framework), with PHP/Laravel comparisons |
 | `go-tutorial/` | Go 101, 102, 103 and Go Web Development (net/http + SQLite) |
 | `dart-tutorial/` | Dart 101, 102, 103 and Flutter (screenshots rendered by `flutter test`) |
 | `mysql-tutorial/` | MySQL from the first table to joins, indexes and transactions |
