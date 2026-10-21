@@ -1,0 +1,7 @@
+{
+ "slug": "rust-leptos",
+ "title": "Rust Leptos — Reactive Full-stack Web",
+ "subtitle": "Leptos হলো Rust-ভিত্তিক full-stack web framework: fine-grained reactivity, Virtual DOM ছাড়া, একই Rust code-এ client-side rendering, SSR আর hydration",
+ "lessons": 44,
+ "slides": 46
+}

@@ -96,7 +96,7 @@ class Code:
 
     def __init__(self, src, lang="rust", *, run=None, err=None, panic=False, stdin=None, file=None,
                  deps=None, requests=None, hl=(), args=None, show_output=True, label=None, test=False,
-                 server_log=False, eloquent=False, flutter=False, app=None, actions=None,
+                 server_log=False, eloquent=False, flutter=False, app=None, actions=None, web=False, fullstack=False, site=None,
                  save=False, validate=None, timeout=300, max_lines=40, hidden=False):
         self.src = src.strip("\n")
         self.lang = lang
@@ -106,6 +106,9 @@ class Code:
         self.show_output, self.label, self.test, self.server_log = show_output, label, test, server_log
         self.eloquent = eloquent   # php block that runs with Eloquent booted against the course database
         self.flutter, self.app, self.actions = flutter, app, actions   # Flutter: screenshot, or test against app
+        self.site = site   # extra static files served next to the wasm app: {"products.json": "..."}
+        self.fullstack = fullstack   # Leptos SSR + hydration: src = src/lib.rs, app = src/main.rs (axum server)
+        self.web = web   # Leptos CSR: build to wasm, open in headless Chromium, screenshot (actions = clicks/typing)
         self.save, self.validate, self.timeout, self.max_lines = save, validate, timeout, max_lines   # shell sessions
         self.hidden = hidden   # setup file: saved into the session but not shown on the slide
         self.result = None   # filled by the runner: dict(kind, text)
@@ -428,6 +431,214 @@ def run_flutter(c: Code, res: Results, folder: Path):
     return out
 
 
+WASM_BINDGEN = CACHE / "wbg/bin/wasm-bindgen"
+PW_PYTHON = CACHE / "pw/bin/python"
+WEB_CSS = """
+:root{color-scheme:light}
+body{margin:0;padding:18px;font:16px/1.5 -apple-system,'Segoe UI',Roboto,sans-serif;color:#1f2937;background:#fff;width:380px}
+button{font:inherit;padding:6px 14px;margin:2px 4px 2px 0;border:1px solid #cbd5e1;border-radius:8px;background:#f1f5f9;cursor:pointer}
+input,select{font:inherit;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box}
+h1,h2,h3{margin:0 0 8px}ul{margin:6px 0;padding-left:22px}p{margin:6px 0}
+.card{border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin:6px 0}
+.low{color:#b91c1c;font-weight:600}.ok{color:#15803d}.muted{color:#64748b}.bold{font-weight:700}
+.total{margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;font-weight:700}
+"""
+WEB_SHOT = r"""
+import json, sys, threading, http.server, functools
+from playwright.sync_api import sync_playwright
+d, out, actions = sys.argv[1], sys.argv[2], json.loads(sys.argv[3])
+url = sys.argv[4] if len(sys.argv) > 4 else None
+if not url:
+    h = functools.partial(http.server.SimpleHTTPRequestHandler, directory=d)
+    h.log_message = lambda *a, **k: None
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), h)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_port}/"
+errors, shots = [], []
+with sync_playwright() as p:
+    b = p.chromium.launch()
+    pg = b.new_page(viewport={"width": 420, "height": 1000}, device_scale_factor=2)
+    pg.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+    pg.on("pageerror", lambda e: errors.append(str(e)))
+    pg.goto(url)
+    pg.wait_for_function("document.body.innerText.trim().length > 0", timeout=15000)
+    if len(sys.argv) > 5:
+        pg.add_style_tag(content=sys.argv[5])
+    pg.wait_for_timeout(300)
+    def shot(label):
+        n = len(shots)
+        pg.evaluate("window.scrollTo(0, 0)")
+        pg.screenshot(path=f"{out}-{n}.png", clip=dict(x=0, y=0, width=420, height=max(60, pg.evaluate("document.body.getBoundingClientRect().height + 2"))))
+        shots.append(dict(label=label, file=f"{out}-{n}.png", text=pg.inner_text("body").strip()))
+    shot("শুরুতে" if actions else "ফলাফল")
+    for a in actions:
+        k = a[0]
+        if k == "click": pg.click(a[1])
+        elif k == "fill": pg.fill(a[1], a[2])
+        elif k == "select": pg.select_option(a[1], a[2])
+        elif k == "press": pg.press(a[1], a[2])
+        elif k == "wait": pg.wait_for_timeout(a[1])
+        elif k == "shot": pg.wait_for_timeout(150); shot(a[1])
+        pg.wait_for_timeout(120)
+    if actions and actions[-1][0] != "shot":
+        shot("পরে")
+    b.close()
+print(json.dumps(dict(shots=shots, errors=errors)))
+"""
+
+
+def run_web(c: Code, res: Results, folder: Path):
+    """Leptos CSR app: cargo build for wasm32, wasm-bindgen, open in headless Chromium, screenshot."""
+    key = _hash("web", c.src, c.deps, c.actions, c.site, WEB_CSS, WEB_SHOT, 4)
+    cached = res.data.get(key)
+    if cached and all((folder / s["img"]).exists() for s in cached["shots"]):
+        return cached
+    d = CACHE / "web" / key
+    (d / "src").mkdir(parents=True, exist_ok=True)
+    deps = "\n".join(f"{k} = {v if v.startswith('{') else json.dumps(v)}" for k, v in (c.deps or {}).items())
+    (d / "Cargo.toml").write_text(f'[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\n{deps}\n')
+    (d / "src/main.rs").write_text(c.src + "\n")
+    env = {**os.environ, "CARGO_TARGET_DIR": str(CACHE / "target")}
+    b = subprocess.run(["cargo", "build", "--target", "wasm32-unknown-unknown", "--color", "never", "-q"], cwd=d,
+                       capture_output=True, text=True, env=env)
+    if b.returncode != 0:
+        raise SystemExit(f"wasm build failed:\n{b.stderr}\n--- source ---\n{c.src}")
+    if "warning" in b.stderr:
+        print(f"  ! warning:\n{b.stderr}", file=sys.stderr)
+    g = subprocess.run([str(WASM_BINDGEN), "--target", "web", "--no-typescript", "--out-dir", str(d / "site/pkg"),
+                        str(CACHE / "target/wasm32-unknown-unknown/debug/app.wasm")], capture_output=True, text=True)
+    if g.returncode != 0:
+        raise SystemExit(f"wasm-bindgen failed:\n{g.stderr}")
+    (d / "site/index.html").write_text(
+        f'<!doctype html><meta charset="utf-8"><style>{WEB_CSS}</style>'
+        '<script type="module">import init from "./pkg/app.js"; init();</script>')
+    for name, text in (c.site or {}).items():
+        (d / "site" / name).write_text(text)
+    r = subprocess.run([str(PW_PYTHON), "-c", WEB_SHOT, str(d / "site"), str(d / "shot"), json.dumps(c.actions or [])],
+                       capture_output=True, text=True, timeout=120)
+    if r.returncode != 0:
+        raise SystemExit(f"browser run failed:\n{r.stderr}")
+    data = json.loads(r.stdout.strip().splitlines()[-1])
+    if data["errors"]:
+        raise SystemExit(f"browser console errors: {data['errors']}\n{c.src}")
+    (folder / "shots").mkdir(exist_ok=True)
+    shots = []
+    for i, s in enumerate(data["shots"]):
+        name = f"shots/{key[:12]}-{i}.png"
+        shutil.copy(s["file"], folder / name)
+        shots.append(dict(label=s["label"], img=name, text=s["text"]))
+    out = dict(kind="web", shots=shots, text="")
+    res.data[key] = out
+    res.save()
+    return out
+
+
+FULLSTACK_TOML = """[package]
+name = "app"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "server"
+path = "src/main.rs"
+required-features = ["ssr"]
+
+[features]
+hydrate = ["leptos/hydrate"]
+ssr = ["dep:axum", "dep:tokio", "dep:leptos_axum", "leptos/ssr"]
+
+[dependencies]
+leptos = "0.8"
+wasm-bindgen = "=0.2.129"
+axum = { version = "0.8", optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+leptos_axum = { version = "0.8", optional = true }
+%s
+"""
+
+
+def _tidy_response(text):
+    """Per-request random nonces and the <head> boilerplate are noise on a slide."""
+    text = re.sub(r'(nonce|crossorigin)="[^"]*"', r'\1="…"', text)
+    m = re.search(r"<body>.*?</body>", text, re.S)
+    if m and "<head>" in text:
+        text = "<!DOCTYPE html><html><head>…</head>" + m.group(0) + "</html>"
+    return text
+
+
+def run_fullstack(c: Code, res: Results, folder: Path):
+    """SSR + hydration: build the lib for wasm (hydrate) and the axum server natively (ssr), start the server,
+    curl it, then open it in headless Chromium so the wasm hydrates the server-rendered HTML."""
+    key = _hash("fullstack", c.src, c.app, c.deps, c.requests, c.actions, c.site, FULLSTACK_TOML, WEB_SHOT, WEB_CSS, 2)
+    cached = res.data.get(key)
+    if cached and all((folder / s["img"]).exists() for s in cached["shots"]):
+        return cached
+    d = CACHE / "fullstack" / key
+    (d / "src").mkdir(parents=True, exist_ok=True)
+    deps = "\n".join(f"{k} = {v if v.startswith('{') else json.dumps(v)}" for k, v in (c.deps or {}).items())
+    (d / "Cargo.toml").write_text(FULLSTACK_TOML % deps)
+    (d / "src/lib.rs").write_text(c.src + "\n")
+    (d / "src/main.rs").write_text(c.app.replace(":3000", f":{TEST_PORT}") + "\n")
+    env = {**os.environ, "CARGO_TARGET_DIR": str(CACHE / "target")}
+    w = subprocess.run(["cargo", "build", "--lib", "--target", "wasm32-unknown-unknown", "--no-default-features",
+                        "--features", "hydrate", "--color", "never", "-q"], cwd=d, capture_output=True, text=True, env=env)
+    if w.returncode != 0:
+        raise SystemExit(f"wasm (hydrate) build failed:\n{w.stderr}\n--- lib.rs ---\n{c.src}")
+    n = subprocess.run(["cargo", "build", "--bin", "server", "--features", "ssr", "--color", "never", "-q"], cwd=d,
+                       capture_output=True, text=True, env=env)
+    if n.returncode != 0:
+        raise SystemExit(f"server (ssr) build failed:\n{n.stderr}\n--- main.rs ---\n{c.app}")
+    for log in (w.stderr, n.stderr):
+        if "warning" in log:
+            print(f"  ! warning:\n{log}", file=sys.stderr)
+    g = subprocess.run([str(WASM_BINDGEN), "--target", "web", "--no-typescript", "--out-dir", str(d / "site/pkg"),
+                        str(CACHE / "target/wasm32-unknown-unknown/debug/app.wasm")], capture_output=True, text=True)
+    if g.returncode != 0:
+        raise SystemExit(f"wasm-bindgen failed:\n{g.stderr}")
+    for name, text in (c.site or {}).items():
+        (d / "site" / name).write_text(text)
+    with socket.socket() as sk:
+        if sk.connect_ex(("127.0.0.1", TEST_PORT)) == 0:
+            raise SystemExit(f"port {TEST_PORT} is busy; stop that process first")
+    p = subprocess.Popen([str(CACHE / "target/debug/server")], cwd=d, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                         text=True, env=env, start_new_session=True)
+    try:
+        if not _wait_port(TEST_PORT):
+            raise SystemExit(f"server did not start:\n{c.app}")
+        parts = []
+        for req in c.requests or []:
+            r = subprocess.run(req.replace(":3000", f":{TEST_PORT}"), shell=True, capture_output=True, text=True, timeout=20)
+            body = r.stdout.replace(f":{TEST_PORT}", ":3000")
+            try:
+                body = json.dumps(json.loads(body), ensure_ascii=False, indent=2)
+            except ValueError:
+                body = _tidy_response(body)
+            parts.append(f"$ {req}\n{body.rstrip()}")
+        sh = subprocess.run([str(PW_PYTHON), "-c", WEB_SHOT, "", str(d / "shot"), json.dumps(c.actions or []), f"http://127.0.0.1:{TEST_PORT}/", WEB_CSS],
+                            capture_output=True, text=True, timeout=120)
+    finally:
+        os.killpg(p.pid, signal.SIGTERM)
+        p.wait(timeout=10)
+    if sh.returncode != 0:
+        raise SystemExit(f"browser run failed:\n{sh.stderr}")
+    data = json.loads(sh.stdout.strip().splitlines()[-1])
+    if data["errors"]:
+        raise SystemExit(f"browser console errors: {data['errors']}\n{c.src}")
+    (folder / "shots").mkdir(exist_ok=True)
+    shots = []
+    for i, s in enumerate(data["shots"]):
+        name = f"shots/{key[:12]}-{i}.png"
+        shutil.copy(s["file"], folder / name)
+        shots.append(dict(label=s["label"], img=name, text=s["text"]))
+    out = dict(kind="web", shots=shots, text="\n\n".join(parts), title="আসল browser-এ — server-এর HTML, তারপর hydration")
+    res.data[key] = out
+    res.save()
+    return out
+
+
 def _clean_go(text, d):
     text = text.replace(str(d) + "/", "./")
     text = re.sub(r"(?s)\n\ngoroutine \d+ .*", "", text)        # panic stack trace
@@ -741,6 +952,14 @@ def render_special(c: Code, r, head, cls):
         return (f'<div class="code{cls}">{head}{hl_code(c.src, c.lang, c.hl)}</div>'
                 f'<figure class="phone-shot"><img src="{r["img"]}" alt="screenshot" loading="lazy">'
                 f'<figcaption>{e(r.get("caption", "আসল screenshot — flutter test দিয়ে তোলা"))}</figcaption></figure>')
+    if r["kind"] == "web":
+        figs = "".join(
+            f'<figure><img src="{s["img"]}" alt="{e(s["text"])}" loading="lazy"><figcaption>{e(s["label"])}</figcaption></figure>'
+            for s in r["shots"])
+        curl = (f'<div class="term http wrap"><div class="term-h">curl — server যা পাঠায়</div><pre>{e(r["text"])}</pre></div>'
+                if r.get("text") else "")
+        return (f'<div class="code{cls}">{head}{hl_code(c.src, c.lang, c.hl)}</div>{curl}'
+                f'<div class="web-shot"><div class="web-h">{e(r.get("title", "আসল browser-এ চালানো (wasm)"))}</div><div class="web-row">{figs}</div></div>')
     return None
 
 
@@ -870,7 +1089,11 @@ class Course:
                 if not c.run:
                     continue
                 n += 1
-                if c.lang == "rust" and c.deps is not None:
+                if c.lang == "rust" and c.web:
+                    c.result = run_web(c, res, self.folder)
+                elif c.lang == "rust" and c.fullstack:
+                    c.result = run_fullstack(c, res, self.folder)
+                elif c.lang == "rust" and c.deps is not None:
                     c.result = run_cargo(c, res)
                 elif c.lang == "rust":
                     c.result = run_rust(c, res)
@@ -1001,6 +1224,10 @@ pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-setting
 .phone-shot img{width:min(260px,60vw);border-radius:22px;border:6px solid #111827;box-shadow:0 12px 30px rgba(0,0,0,.3);background:#fff}
 .phone-shot figcaption{font-size:13px;color:var(--muted)}
 .dash-shot{margin:0;display:flex;flex-direction:column;gap:6px}.dash-shot img{width:100%;border-radius:12px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.term.wrap pre{white-space:pre-wrap;word-break:break-all}
+.web-shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card,#fff)}.web-h{font-size:12px;padding:5px 10px;background:var(--line);color:var(--muted)}
+.web-row{display:flex;gap:10px;padding:10px;flex-wrap:wrap;justify-content:center}.web-row figure{margin:0;flex:1 1 180px;max-width:100%;text-align:center}
+.web-row img{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}.web-row figcaption{font-size:12px;color:var(--muted);margin-top:4px}
 .dash-shot figcaption{font-size:13px;color:var(--muted)}
 .codecol:has(.phone-shot){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:1.2vw}
 @media (max-width:900px){.codecol:has(.phone-shot){grid-template-columns:1fr}}

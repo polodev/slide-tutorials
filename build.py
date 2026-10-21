@@ -18,7 +18,7 @@ SERIES = ["rust-tutorial", "go-tutorial", "dart-tutorial", "mysql-tutorial", "po
 
 def tutorials():
     return [
-        ("rust-tutorial", "🦀", "Rust", "শূন্য থেকে Rust, তারপর axum দিয়ে Laravel-এর মতো web API। PHP developer-দের জন্য তুলনাসহ।",
+        ("rust-tutorial", "🦀", "Rust", "শূন্য থেকে Rust, তারপর axum দিয়ে web API আর Leptos দিয়ে reactive full-stack web। PHP developer-দের জন্য তুলনাসহ।",
          series_meta(HERE / "rust-tutorial")),
         ("go-tutorial", "🐹", "Go", "ছোট, দ্রুত ভাষা — goroutine, channel আর framework ছাড়া web API। DevOps-এর ভাষা।",
          series_meta(HERE / "go-tutorial")),

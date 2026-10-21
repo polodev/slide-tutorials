@@ -59,12 +59,19 @@ code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;backgrou
 .term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
 .term.error .term-h,.term.panic .term-h{background:#B83434}
 .term.http .term-h{background:#1F5FA8}
+.term.termrun .term-h{background:#334155}.term.valid .term-h{background:#0D8A4A}
+.term .gp{color:#4ADE80;font-weight:700}.term b.cmd{color:#F8FAFC;font-weight:600}
 .term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
 pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
 .term.error pre,.term.panic pre{color:#FFB4B4}
 .phone-shot{margin:0;align-self:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .phone-shot img{width:min(260px,60vw);border-radius:22px;border:6px solid #111827;box-shadow:0 12px 30px rgba(0,0,0,.3);background:#fff}
 .phone-shot figcaption{font-size:13px;color:var(--muted)}
+.dash-shot{margin:0;display:flex;flex-direction:column;gap:6px}.dash-shot img{width:100%;border-radius:12px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.web-shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card,#fff)}.web-h{font-size:12px;padding:5px 10px;background:var(--line);color:var(--muted)}
+.web-row{display:flex;gap:10px;padding:10px;flex-wrap:wrap;justify-content:center}.web-row figure{margin:0;flex:1 1 180px;max-width:100%;text-align:center}
+.web-row img{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}.web-row figcaption{font-size:12px;color:var(--muted);margin-top:4px}
+.dash-shot figcaption{font-size:13px;color:var(--muted)}
 .codecol:has(.phone-shot){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:1.2vw}
 @media (max-width:900px){.codecol:has(.phone-shot){grid-template-columns:1fr}}
 .stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}
@@ -1192,7 +1199,7 @@ $ curl -s http://127.0.0.1:3000/api/v1/products/2
 }
 ← HTTP 404</pre></div></div></div></div></section>
 <section class="slide" data-part="সম্পূর্ণ Project" data-title="এরপর কী শিখবেন"><div class="inner"><div class="head"><span class="tag">পাঠ ২৮</span><h2>এরপর কী শিখবেন</h2></div><div class="body one"><div class="txt"><table class="tbl"><tr><th>বিষয়</th><th>crate</th></tr><tr><td>Login, JWT</td><td><code>jsonwebtoken</code>, <code>argon2</code> (password hash)</td></tr><tr><td>HTML page (Blade-এর মতো)</td><td><code>askama</code> বা <code>minijinja</code></td></tr><tr><td>Attribute দিয়ে validation</td><td><code>validator</code> / <code>garde</code></td></tr><tr><td>Integration test</td><td><code>tower::ServiceExt::oneshot</code>, <code>axum-test</code></td></tr><tr><td>Background job (queue)</td><td><code>tokio::spawn</code>, <code>apalis</code></td></tr><tr><td>OpenAPI/Swagger doc</td><td><code>utoipa</code></td></tr></table><div class="callout">💡 Laravel-এ যা করতে পারেন, Rust-এ প্রায় সবই পারবেন — শুধু একটু বেশি লিখতে হয়, বিনিময়ে অনেক কম memory আর অনেক বেশি গতি।</div></div></div></div></section>
-<section class="slide hero end" data-part="সম্পূর্ণ Project" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>Rust Web Development শেষ! 🎉</h1><p class="lead">আপনি এখন Rust দিয়ে একটা আসল JSON API বানাতে, database-এ রাখতে আর server-এ চালাতে পারেন।</p><div class="steps done"><div><i>✓</i><span>Route + async handler + extractor (<code>Path</code>, <code>Query</code>, <code>Json</code>, <code>State</code>)</span></div><div><i>✓</i><span><code>IntoResponse</code> দিয়ে error → JSON, Laravel-এর মতো 422</span></div><div><i>✓</i><span>sqlx: bind দিয়ে নিরাপদ SQL, <code>FromRow</code> দিয়ে struct</span></div><div><i>✓</i><span>Middleware: <code>from_fn</code>, TraceLayer, CorsLayer</span></div><div><i>✓</i><span>Release binary + systemd + Nginx = production</span></div></div><div class="btns"><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
+<section class="slide hero end" data-part="সম্পূর্ণ Project" data-title="শেষ"><div class="inner"><span class="tag">শেষ</span><h1>Rust Web Development শেষ! 🎉</h1><p class="lead">আপনি এখন Rust দিয়ে একটা আসল JSON API বানাতে, database-এ রাখতে আর server-এ চালাতে পারেন।</p><div class="steps done"><div><i>✓</i><span>Route + async handler + extractor (<code>Path</code>, <code>Query</code>, <code>Json</code>, <code>State</code>)</span></div><div><i>✓</i><span><code>IntoResponse</code> দিয়ে error → JSON, Laravel-এর মতো 422</span></div><div><i>✓</i><span>sqlx: bind দিয়ে নিরাপদ SQL, <code>FromRow</code> দিয়ে struct</span></div><div><i>✓</i><span>Middleware: <code>from_fn</code>, TraceLayer, CorsLayer</span></div><div><i>✓</i><span>Release binary + systemd + Nginx = production</span></div></div><div class="btns"><a class="btn" href="../rust-leptos/index.html">পরের কোর্স: Rust Leptos — Reactive Full-stack Web →</a><a class="btn ghost" href="../index.html">সব কোর্স</a><a class="btn ghost" href="../../index.html">সব টিউটোরিয়াল</a></div></div></section>
 </main>
 <div id="menu"></div>
 <div id="nav"><button id="prev" aria-label="আগের">‹</button><span id="count"></span><button id="next" aria-label="পরের">›</button><button id="menuBtn" title="সব পাঠ (M)" aria-label="সব পাঠ">☰</button><button id="fs" title="Fullscreen (F)" aria-label="Fullscreen">⛶</button><button id="theme" title="Dark mode (D)" aria-label="Theme">◐</button></div>

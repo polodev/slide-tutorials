@@ -35,6 +35,10 @@ tutorial-kit/.cache/       git-ignored: results cache, cargo target, flutter pro
 <series>/<course>/build.py one course → index.html + course.json
 ```
 
+Leptos needs (all in `tutorial-kit/.cache`, git-ignored; `rustup target add wasm32-unknown-unknown` is the only system-wide bit):
+`cargo install wasm-bindgen-cli --version 0.2.129 --root tutorial-kit/.cache/wbg` (must match the `wasm-bindgen` in Cargo.lock) and a venv
+`python3 -m venv tutorial-kit/.cache/pw && tutorial-kit/.cache/pw/bin/pip install playwright` (uses the Playwright Chromium in `~/Library/Caches/ms-playwright`).
+
 Series: `rust-tutorial`, `go-tutorial`, `dart-tutorial` (incl. `flutter`), `mysql-tutorial`,
 `postgresql-tutorial`, `devops-tutorial` (in progress), `accounts-101` (own older builder, not the kit).
 
@@ -59,6 +63,8 @@ right column automatically.
 |---|---|
 | `rust` | rustc --edition 2024; `err="E0382"` expects that compile error; `panic=True`; `stdin=`; `test=True` (rustc --test) |
 | `rust` + `deps={...}` | Cargo project with crates; `requests=[curl ...]` starts the server and records responses |
+| `rust` + `web=True` | **Leptos CSR**: wasm32 build → wasm-bindgen → headless Chromium (Playwright). `actions=[("click",sel),("fill",sel,txt),("select",sel,v),("wait",ms),("shot",label)]`; real before/after screenshots; `site={"products.json": "..."}` serves extra static files |
+| `rust` + `fullstack=True` | **Leptos SSR + hydration**: `src`=lib.rs (built for wasm `hydrate` + native `ssr`), `app`=src/main.rs (axum server); curl `requests=` show the server HTML, `actions=` run in the browser after hydration |
 | `go` | `go run` (gofmt applied to the shown source); `err=`, `panic=`, `stdin=`; `test=True, app=SRC` → `go test -v`; `deps=[module]`; `requests=` for servers |
 | `dart` | `dart run`; `deps={"http": "^1.2.0"}`; `test=True` → dart test |
 | `dart` + `flutter=True` | analyzed with --fatal-infos, then a **real screenshot** via golden test (`actions=[tester code]` taps/types first); `test=True, app=SRC` runs a widget test. Apps must define `class App` with a const constructor. |
@@ -108,7 +114,7 @@ Co-Authored-By trailers** (author: the user's git identity). Pages deploys autom
 
 ## Status / queue (keep this updated)
 
-- Done: Rust (4), Go (4), Dart+Flutter (4), MySQL (4), PostgreSQL (4), Accounts 101.
+- Done: Rust (5, incl. Rust Leptos), Go (4), Dart+Flutter (4), MySQL (4), PostgreSQL (4), Accounts 101.
 - In progress: **DevOps** — devops-101 (Linux in an Ubuntu container), docker, kubernetes (kind) written;
   still to write: ci-cd (GitHub Actions, actionlint), monitoring (Prometheus + Grafana with screenshots),
   infrastructure-as-code (OpenTofu). Then `devops-tutorial/build.py`, hub entry, README row.

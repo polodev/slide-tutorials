@@ -59,12 +59,19 @@ code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;backgrou
 .term-h{padding:5px 14px;background:#0D8A4A;color:#fff;font:600 13px 'Hind Siliguri',sans-serif}
 .term.error .term-h,.term.panic .term-h{background:#B83434}
 .term.http .term-h{background:#1F5FA8}
+.term.termrun .term-h{background:#334155}.term.valid .term-h{background:#0D8A4A}
+.term .gp{color:#4ADE80;font-weight:700}.term b.cmd{color:#F8FAFC;font-weight:600}
 .term pre{margin:0;padding:10px 16px;overflow-x:auto;font:clamp(12px,calc(var(--u)*1),15px)/1.5 'JetBrains Mono',monospace;color:#D5DEE9;white-space:pre}
 pre,code,pre *,code *{font-variant-ligatures:none!important;font-feature-settings:'liga' 0,'calt' 0!important}  /* show <= -> => as typed */
 .term.error pre,.term.panic pre{color:#FFB4B4}
 .phone-shot{margin:0;align-self:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .phone-shot img{width:min(260px,60vw);border-radius:22px;border:6px solid #111827;box-shadow:0 12px 30px rgba(0,0,0,.3);background:#fff}
 .phone-shot figcaption{font-size:13px;color:var(--muted)}
+.dash-shot{margin:0;display:flex;flex-direction:column;gap:6px}.dash-shot img{width:100%;border-radius:12px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.web-shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card,#fff)}.web-h{font-size:12px;padding:5px 10px;background:var(--line);color:var(--muted)}
+.web-row{display:flex;gap:10px;padding:10px;flex-wrap:wrap;justify-content:center}.web-row figure{margin:0;flex:1 1 180px;max-width:100%;text-align:center}
+.web-row img{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}.web-row figcaption{font-size:12px;color:var(--muted);margin-top:4px}
+.dash-shot figcaption{font-size:13px;color:var(--muted)}
 .codecol:has(.phone-shot){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:1.2vw}
 @media (max-width:900px){.codecol:has(.phone-shot){grid-template-columns:1fr}}
 .stdin{padding:6px 16px 0;color:#9FE6BE;font:600 13px 'JetBrains Mono',monospace}

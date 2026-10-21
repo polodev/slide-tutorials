@@ -5,7 +5,7 @@ at build time, and the real output (or real compiler error) is shown on the slid
 
 | Folder | Tutorial |
 |---|---|
-| `rust-tutorial/` | Rust 101, 102, 103 and Rust Web Development (axum), with PHP/Laravel comparisons |
+| `rust-tutorial/` | Rust 101, 102, 103, Rust Web Development (axum) and Rust Leptos (reactive full-stack web), with PHP/Laravel comparisons |
 | `go-tutorial/` | Go 101, 102, 103 and Go Web Development (net/http + SQLite) |
 | `dart-tutorial/` | Dart 101, 102, 103 and Flutter (screenshots rendered by `flutter test`) |
 | `mysql-tutorial/` | MySQL from the first table to joins, indexes and transactions |
@@ -25,7 +25,7 @@ python3 rust-tutorial/build.py # one series
 python3 build.py --hub         # hub page only
 ```
 
-Requirements for verifying code: `rustc`/`cargo` (Rust), `go` (Go), `dart`/`flutter`, `php` (PHP comparisons), a local MySQL server
+Requirements for verifying code: `rustc`/`cargo` (Rust; Leptos also needs the wasm32 target, wasm-bindgen-cli and Playwright, see AGENTS.md), `go` (Go), `dart`/`flutter`, `php` (PHP comparisons), a local MySQL server
 (`mysql -uroot`) and PostgreSQL (`psql`). Laravel snippets run through `illuminate/database`:
 run `composer install` in `tutorial-kit/eloquent` once. Results are cached in `tutorial-kit/.cache` (git-ignored).
 

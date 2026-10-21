@@ -24,7 +24,7 @@ JSON_H = "-H 'Content-Type: application/json'"
 
 c = Course(slug="rust-web-development", title="Rust Web Development — axum দিয়ে API", folder=HERE,
            subtitle="Laravel জানেন? axum, tokio আর sqlx দিয়ে একটা দোকানের Product API: route, JSON, validation, database, middleware, deploy",
-           series="Rust Web Development")
+           series="Rust Web Development", next_course=("../rust-leptos/index.html", "Rust Leptos — Reactive Full-stack Web"))
 
 c.cover("Rust Web Development<br>axum দিয়ে API",
         "Laravel-এ যা প্রতিদিন করেন — route, controller, validation, Eloquent, middleware — সেগুলোই Rust-এ। শেষে পুরো একটা Product API, যা চালানো যায়।",
