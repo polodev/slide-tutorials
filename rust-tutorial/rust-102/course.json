@@ -2,6 +2,6 @@
  "slug": "rust-102",
  "title": "Rust 102 — Ownership ও Data",
  "subtitle": "Rust-এর আসল শক্তি: ownership, borrowing, struct, enum, Option, Result, Vec আর HashMap",
- "lessons": 31,
- "slides": 33
+ "lessons": 36,
+ "slides": 38
 }

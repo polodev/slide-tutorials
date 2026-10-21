@@ -7,7 +7,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "tutorial-kit"))
-from kit import Course, code, php_note, points, quiz, say, shell, steps, table, task, tip, warn  # noqa: E402
+from kit import Course, code, jargon, php_note, points, quiz, say, shell, steps, table, task, tip, warn  # noqa: E402
 
 SSR = {"leptos": '{ version = "0.8", features = ["ssr"] }'}
 CSR = {"leptos": '{ version = "0.8", features = ["csr"] }'}
@@ -32,7 +32,8 @@ def laravel(src, label="Laravel / Livewire-এ"):
 
 c = Course(slug="rust-leptos", title="Rust Leptos — Reactive Full-stack Web", folder=HERE,
            subtitle="Leptos হলো Rust-ভিত্তিক full-stack web framework: fine-grained reactivity, Virtual DOM ছাড়া, একই Rust code-এ client-side rendering, SSR আর hydration",
-           series="Rust Leptos", prev_course=("../rust-web-development/index.html", "Rust Web Development"))
+           series="Rust Leptos", prev_course=("../rust-web-development/index.html", "Rust Web Development"),
+           next_course=("../rust-topcoat/index.html", "Rust Topcoat — Tokio-র Full-stack Framework"))
 
 c.cover("Rust Leptos<br>Reactive Full-stack Web",
         "Livewire আর Vue/React যা করে — interactive UI — সেটাই পুরোপুরি Rust-এ। Virtual DOM ছাড়া, fine-grained reactivity দিয়ে। প্রতিটি উদাহরণ আসলেই browser-এ চালানো, screenshot আসল।",
@@ -64,6 +65,17 @@ c.lesson("Laravel-এর সাথে মিল",
         ["<code>@if</code> / <code>v-if</code>", "<code>&lt;Show&gt;</code> বা <code>if</code>"],
         ["<code>routes/web.php</code>", "<code>leptos_router</code>"],
         ["Controller + API call", "<code>#[server]</code> function"]]))
+
+c.lesson("Web frontend-এর জার্গন",
+    say("Leptos, React, Vue — এই জগতের আলোচনায় কিছু শব্দ বারবার আসে। আগে একবার সবগুলো চিনে নিন; প্রতিটা এই কোর্সেই কাজে দেখবেন।"),
+    jargon(("DOM", "browser page-কে যে tree আকারে মনে রাখে (<code>html → body → p</code>…); JavaScript/wasm এই tree বদলে page বদলায়"),
+           ("Virtual DOM", "React-এর কৌশল: আগে একটা কপি-tree বানিয়ে পুরনোটার সাথে তুলনা, তারপর পার্থক্যটুকু আসল DOM-এ — Leptos এই ধাপই বাদ দেয়"),
+           ("Reactivity", "data বদলালে যা যা data-র উপর নির্ভরশীল সেগুলো নিজে নিজে আপডেট হওয়া"),
+           ("WebAssembly (wasm)", "browser-এ চলা compile-করা binary format; Rust compile করে এখানে নেওয়া যায়"),
+           ("SPA (Single Page App)", "একটাই page লোড হয়, পরে JavaScript/wasm দিয়ে অংশ বদলায়"),
+           ("CSR / SSR / Hydration", "browser-এ বানানো / server-এ বানানো / server-এর HTML-কে browser-এ জীবন্ত করা"),
+           ("Isomorphic / universal", "একই code server আর browser দুই জায়গাতেই চলে")),
+    php_note("Blade সবসময় server-এ HTML বানায় (SSR)। jQuery/Alpine তারপর DOM হাতে বদলায়। Leptos একই code-এ দুটোই করে।"))
 
 c.lesson("প্রথম Hello, World! — server-এ render",
     say("সবচেয়ে ছোট Leptos program। এখানে browser নেই — <code>to_html()</code> view-কে সরাসরি HTML string বানায়, ঠিক SSR যা করে।"),
@@ -112,6 +124,22 @@ trunk serve --open'''),
 
 # ================================================================== view! ও component
 c.section("view! ও component")
+c.lesson("view! আসলে macro",
+    say("Rust 101-এ <code>println!</code> দেখে শিখেছেন: নামের শেষে <code>!</code> মানে macro। <code>view!</code> সেই জাতেরই — তবে অনেক বেশি শক্তিশালী। <code>view!</code>-এর ভিতরের HTML-সদৃশ লেখা compile-এর সময় সাধারণ Rust code-এ বদলে যায়, তাই HTML-এ ভুল করলে program চলার আগেই ধরা পড়ে:"),
+    code(r'''
+use leptos::prelude::*;
+
+fn main() {
+    let page = view! { <div><p>"Hello"</div> };
+    println!("{}", page.to_html());
+}
+''', "rust", deps=SSR, err="error"),
+    jargon(("Function-like macro", "<code>view!(...)</code>, <code>println!(...)</code> — ডাকার ধরন function-এর মতো"),
+           ("Attribute macro", "<code>#[component]</code>, <code>#[page]</code> — নিচের function বদলে দেয় (Rust 102-এর attribute)"),
+           ("Derive macro", "<code>#[derive(...)]</code> — struct দেখে trait-এর code বানায়"),
+           ("DSL (Domain-Specific Language)", "একটা নির্দিষ্ট কাজের জন্য ছোট ভাষা — <code>view!</code>-এর ভিতরের HTML-সদৃশ ভাষা")),
+    tip("এই তিন ধরনকেই একসাথে বলে <b>procedural macro</b> — Rust code পড়ে Rust code লেখে। Leptos আর Topcoat দুজনেরই প্রাণ এখানে।"))
+
 c.lesson("view! — Rust-এর ভিতরে HTML",
     say("<code>view!</code> HTML-এর মতো লেখা যায়, কিন্তু এটা type-checked Rust। ভুল tag বা ভুল attribute হলে compile-ই হবে না।"),
     ssr(r'''
@@ -1210,6 +1238,19 @@ c.lesson("কখন কোনটা?",
     warn("Leptos এখনো দ্রুত বদলায় (0.x)। নতুন version-এ API একটু আলাদা হতে পারে — project-এ version লক করে রাখুন, আর upgrade-এর আগে release note পড়ুন।"))
 
 # @@END
+c.lesson("Leptos-এর জার্গন কার্ড",
+    table(["শব্দ", "এক লাইনে"], [
+        ["DOM / Virtual DOM", "page-এর tree / তুলনার কপি-tree (Leptos-এ নেই)"],
+        ["Reactivity", "data বদলালে নির্ভরশীল অংশ নিজে আপডেট"],
+        ["Signal", "বদলানো যায় এমন reactive মান"],
+        ["Memo / Derived", "অন্য signal থেকে হিসাব করা মান"],
+        ["Effect / Side effect", "বাইরের জগতে কাজ (log, storage) যা signal বদলালে চলে"],
+        ["Component", "পুনর্ব্যবহারযোগ্য UI অংশ (function)"],
+        ["Prop", "component-কে দেওয়া argument"],
+        ["CSR / SSR / Hydration", "browser-এ / server-এ বানানো / server-এর HTML জীবন্ত করা"],
+        ["Server function", "server-এ চলে, browser থেকে ডাকা যায় এমন function"],
+        ["WebAssembly", "browser-এ চলা compile-করা binary"]]))
+
 c.finish("Leptos শেখা শেষ", "আপনি এখন Rust-এ interactive UI বানাতে পারেন — browser-এ, server-এ, দুই জায়গাতেই এক code।",
          recap=["Leptos: fine-grained reactivity, Virtual DOM নেই", "view! আর #[component], props, children",
                 "signal, Memo, Effect — component একবারই চলে", "on:click, prop:value, For, Show",

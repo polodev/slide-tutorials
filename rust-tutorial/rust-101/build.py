@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tutorial-kit"))
-from kit import Course, code, php_note, points, quiz, say, shell, steps, table, task, tip, warn  # noqa: E402
+from kit import Course, code, jargon, php_note, points, quiz, say, shell, steps, table, task, tip, warn  # noqa: E402
 
 c = Course(slug="rust-101", title="Rust 101 — শূন্য থেকে শুরু", folder=Path(__file__).parent,
            subtitle="Install, variables, types, function, if/loop/match আর keyboard input — PHP জানা থাকলেই যথেষ্ট",
@@ -54,6 +54,36 @@ fn main() {
 '''),
     task("নিজের নাম আর জেলার নাম দুই লাইনে প্রিন্ট করুন।"))
 
+c.lesson("Macro: নামের শেষে ! কেন?",
+    say("<code>println!</code>-এর <code>!</code> বলে দেয় এটা function না, <b>macro</b>। Macro হলো \"কোড লেখার কোড\" — compile হওয়ার <b>আগেই</b> compiler একে আসল Rust code-এ খুলে (expand করে) নেয়।"),
+    points("Function-এ argument-এর সংখ্যা আর type আগে থেকে ঠিক করা; macro-তে নমনীয় — <code>println!(\"{} {}\", a, b)</code>, যত খুশি argument",
+           "Macro-র নাম সবসময় <code>!</code> দিয়ে — তাই দেখেই বোঝা যায়",
+           "পরে <code>vec!</code>, <code>format!</code>, <code>assert_eq!</code> সবই macro"),
+    php_note("PHP-র <code>echo</code>, <code>isset()</code>, <code>empty()</code> আসলে function না — <b>language construct</b>, তাই তাদের আচরণ একটু আলাদা। Rust-এ এই ক্ষমতা macro দিয়ে সবাই নিজের জন্য বানাতে পারে।"),
+    jargon(("Macro", "যে code compile-এর সময় অন্য code বানিয়ে দেয়"),
+           ("Expand", "macro-কে তার আসল, লম্বা code-এ খুলে ফেলা"),
+           ("Compile time", "program চালানোর <b>আগে</b>, যখন compiler কোড পড়ে — runtime হলো চলার সময়")))
+
+c.lesson("! ভুলে গেলে compiler কী বলে?",
+    say("<code>println</code> আর <code>println!</code> আলাদা জিনিস। <code>!</code> বাদ দিলে compiler ঠিক বুঝিয়ে দেয়:"),
+    code(r'''
+fn main() {
+    println("Hello, World!");
+}
+''', err="E0423"),
+    say("সাধারণ macro-গুলো এক নজরে (সব আসল আউটপুট):"),
+    code(r'''
+fn main() {
+    let name = "Rahim Mobile";
+    let line = format!("{name} — Mirpur");   // String বানায়
+    let prices = vec![18500, 41500, 112000];  // Vec বানায়
+    println!("{line}");
+    println!("{prices:?}");
+    assert_eq!(prices.len(), 3);              // ভুল হলে program থামে
+    println!("ঠিক আছে");
+}
+'''))
+
 c.lesson("Cargo: Rust-এর Composer",
     say("বাস্তব project-এ আমরা <code>rustc</code> সরাসরি না চালিয়ে <code>cargo</code> ব্যবহার করি। এটা project বানায়, build করে, চালায়, আর package (crate) নামায়।"),
     table(["Cargo", "কাজ", "Composer/Laravel-এ"], [
@@ -72,6 +102,18 @@ edition = "2024"
 
 [dependencies]
 ''', "toml", file="Cargo.toml"))
+
+c.lesson("Compile, build, binary: শব্দগুলো",
+    say("Cargo-র সাথে কয়েকটা শব্দ বারবার আসবে। PHP-তে এগুলোর দরকার পড়ে না, কারণ PHP source file-ই সরাসরি চলে।"),
+    table(["শব্দ", "মানে", "PHP-তে কাছাকাছি"], [
+        ["<b>Compile</b>", "Rust কোডকে machine-এর বোঝার ভাষায় বদলানো", "নেই (PHP interpret করে)"],
+        ["<b>Binary / executable</b>", "compile-এর ফল — একটাই ফাইল, চালালেই চলে", "<code>.php</code> ফাইল"],
+        ["<b>Build</b>", "compile + সব dependency জোড়া লাগানো", "<code>composer install</code> (আংশিক)"],
+        ["<b>Debug / release build</b>", "debug: দ্রুত build, ধীর; release: ধীর build, অনেক দ্রুত", "—"],
+        ["<b>Crate</b>", "Rust-এর package/library", "Composer package"],
+        ["<b>Dependency</b>", "অন্য crate যার উপর আপনার কোড নির্ভর করে", "<code>require</code> করা package"]]),
+    jargon(("Runtime", "program <b>চলার সময়</b>; যে ভুল কেবল তখন ধরা পড়ে সেটা runtime error"),
+           ("Interpreter", "source code লাইন ধরে চালায় (PHP); compiler আগে পুরোটা বদলে নেয় (Rust)")))
 
 c.lesson("println! দিয়ে সুন্দর করে প্রিন্ট",
     say("<code>{}</code> জায়গায় মান বসে। Variable-এর নাম সরাসরি <code>{name}</code> লেখা যায়।"),
@@ -154,6 +196,20 @@ fn main() {
     println!("দাম {price}, VAT {vat}, মোট {}", price + vat);
 }
 '''))
+
+c.lesson("Type: static typing আর inference",
+    say("Rust <b>statically typed</b>: প্রতিটা value-র type compile-এর সময়েই ঠিক। আবার <b>type inference</b> আছে — অনেক সময় type লিখতে হয় না, compiler আন্দাজ করে নেয়। কিন্তু মিলছে না দেখলে compile-এই থামিয়ে দেয়।"),
+    code(r'''
+fn main() {
+    let price = 18500;          // compiler বুঝে নিল: সংখ্যা
+    let qty: i32 = "5";         // লিখে দিলাম i32, কিন্তু মান text
+    println!("{}", price * qty);
+}
+''', err="E0308"),
+    php_note("PHP-তে <code>\"5\"</code> আর <code>5</code> চুপচাপ গুণ হয়ে যায় (type juggling)। Rust এই ধরনের অসাবধান ভুল চলতেই দেয় না।"),
+    jargon(("Static typing", "type compile-এর সময় ঠিক হয়; dynamic typing-এ (PHP) চলার সময়"),
+           ("Type inference", "type না লিখলেও compiler context দেখে বুঝে নেয়"),
+           ("Type safety", "ভুল type-এর মান মিশে যাওয়া আটকানো")))
 
 c.lesson("Integer: পূর্ণ সংখ্যা",
     say("Rust-এ number-এর আকার আপনি ঠিক করেন। <code>i</code> = চিহ্নসহ (ঋণাত্মক হতে পারে), <code>u</code> = শুধু ধনাত্মক।"),
@@ -322,6 +378,20 @@ fn main() {
 }
 ''', err="E0308"),
     tip("Error-এর <code>help: remove this semicolon</code> লাইনটা দেখুন — compiler ঠিক জায়গা দেখিয়ে দিচ্ছে।"))
+
+c.lesson("Expression আর statement",
+    say("Rust-এর অনেক নিয়ম এই দুই শব্দে। <b>Expression</b> একটা <b>মান</b> দেয়; <b>statement</b> কাজ করে, মান দেয় না। শেষে <code>;</code> বসালে expression statement হয়ে যায় — আগের <code>;</code> নিয়ে ভুলের কারণও এটাই।"),
+    code(r'''
+fn main() {
+    let a = 5;                 // statement: কাজ (variable বানানো)
+    let b = { 2 + 3 };         // { ... } একটা expression, মান ৫
+    let c = if b > 3 { "বেশি" } else { "কম" };   // if-ও expression
+    println!("{a} {b} {c}");
+}
+'''),
+    jargon(("Expression", "যা evaluate হয়ে একটা মান হয় (<code>2 + 3</code>, <code>if ... else ...</code>)"),
+           ("Statement", "যা কাজ করে কিন্তু মান ফেরত দেয় না (<code>let x = 5;</code>)"),
+           ("Scope", "যে অংশে একটা নাম দেখা যায় — সাধারণত <code>{ }</code> block")))
 
 c.lesson("Block-ও একটা মান",
     say("<code>{ }</code> block-এর শেষ লাইন (semicolon ছাড়া) পুরো block-এর মান হয়। তাই block দিয়ে variable-এ মান বসানো যায়।"),
@@ -564,6 +634,19 @@ c.lesson("Compiler-কে বন্ধু বানান",
     steps("Error-এর প্রথম লাইন পড়ুন: <code>error[E0384]</code> আর ছোট বর্ণনা",
           "<code>--&gt;</code> লাইনে file আর line নম্বর", "<code>help:</code> লাইনে প্রায়ই সমাধান লেখা থাকে"),
     tip("একবারে সব error ঠিক করতে যাবেন না। প্রথমটা ঠিক করুন, আবার <code>cargo check</code> চালান।"))
+
+c.lesson("Rust 101-এর জার্গন কার্ড",
+    table(["শব্দ", "এক লাইনে"], [
+        ["Macro (<code>name!</code>)", "compile-এর সময় code বানানো code"],
+        ["Compile time / Runtime", "চালানোর আগে / চলার সময়"],
+        ["Binary", "compile করা চালানো যায় এমন ফাইল"],
+        ["Crate", "Rust-এর package"],
+        ["Static typing, inference", "type compile-এই ঠিক; লিখতে না হলেও compiler আন্দাজ করে"],
+        ["Expression / Statement", "মান দেয় / কাজ করে"],
+        ["Immutable / Mutable", "বদলানো যায় না (ডিফল্ট) / <code>mut</code> দিলে যায়"],
+        ["Scope", "যেখানে একটা নাম দেখা যায়"],
+        ["Panic", "program-এর জরুরি থামা (যেমন array-র বাইরে যাওয়া)"]]),
+    tip("কোনো শব্দ আটকে গেলে এই কার্ডে ফিরে আসুন। পরের কোর্সে আরও শব্দ — attribute, trait, ownership — প্রতিটা প্রথম যেখানে আসে সেখানেই বুঝিয়ে দেওয়া আছে।"))
 
 c.finish("Rust 101 শেষ! 🎉",
          "আপনি এখন ছোট Rust program লিখতে পারেন। পরের কোর্সে Rust-এর সবচেয়ে গুরুত্বপূর্ণ ধারণা: Ownership।",

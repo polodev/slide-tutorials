@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tutorial-kit"))
-from kit import Course, code, php_note, points, quiz, say, steps, table, task, tip, warn  # noqa: E402
+from kit import Course, code, jargon, php_note, points, quiz, say, steps, table, task, tip, warn  # noqa: E402
 
 c = Course(slug="rust-102", title="Rust 102 — Ownership ও Data", folder=Path(__file__).parent,
            subtitle="Rust-এর আসল শক্তি: ownership, borrowing, struct, enum, Option, Result, Vec আর HashMap",
@@ -161,6 +161,16 @@ fn main() {
 ''', err="E0106"),
     say("সমাধান সহজ: reference না দিয়ে মালিকানাসহ <code>String</code> ফেরত দিন: <code>fn make_name() -&gt; String</code>।"))
 
+c.lesson("Memory safety: Rust কী আটকায়",
+    say("Ownership নিয়ম আসলে কিছু পুরনো মারাত্মক bug আটকানোর জন্য। এই শব্দগুলো C/C++-এর দুনিয়ায় নিয়মিত শোনা যায়, Rust-এ এগুলো compile-এই ধরা পড়ে।"),
+    jargon(("Memory safety", "নিজের memory-র ভুল ব্যবহার (ভুল জায়গা পড়া, দুইবার মুছা) থেকে সুরক্ষা"),
+           ("Dangling pointer / reference", "যে জিনিসের দিকে নির্দেশ করছে সেটা আগেই মুছে গেছে — আগের lesson-এর error"),
+           ("Use-after-free", "মুছে ফেলা memory আবার ব্যবহার"),
+           ("Double free", "একই জিনিস দুইবার মুছতে যাওয়া — move নিয়ম এটা আটকায়"),
+           ("Null pointer", "\"কিছু নেই\" কিন্তু ব্যবহার করতে গেলে crash — Rust-এ <code>Option</code> আছে, null নেই"),
+           ("Garbage collector (GC)", "চলার সময় যে প্রক্রিয়া আর-লাগে-না memory পরিষ্কার করে (PHP-তে আছে); Rust-এ নেই, ownership compile-এই ঠিক করে")),
+    php_note("PHP-তে memory আপনাকে ভাবতে হয় না, কারণ GC আছে — বিনিময়ে একটু ধীর আর বেশি memory। Rust GC ছাড়াই নিরাপদ।"))
+
 c.lesson("Slice: পুরোটা না, একটা অংশ ধার",
     say("<code>&s[0..5]</code> হলো String-এর একটা অংশের reference (<code>&str</code>)। Array/Vec-এর অংশ হলো <code>&[T]</code>।"),
     code(r'''
@@ -282,6 +292,38 @@ fn main() {
 }
 '''),
     php_note("<code>new Product('Realme')</code> → <code>Product::new(\"Realme\")</code>। Rust-এ <code>new</code> শুধু একটা নাম, বিশেষ keyword না।"))
+
+c.lesson("Attribute: #[...] মানে কী?",
+    say("Struct বা function-এর ঠিক উপরে <code>#[...]</code> লেখা দেখেছেন? একে বলে <b>attribute</b> — compiler-কে দেওয়া একটা নির্দেশ বা তথ্য। নিচে <code>Debug</code> চাওয়া হচ্ছে, কিন্তু struct-কে সেই ক্ষমতা দেওয়া হয়নি:"),
+    code(r'''
+struct Customer {
+    name: String,
+    due: i64,
+}
+
+fn main() {
+    let c = Customer { name: "Nusrat".into(), due: 1500 };
+    println!("{:?}", c);
+}
+''', err="E0277"),
+    php_note("PHP 8-এও একই চিহ্ন: <code>#[Route('/home')]</code>, <code>#[Test]</code>। Laravel-এ attribute দিয়ে route/validation লেখা এখন চালু হচ্ছে। Rust-এ attribute এর চেয়েও গভীরে কাজ করে — compiler নিজে code বানিয়ে দেয়।"),
+    jargon(("Attribute", "<code>#[...]</code> — নিচের item-এর (struct/function) জন্য compiler-কে নির্দেশ"),
+           ("<code>#![...]</code>", "ভিতরের attribute — পুরো file বা crate-এর জন্য (শুরুতে লেখা হয়)"),
+           ("Annotation", "অন্য ভাষায় একই ধারণার নাম (Java, PHP)")))
+
+c.lesson("Attribute-এর পরিবার",
+    say("এই কোর্স-সিরিজে যে attribute-গুলো দেখবেন, সব একসাথে। প্রতিটার কাজ আলাদা, কিন্তু লেখার ধরন এক।"),
+    table(["Attribute", "কাজ", "কোথায়"], [
+        ["<code>#[derive(Debug)]</code>", "compiler একটা trait-এর code নিজে লিখে দেয়", "এই কোর্স, Rust 103"],
+        ["<code>#[test]</code>", "function-টা test হিসেবে চিহ্নিত", "Rust 103"],
+        ["<code>#[cfg(test)]</code>", "শুধু শর্ত মিললে এই code compile হবে", "Rust 103"],
+        ["<code>#[allow(dead_code)]</code>", "নির্দিষ্ট warning চুপ করানো", "—"],
+        ["<code>#[tokio::main]</code>", "<code>async fn main</code>-কে চালানোর ব্যবস্থা বানায়", "Rust Web Development"],
+        ["<code>#[serde(default)]</code>", "serde crate-কে নির্দেশ", "Rust Web Development"],
+        ["<code>#[component]</code>, <code>#[page]</code>", "framework-এর function চিহ্নিত", "Leptos, Topcoat"]]),
+    jargon(("Procedural macro", "attribute আর derive-এর ভিতরের শক্তি — Rust code পড়ে নতুন Rust code লেখে"),
+           ("Boilerplate", "বারবার একই ছাঁচে লিখতে হয় এমন একঘেয়ে code — derive সেটা কমায়")),
+    tip("পরের lesson-এ <code>#[derive(Debug)]</code> বসিয়ে ঠিক এই ভুলটাই সারাবেন।"))
 
 c.lesson("#[derive(Debug)]: struct প্রিন্ট করা",
     say("<code>{:?}</code> দিয়ে struct প্রিন্ট করতে <code>#[derive(Debug)]</code> লাগে। <code>{:#?}</code> সুন্দর করে লাইন ভেঙে দেখায় — PHP-র <code>dd()</code>/<code>print_r</code>-এর মতো।"),
@@ -586,6 +628,14 @@ fn main() {
 '''),
     php_note("PHP-র <code>namespace App\\Billing;</code> আর <code>public/private</code>-এর মতো। বড় project-এ প্রতিটি <code>mod</code> আলাদা file হয়: <code>src/billing.rs</code>।"))
 
+c.lesson("Module, API আর encapsulation",
+    say("<code>pub</code> দিয়ে আপনি ঠিক করেন বাইরের কোড কী দেখতে পাবে। এটাই <b>encapsulation</b>: ভিতরের খুঁটিনাটি লুকিয়ে শুধু দরকারি অংশ খোলা রাখা।"),
+    jargon(("Module", "কোড ভাগ করার একক; Rust-এ <code>mod</code>। PHP-র namespace-এর কাছাকাছি"),
+           ("Encapsulation", "ভিতরের data/কাজ লুকানো, শুধু নির্দিষ্ট দরজা (public method) খোলা"),
+           ("API (Application Programming Interface)", "একটা code যা অন্য code-কে কী কী করতে দেয় তার তালিকা — এখানে <code>pub</code> ফাংশনগুলো"),
+           ("Public / private", "বাইরে থেকে দেখা যায় / যায় না (ডিফল্ট private)")),
+    tip("\"API\" শব্দটা দুই অর্থে আসে: library-র pub function-এর তালিকা (এখানে), আর web server-এর endpoint-এর তালিকা (Rust Web Development-এ)।"))
+
 c.lesson("Project: দোকানের Inventory",
     say("struct, enum, HashMap, Result আর <code>?</code> একসাথে। প্রতিটি লাইন একটা command: <code>add</code>, <code>sell</code>, <code>report</code>।"),
     code(r'''
@@ -626,6 +676,17 @@ fn main() {
 }
 ''', stdin="add Redmi13 5\nadd GalaxyA15 2\nsell Redmi13 3\nsell GalaxyA15 4\nsell Nokia 1\nhello\nreport\n"),
     task("<code>price</code> যোগ করুন: <code>add Redmi13 5 17500</code>, আর report-এ মোট স্টকের দাম দেখান।"))
+
+c.lesson("Rust 102-এর জার্গন কার্ড",
+    table(["শব্দ", "এক লাইনে"], [
+        ["Ownership / Move / Borrow", "এক সময়ে একজন মালিক; হস্তান্তর; ধার নেওয়া (<code>&amp;</code>)"],
+        ["Stack / Heap", "দ্রুত নির্দিষ্ট আকারের জায়গা / বড়, বাড়তে-পারা জায়গা"],
+        ["Memory safety", "memory-র ভুল ব্যবহার compile-এই আটকানো"],
+        ["Null / Option", "\"কিছু নেই\" — Rust-এ <code>Option</code> দিয়ে স্পষ্টভাবে"],
+        ["Attribute (<code>#[...]</code>)", "compiler-কে নির্দেশ; derive দিয়ে code বানানো"],
+        ["Boilerplate", "বারবার লেখার একঘেয়ে code"],
+        ["Encapsulation / API", "ভিতরের তথ্য লুকানো / বাইরে খোলা দরজার তালিকা"],
+        ["Error value", "<code>Result</code> — exception ছোঁড়ার বদলে মান হিসেবে ফেরত"]]))
 
 c.finish("Rust 102 শেষ! 🎉",
          "Rust-এর সবচেয়ে কঠিন অংশ আপনি পার করে এসেছেন। এবার trait, generic, iterator আর একসাথে অনেক কাজ (concurrency)।",

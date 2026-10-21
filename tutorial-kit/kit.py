@@ -70,6 +70,12 @@ def php_note(x):
     return Html(f'<div class="callout php"><b>PHP/Laravel-এ যেমন</b> {x}</div>')
 
 
+def jargon(*pairs):
+    """Software-engineering words, explained where they first appear. pairs: (term, meaning), ..."""
+    rows = "".join(f"<li><b>{t}</b> — {m}</li>" for t, m in pairs)
+    return Html(f'<div class="callout jargon"><span class="jh">📘 জার্গন — শব্দের মানে</span><ul>{rows}</ul></div>')
+
+
 def task(x):
     return Html(f'<div class="callout task"><b>নিজে করুন</b> {x}</div>')
 
@@ -96,7 +102,7 @@ class Code:
 
     def __init__(self, src, lang="rust", *, run=None, err=None, panic=False, stdin=None, file=None,
                  deps=None, requests=None, hl=(), args=None, show_output=True, label=None, test=False,
-                 server_log=False, eloquent=False, flutter=False, app=None, actions=None, web=False, fullstack=False, site=None,
+                 server_log=False, eloquent=False, flutter=False, app=None, actions=None, web=False, fullstack=False, topcoat=None, files=None, site=None,
                  save=False, validate=None, timeout=300, max_lines=40, hidden=False):
         self.src = src.strip("\n")
         self.lang = lang
@@ -107,6 +113,8 @@ class Code:
         self.eloquent = eloquent   # php block that runs with Eloquent booted against the course database
         self.flutter, self.app, self.actions = flutter, app, actions   # Flutter: screenshot, or test against app
         self.site = site   # extra static files served next to the wasm app: {"products.json": "..."}
+        self.topcoat = topcoat   # Topcoat app: "html" = curl the server, "runtime" = bundle assets + open in headless Chromium
+        self.files = files       # extra source files for the project: {"src/about.rs": "..."}
         self.fullstack = fullstack   # Leptos SSR + hydration: src = src/lib.rs, app = src/main.rs (axum server)
         self.web = web   # Leptos CSR: build to wasm, open in headless Chromium, screenshot (actions = clicks/typing)
         self.save, self.validate, self.timeout, self.max_lines = save, validate, timeout, max_lines   # shell sessions
@@ -478,6 +486,7 @@ with sync_playwright() as p:
         elif k == "select": pg.select_option(a[1], a[2])
         elif k == "press": pg.press(a[1], a[2])
         elif k == "wait": pg.wait_for_timeout(a[1])
+        elif k == "goto": pg.goto(url.rstrip("/") + a[1]); pg.wait_for_timeout(300)
         elif k == "shot": pg.wait_for_timeout(150); shot(a[1])
         pg.wait_for_timeout(120)
     if actions and actions[-1][0] != "shot":
@@ -634,6 +643,84 @@ def run_fullstack(c: Code, res: Results, folder: Path):
         shutil.copy(s["file"], folder / name)
         shots.append(dict(label=s["label"], img=name, text=s["text"]))
     out = dict(kind="web", shots=shots, text="\n\n".join(parts), title="আসল browser-এ — server-এর HTML, তারপর hydration")
+    res.data[key] = out
+    res.save()
+    return out
+
+
+TOPCOAT_BIN = CACHE / "tcbin/bin/topcoat"
+
+
+def run_topcoat(c: Code, res: Results, folder: Path):
+    """Topcoat app (tokio-rs/topcoat): cargo build (or `topcoat asset bundle` for runtime pages), start the server on
+    TEST_PORT, curl it, and for runtime pages open it in headless Chromium and click/type."""
+    runtime = c.topcoat == "runtime"
+    key = _hash("topcoat", c.src, c.files, c.deps, c.requests, c.actions, c.site, c.err, runtime, WEB_SHOT, WEB_CSS, 2)
+    cached = res.data.get(key)
+    if cached and all((folder / s["img"]).exists() for s in cached.get("shots", [])):
+        return cached
+    d = CACHE / "topcoat" / key
+    (d / "src").mkdir(parents=True, exist_ok=True)
+    deps = {"topcoat": '"0.10"', "tokio": '{ version = "1", features = ["rt-multi-thread", "macros"] }', **(c.deps or {})}
+    toml = "\n".join(f"{k} = {v if v.startswith(('{', '\"')) else json.dumps(v)}" for k, v in deps.items())
+    (d / "Cargo.toml").write_text(f'[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\n{toml}\n')
+    (d / "src/main.rs").write_text(c.src + "\n")
+    for name, text in (c.files or {}).items():
+        (d / name).parent.mkdir(parents=True, exist_ok=True)
+        (d / name).write_text(text.strip("\n") + "\n")
+    env = {**os.environ, "CARGO_TARGET_DIR": str(CACHE / "target-topcoat"), "PORT": str(TEST_PORT), "HOST": "127.0.0.1",
+           "PATH": f"{TOPCOAT_BIN.parent}:{os.environ['PATH']}", "NO_COLOR": "1"}
+    cmd = [str(TOPCOAT_BIN), "asset", "bundle"] if runtime else ["cargo", "build", "--color", "never", "-q"]
+    b = subprocess.run(cmd, cwd=d, capture_output=True, text=True, env=env)
+    if c.err:
+        if b.returncode == 0 or c.err not in (b.stderr + b.stdout):
+            raise SystemExit(f"expected topcoat error {c.err}:\n{b.stderr}\n{c.src}")
+        out = dict(kind="error", text=_clean_rustc(b.stderr))
+        res.data[key] = out
+        res.save()
+        return out
+    if b.returncode != 0:
+        raise SystemExit(f"topcoat build failed:\n{b.stderr}{b.stdout}\n--- source ---\n{c.src}")
+    if "warning" in b.stderr:
+        print(f"  ! warning:\n{b.stderr}", file=sys.stderr)
+    with socket.socket() as sk:
+        if sk.connect_ex(("127.0.0.1", TEST_PORT)) == 0:
+            raise SystemExit(f"port {TEST_PORT} is busy; stop that process first")
+    p = subprocess.Popen([str(CACHE / "target-topcoat/debug/app")], cwd=d, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                         text=True, env=env, start_new_session=True)
+    shots, parts = [], []
+    try:
+        if not _wait_port(TEST_PORT):
+            raise SystemExit(f"server did not start:\n{c.src}")
+        for req in c.requests or []:
+            r = subprocess.run(req.replace(":3000", f":{TEST_PORT}"), shell=True, capture_output=True, text=True, timeout=20)
+            body = re.sub(r"(?im)^date: .*\r?\n?", "", r.stdout).replace(f":{TEST_PORT}", ":3000")
+            if "@@" not in body:
+                try:
+                    body = json.dumps(json.loads(body), ensure_ascii=False, indent=2)
+                except ValueError:
+                    pass
+            parts.append(f"$ {req}\n{body.rstrip()}")
+        if runtime:
+            sh = subprocess.run([str(PW_PYTHON), "-c", WEB_SHOT, "", str(d / "shot"), json.dumps(c.actions or []),
+                                 f"http://127.0.0.1:{TEST_PORT}/", WEB_CSS], capture_output=True, text=True, timeout=120)
+            if sh.returncode != 0:
+                raise SystemExit(f"browser run failed:\n{sh.stderr}")
+            data = json.loads(sh.stdout.strip().splitlines()[-1])
+            if data["errors"]:
+                raise SystemExit(f"browser console errors: {data['errors']}\n{c.src}")
+            (folder / "shots").mkdir(exist_ok=True)
+            for i, s in enumerate(data["shots"]):
+                name = f"shots/{key[:12]}-{i}.png"
+                shutil.copy(s["file"], folder / name)
+                shots.append(dict(label=s["label"], img=name, text=s["text"]))
+    finally:
+        os.killpg(p.pid, signal.SIGTERM)
+        p.wait(timeout=10)
+    if shots:
+        out = dict(kind="web", shots=shots, text="\n\n".join(parts), title="আসল browser-এ চালানো (Topcoat runtime, wasm ছাড়া)")
+    else:
+        out = dict(kind="http", text="\n\n".join(parts))
     res.data[key] = out
     res.save()
     return out
@@ -1091,6 +1178,8 @@ class Course:
                 n += 1
                 if c.lang == "rust" and c.web:
                     c.result = run_web(c, res, self.folder)
+                elif c.lang == "rust" and c.topcoat:
+                    c.result = run_topcoat(c, res, self.folder)
                 elif c.lang == "rust" and c.fullstack:
                     c.result = run_fullstack(c, res, self.folder)
                 elif c.lang == "rust" and c.deps is not None:
@@ -1192,6 +1281,8 @@ h2{font-size:clamp(21px,calc(var(--u)*3),46px);font-weight:700;line-height:1.25;
 code.i,.txt code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--accent2);color:var(--ink);padding:.08em .4em;border-radius:6px}
 .callout{background:var(--card);border-left:5px solid var(--accent);border-radius:10px;padding:1.3vh 1.2vw;font-size:clamp(14px,calc(var(--u)*1.45),22px);line-height:1.65;box-shadow:0 4px 16px rgba(12,30,56,.07)}
 .callout.warn{border-left-color:var(--amber)}
+.callout.jargon{border-left-color:#7c3aed}.callout.jargon .jh{display:block;font-weight:700;color:#7c3aed;margin-bottom:4px}
+.callout.jargon ul{margin:0;padding-left:20px}.callout.jargon li{margin:3px 0}
 .callout.php{border-left-color:var(--php)}.callout.php b{color:var(--php);margin-right:.4em}
 .callout.task{border-left-color:#7C3AED}.callout.task b{color:#7C3AED;margin-right:.4em}
 .quiz{background:var(--card);border-radius:10px;padding:1.2vh 1.1vw;box-shadow:0 4px 16px rgba(12,30,56,.07)}

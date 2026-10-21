@@ -2,6 +2,6 @@
  "slug": "rust-web-development",
  "title": "Rust Web Development — axum দিয়ে API",
  "subtitle": "Laravel জানেন? axum, tokio আর sqlx দিয়ে একটা দোকানের Product API: route, JSON, validation, database, middleware, deploy",
- "lessons": 28,
- "slides": 30
+ "lessons": 34,
+ "slides": 36
 }

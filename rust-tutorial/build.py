@@ -7,7 +7,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "tutorial-kit"))
 from kit import build_home  # noqa: E402
 
-COURSES = [("rust-101", "🦀"), ("rust-102", "🔐"), ("rust-103", "⚙️"), ("rust-web-development", "🌐"), ("rust-leptos", "⚡")]
+COURSES = [("rust-101", "🦀"), ("rust-102", "🔐"), ("rust-103", "⚙️"), ("rust-web-development", "🌐"), ("rust-leptos", "⚡"), ("rust-topcoat", "🧥")]
 
 if __name__ == "__main__":
     for folder, _ in COURSES:

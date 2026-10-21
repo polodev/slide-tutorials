@@ -7,7 +7,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "tutorial-kit"))
-from kit import Course, code, php_note, points, quiz, say, shell, steps, table, task, tip, warn  # noqa: E402
+from kit import Course, code, jargon, php_note, points, quiz, say, shell, steps, table, task, tip, warn  # noqa: E402
 
 AXUM = {"axum": "0.8", "tokio": '{ version = "1", features = ["full"] }',
         "serde": '{ version = "1", features = ["derive"] }', "serde_json": "1"}
@@ -47,6 +47,18 @@ c.lesson("Laravel থেকে axum: কোনটা কী",
         ["Middleware", "tower layer / <code>middleware::from_fn</code>"],
         ["<code>php artisan serve</code>", "<code>cargo run</code>"], [".env + <code>config()</code>", "dotenvy + <code>std::env::var</code>"]]),
     tip("পার্থক্যটা মনে রাখুন: Laravel প্রতি request-এ নতুন করে শুরু হয়। Rust server একবার চালু হয়ে চলতেই থাকে — তাই memory-তে state রাখা যায়, আর খুব দ্রুত।"))
+
+c.lesson("Web-এর জার্গন: request থেকে response",
+    say("Web server-এর সব আলোচনায় এই শব্দগুলো ঘুরেফিরে আসে। Laravel-এ আপনি এগুলো রোজ ব্যবহার করেন, শুধু হয়তো নামগুলো আলাদা করে ভাবেননি।"),
+    jargon(("HTTP", "browser আর server-এর কথা বলার নিয়ম"),
+           ("Request / Response", "প্রশ্ন (method, URL, header, body) / উত্তর (status, header, body)"),
+           ("Endpoint", "একটা নির্দিষ্ট URL + method, যেমন <code>POST /api/products</code>"),
+           ("Route / Handler", "URL-এর নিয়ম / সেই URL যে function চালায় (Laravel-এর controller method)"),
+           ("Status code", "উত্তরের সংক্ষিপ্ত ফল: 200 ঠিক, 404 পাওয়া যায়নি, 422 ভুল input, 500 server-এর ভুল"),
+           ("REST API", "resource ধরে URL সাজানো (<code>/products</code>, <code>/products/5</code>) আর method দিয়ে কাজ বোঝানো (GET পড়া, POST বানানো, DELETE মোছা)"),
+           ("JSON", "data পাঠানোর text ফরম্যাট: <code>{\"name\": \"Redmi\"}</code>"),
+           ("Idempotent", "একই request বারবার পাঠালেও ফল একই (GET, PUT, DELETE) — POST সাধারণত নয়")),
+    php_note("Laravel-এ <code>Route::get()</code> → <i>route</i>, controller method → <i>handler</i>, <code>response()-&gt;json()</code> → <i>JSON response</i>। নতুন কিছু না, শুধু নাম।"))
 
 c.lesson("Project বানানো",
     shell("$ cargo new shop-api\n$ cd shop-api\n$ cargo add axum\n$ cargo add tokio --features full\n$ cargo add serde --features derive\n$ cargo add serde_json"),
@@ -176,6 +188,17 @@ async fn main() {
                           "curl -s 'http://127.0.0.1:3000/products'",
                           "curl -s 'http://127.0.0.1:3000/products?page=two'"]),
     php_note("<code>$request-&gt;query('q')</code> আর <code>$request-&gt;integer('page', 1)</code> — এখানে সব একটা typed struct-এ।"))
+
+c.lesson("Serialization: struct থেকে JSON, আবার ফেরত",
+    say("Rust-এর <code>struct</code> আর JSON <code>text</code> আলাদা জিনিস। একটাকে আরেকটায় বদলানো — এটাই <b>serialization</b> আর <b>deserialization</b>। কাজটা করে <code>serde</code> crate, আর <code>#[derive(Serialize)]</code> attribute (Rust 102-এ attribute দেখেছেন) সেই code নিজে লিখে দেয়।"),
+    table(["", "দিক", "Rust", "PHP-তে"], [
+        ["Serialize", "struct → JSON text", "<code>#[derive(Serialize)]</code>", "<code>json_encode($data)</code>"],
+        ["Deserialize", "JSON text → struct", "<code>#[derive(Deserialize)]</code>", "<code>json_decode($json, true)</code>"]]),
+    jargon(("Serialization", "memory-র data-কে পাঠানো/রাখার মতো text/bytes-এ বদলানো"),
+           ("Deserialization", "text/bytes থেকে আবার type-ওয়ালা data বানানো — ভুল ফরম্যাট হলে এখানেই error"),
+           ("Payload", "request বা response-এ বহন করা আসল data (body)"),
+           ("Schema", "data-র আকারের বর্ণনা — Rust-এ struct-ই schema")),
+    tip("PHP-র <code>json_decode</code> যেকোনো আকারের array দেয়। Rust-এ struct-এর আকারের সাথে না মিললে request-ই ঢোকে না — ফলে validation অর্ধেক হয়ে যায় type-ই করে দেয়।"))
 
 c.lesson("JSON response",
     say("struct-এ <code>#[derive(Serialize)]</code> দিয়ে <code>Json(...)</code>-এ মুড়ে ফেরত দিলেই JSON, সাথে <code>Content-Type: application/json</code>।"),
@@ -387,6 +410,18 @@ $data = $request->validate([
 
 # ================================================================== database
 c.section("Database (SQLite + sqlx)")
+c.lesson("Database-এর জার্গন",
+    say("এখন থেকে SQL আসছে। Laravel-এ Eloquent বা migration ব্যবহার করে থাকলে এগুলো চেনা।"),
+    jargon(("ORM", "table-কে object-এর মতো ব্যবহার (Eloquent); sqlx ORM না — সরাসরি SQL"),
+           ("Query builder", "কোড দিয়ে SQL বানানো (<code>DB::table()-&gt;where()</code>)"),
+           ("Migration", "table-এর গঠন বদলানোর ধাপ-ধরা script, version control-এ রাখা যায়"),
+           ("Connection pool", "আগে থেকে খুলে রাখা কয়েকটা database connection; request এলে একটা ধার নেয়"),
+           ("CRUD", "Create, Read, Update, Delete — বেশিরভাগ API-র ভিত"),
+           ("Transaction", "কয়েকটা কাজ হয় সবকটা, নয়তো একটাও না"),
+           ("Bind parameter / SQL injection", "<code>?</code> দিয়ে মান আলাদা পাঠানো — user-এর লেখা SQL-এর অংশ হতে পারে না"),
+           ("N+1 query", "১টা list আনার পর প্রতি row-র জন্য আরও ১টা query — ধীর হওয়ার সাধারণ কারণ")),
+    php_note("Laravel-এ <code>User::where('id', $id)</code>-এর ভিতরে binding আপনা-আপনি। এখানে <code>?</code> নিজে লিখতে হয়, কিন্তু নিরাপত্তার ধারণা একই।"))
+
 c.lesson("sqlx যোগ করা আর connect",
     say("<b>sqlx</b> async SQL library — Eloquent-এর মতো ORM না, আপনি SQL লেখেন, সে নিরাপদে চালায় আর ফলাফল struct-এ বসায়। শুরুতে SQLite (একটা file), পরে শুধু URL বদলে MySQL/PostgreSQL।"),
     shell('$ cargo add sqlx --features runtime-tokio,sqlite'),
@@ -651,6 +686,16 @@ async fn main() {
 }
 ''', deps=AXUM, requests=["curl -s http://127.0.0.1:3000/api/v1/products", "curl -s http://127.0.0.1:3000/api/v1/customers"]))
 
+c.lesson("Middleware আর নিরাপত্তার জার্গন",
+    say("Request handler-এ পৌঁছানোর আগে (আর response ফেরার সময়) মাঝপথে যা চলে, সেটাই middleware।"),
+    jargon(("Middleware / Layer", "request আর handler-এর মাঝের ধাপ — log, auth, CORS (tower-এ বলে layer)"),
+           ("Authentication", "তুমি কে? (login, API key)"),
+           ("Authorization", "তুমি কী করতে পারো? (admin কিনা)"),
+           ("API key", "client-কে দেওয়া গোপন token, header-এ পাঠায়"),
+           ("CORS", "অন্য domain-এর browser JavaScript আপনার API ডাকতে পারবে কিনা তার নিয়ম"),
+           ("Rate limiting", "একজন কত দ্রুত request পাঠাতে পারবে তার সীমা")),
+    php_note("Laravel-এ <code>Route::middleware('auth')</code> আর <code>$this-&gt;authorize()</code> — প্রথমটা authentication, দ্বিতীয়টা authorization।"))
+
 c.lesson("নিজের middleware: API key",
     say("<code>middleware::from_fn</code> দিয়ে async function-ই middleware। Request দেখে হয় আটকাই (401), নয়তো <code>next.run(req)</code> দিয়ে এগিয়ে দিই। <code>route_layer</code> শুধু ঐ route-গুলোতে বসে।"),
     code(r'''
@@ -722,6 +767,17 @@ API_KEY=change-me
 
 # ================================================================== deploy
 c.section("Deploy")
+c.lesson("Deploy-এর জার্গন",
+    say("Laptop থেকে সত্যিকারের server-এ নিতে হলে এই শব্দগুলো লাগে।"),
+    jargon(("Deploy", "code server-এ তুলে চালু করা"),
+           ("Production / Staging", "আসল user-দের server / তার আগের মহড়ার server"),
+           ("Artifact", "build-এর ফল যা deploy হয় — এখানে একটাই binary"),
+           ("Reverse proxy", "সামনে বসা server (Nginx) যে request নিয়ে ভিতরের app-কে পাঠায়"),
+           ("TLS / HTTPS", "ট্রাফিক এনক্রিপ্ট করা; certificate লাগে"),
+           ("Daemon / Service", "পেছনে সবসময় চলা প্রোগ্রাম; systemd দেখাশোনা করে"),
+           ("Container", "app + তার দরকারি সবকিছু একটা প্যাকেটে (Docker)"),
+           ("Environment variable", "code-এর বাইরে রাখা সেটিং (<code>DATABASE_URL</code>); secret এভাবেই রাখা হয়")))
+
 c.lesson("Release build",
     say("<code>--release</code> build অনেক দ্রুত আর ছোট। ফলাফল একটা মাত্র file — server-এ PHP, Composer, vendor কিছুই লাগে না।"),
     shell("$ cargo build --release\n$ ls -lh target/release/shop-api\n$ ./target/release/shop-api",
@@ -943,6 +999,19 @@ c.lesson("এরপর কী শিখবেন",
         ["Background job (queue)", "<code>tokio::spawn</code>, <code>apalis</code>"],
         ["OpenAPI/Swagger doc", "<code>utoipa</code>"]]),
     tip("Laravel-এ যা করতে পারেন, Rust-এ প্রায় সবই পারবেন — শুধু একটু বেশি লিখতে হয়, বিনিময়ে অনেক কম memory আর অনেক বেশি গতি।"))
+
+c.lesson("Rust Web Development-এর জার্গন কার্ড",
+    table(["শব্দ", "এক লাইনে"], [
+        ["Endpoint / Handler", "URL+method / সেই কাজের function"],
+        ["Status code", "ফলের সংখ্যা-সংকেত (200, 404, 422, 500)"],
+        ["Serialize / Deserialize", "struct ⇄ JSON text"],
+        ["ORM / Query builder / Raw SQL", "object দিয়ে / কোড দিয়ে / সরাসরি SQL লেখা"],
+        ["Migration", "database গঠনের version-ধরা ধাপ"],
+        ["Middleware", "request-handler-এর মাঝের ধাপ"],
+        ["Authentication / Authorization", "কে তুমি / কী করার অনুমতি তোমার"],
+        ["Reverse proxy", "সামনের server যে request পাঠায় ভিতরে"],
+        ["Environment variable", "code-এর বাইরের সেটিং আর গোপন তথ্য"]]),
+    tip("পরের কোর্সগুলো (Leptos, Topcoat) এই শব্দগুলোর উপর আরও কিছু নতুন শব্দ যোগ করবে: DOM, reactivity, SSR, hydration, CSRF।"))
 
 c.finish("Rust Web Development শেষ! 🎉",
          "আপনি এখন Rust দিয়ে একটা আসল JSON API বানাতে, database-এ রাখতে আর server-এ চালাতে পারেন।",

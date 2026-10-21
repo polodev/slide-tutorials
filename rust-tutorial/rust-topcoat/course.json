@@ -1,0 +1,7 @@
+{
+ "slug": "rust-topcoat",
+ "title": "Rust Topcoat — Tokio-র Full-stack Framework",
+ "subtitle": "axum-এর উপর বানানো server-first framework: view! macro, async component, module routing, আর WebAssembly ছাড়া browser interactivity",
+ "lessons": 43,
+ "slides": 45
+}
